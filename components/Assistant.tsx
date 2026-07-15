@@ -87,6 +87,30 @@ export function Assistant() {
     return m;
   }, [squad, shortlist]);
 
+  const squadById = useMemo(() => {
+    const m = new Map<string, Player>();
+    if (squad) for (const p of squad.dataset.players) m.set(p.id, p);
+    return m;
+  }, [squad]);
+
+  const shortlistById = useMemo(() => {
+    const m = new Map<string, Player>();
+    if (shortlist) for (const p of shortlist.dataset.players) m.set(p.id, p);
+    return m;
+  }, [shortlist]);
+
+  const scoreById = useMemo(() => {
+    const m = new Map<string, PlayerScores>();
+    for (const b of [squad, shortlist]) {
+      if (b) for (const [id, s] of b.scoreById) m.set(id, s);
+    }
+    return m;
+  }, [squad, shortlist]);
+
+  const peekMaps = useMemo(
+    () => ({ squadById, shortlistById, scoreById }),
+    [squadById, shortlistById, scoreById],
+  );
   const report: AssistantReport | null = useMemo(() => {
     if (!committed || !squad) return null;
     const formation = FORMATIONS.find((f) => f.id === committed.formationId) ?? FORMATIONS[0]!;
@@ -167,7 +191,12 @@ export function Assistant() {
 
           <div className="assist-grid">
             <Pitch report={report} nameById={nameById} />
-            <GapsPanel report={report} nameById={nameById} onFormation={tryFormation} />
+            <GapsPanel
+              report={report}
+              nameById={nameById}
+              maps={peekMaps}
+              onFormation={tryFormation}
+            />
           </div>
 
           <div className="section-label section-gap-lg">
@@ -189,13 +218,27 @@ export function Assistant() {
           ) : (
             <div className="plans">
               {report.packages.map((pk) => (
-                <PackageCard key={pk.id} pk={pk} nameById={nameById} cap={report.budgetCap} />
+                <PackageCard
+                  key={pk.id}
+                  pk={pk}
+                  nameById={nameById}
+                  squadById={squadById}
+                  shortlistById={shortlistById}
+                  scoreById={scoreById}
+                  cap={report.budgetCap}
+                />
               ))}
             </div>
           )}
 
           <div className="section-label section-gap-lg">Sporting director</div>
-          <SportingDirector report={report} nameById={nameById} />
+          <SportingDirector
+            report={report}
+            nameById={nameById}
+            squadById={squadById}
+            shortlistById={shortlistById}
+            scoreById={scoreById}
+          />
 
           <FindingsFeed
             findings={findings}

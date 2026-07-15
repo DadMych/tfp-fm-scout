@@ -1,24 +1,32 @@
-import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Player } from "@/src/domain/player.js";
+import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import type { TransferPackage } from "@/src/domain/assistant/packages.js";
 import { WatchToggle } from "@/components/kit/WatchToggle";
 import { formatMoney } from "@/src/report/format.js";
+import { PlayerLink, peekFor, type ScoutDataset } from "./PlayerLink";
 
 const FATE_LABEL = {
   bench: "drops to the bench",
   sell: "is sold to fund the window",
   cover: "becomes first-choice cover",
   loan: "leaves on loan",
+  "b-team": "moves to the junior side",
 } as const;
 
 export function PackageCard({
   pk,
   nameById,
+  squadById,
+  shortlistById,
+  scoreById,
   cap,
 }: {
   pk: TransferPackage;
   nameById: Map<string, Player>;
+  squadById: Map<string, Player>;
+  shortlistById: Map<string, Player>;
+  scoreById: Map<string, PlayerScores>;
   cap: number;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -35,6 +43,21 @@ export function PackageCard({
   const visibleMoves = showCollapse && !expanded ? starters : pk.moves;
   const hiddenDepth = showCollapse && !expanded ? depth.length : 0;
   const squadLoans = pk.loans.filter((l) => !pk.moves.some((m) => m.playerId === l.playerId && m.kind === "prospect"));
+
+  const maps = useMemo(
+    () => ({ squadById, shortlistById, scoreById }),
+    [squadById, shortlistById, scoreById],
+  );
+
+  function link(id: string, label: string, prefer: ScoutDataset = "squad") {
+    const peek = peekFor(id, maps);
+    const dataset = peek?.dataset ?? prefer;
+    return (
+      <PlayerLink id={id} dataset={dataset} peek={peek} className="player-link">
+        {label}
+      </PlayerLink>
+    );
+  }
 
   return (
     <div className="plan">
@@ -75,12 +98,12 @@ export function PackageCard({
           <ul className="exits-list">
             {pk.sales.map((s) => (
               <li key={s.playerId}>
-                Sell <b>{s.playerName}</b> ({formatMoney(s.fee)}) — {s.consequence}
+                Sell {link(s.playerId, s.playerName)} ({formatMoney(s.fee)}) — {s.consequence}
               </li>
             ))}
             {squadLoans.map((l) => (
               <li key={l.playerId}>
-                Loan <b>{l.playerName}</b> — {l.reason}
+                {l.destination === "b-team" ? "B team" : "Loan"} {link(l.playerId, l.playerName)} — {l.reason}
               </li>
             ))}
           </ul>
@@ -94,9 +117,7 @@ export function PackageCard({
             <li key={m.playerId} className="move">
               <div className="move-top">
                 {p ? <WatchToggle player={p} /> : null}
-                <Link href={`/scout/shortlist/${m.playerId}`} className="move-name">
-                  {p?.name ?? m.playerId}
-                </Link>
+                {link(m.playerId, p?.name ?? m.playerId, "shortlist")}
                 <span className="move-slot">{m.slotLabel}</span>
                 {m.kind === "prospect" ? <span className="move-profile">Prospect · on loan</span> : null}
                 <span className="move-profile">{m.profile}</span>
@@ -105,7 +126,7 @@ export function PackageCard({
               <div className="move-why">{m.why}</div>
               {m.out ? (
                 <div className="move-out">
-                  <b>{m.out.name}</b> {FATE_LABEL[m.out.fate]}.
+                  {link(m.out.playerId, m.out.name)} {FATE_LABEL[m.out.fate]}.
                 </div>
               ) : null}
             </li>
@@ -127,9 +148,13 @@ export function PackageCard({
             {pk.xiDiff.map((row) => (
               <tr key={row.slotLabel} className={row.changed ? "changed" : ""}>
                 <td className="xi-slot">{row.slotLabel}</td>
-                <td className="xi-before">{row.before}</td>
+                <td className="xi-before">
+                  {row.beforeId ? link(row.beforeId, row.before) : row.before}
+                </td>
                 <td className="xi-arrow">→</td>
-                <td className="xi-after">{row.after}</td>
+                <td className="xi-after">
+                  {row.afterId ? link(row.afterId, row.after) : row.after}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -22,12 +22,18 @@ Every package carries an **exits** block drawn from `buildSales` verdicts:
 
 | Verdict | Effect |
 |---------|--------|
-| `release`, `sell-now`, `sell-high` | Sale — frees a place, adds fee to cash |
-| `loan-out` | Loan — frees a place, no fee |
+| `sell-now`, `sell-high` | Sale — frees a place, adds fee to cash |
+| `loan-out` | External loan — frees a place, no fee |
+| `b-team` | Junior / B-team move — frees a place, no fee |
+| `release` | Sale of last resort — frees a place; only older low-value fringe |
 
-Priority when picking exits: sell-now → sell-high → release → loan-out, then
-**registration culls** synthesised from fringe `keep` players (loan if ≤21, else release)
-when board exits alone cannot land under the cap.
+Priority when picking exits: **sell-now → sell-high → loan-out → b-team → release**, then
+**registration culls** synthesised from fringe `keep` players (loan if ≤21, B-team if ≤23,
+release only when value ≥ `MIN_FUNDING_SALE` or unknown) when board exits alone cannot land
+under the cap.
+
+Penny sales (`ask < MIN_FUNDING_SALE`) do not fund a window. Cheap releases are last resort
+for size pressure only.
 
 If the engine cannot free enough places to land ≤ `squadCap`, the package is discarded.
 
@@ -53,7 +59,9 @@ signings; other strategies may still displace squad kids via loan-out exits.
 
 ## `windowSummary`
 
-Example: `5 in (1 prospect on loan), 3 sold for €18M, 1 loaned — squad 24/25`.
+Example: `5 in (1 prospect on loan), 3 sold for €18M, 2 loaned, 1 to B team, squad 24/25`.
+
+Zero counts are omitted (no more `0 loaned` filler).
 
 ## Fit desk alignment
 

@@ -61,6 +61,7 @@ export const VERDICT_LABEL: Record<SaleRecommendation["verdict"], string> = {
   "sell-high": "Sell high",
   "sell-now": "Sell now",
   "loan-out": "Loan out",
+  "b-team": "B team",
   release: "Release",
 };
 
@@ -70,6 +71,7 @@ export const VERDICT_TONE: Record<SaleRecommendation["verdict"], string> = {
   "sell-high": "gold",
   "sell-now": "red",
   "loan-out": "gold",
+  "b-team": "ink",
   release: "red",
 };
 

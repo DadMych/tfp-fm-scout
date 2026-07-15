@@ -1,10 +1,18 @@
 import type { Player } from "@/src/domain/player.js";
+import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import type { AssistantReport } from "@/src/domain/assistant/types.js";
 import type { Zone } from "@/src/domain/squad/formations.js";
 import type { SlotNeed } from "@/src/domain/assistant/slots.js";
 import { InkBar } from "@/components/kit/InkBar";
 import { SectionRule } from "@/components/kit/SectionRule";
 import { NEED_LABEL, NEED_TONE, surname, ZONE_LABEL } from "./shared";
+import { PlayerLink, peekFor } from "./PlayerLink";
+
+type PeekMaps = {
+  squadById: Map<string, Player>;
+  shortlistById: Map<string, Player>;
+  scoreById: Map<string, PlayerScores>;
+};
 
 export function VerdictBar({ report }: { report: AssistantReport }) {
   return (
@@ -42,10 +50,12 @@ export function VerdictBar({ report }: { report: AssistantReport }) {
 export function GapsPanel({
   report,
   nameById,
+  maps,
   onFormation,
 }: {
   report: AssistantReport;
   nameById: Map<string, Player>;
+  maps: PeekMaps;
   onFormation?: (id: string) => void;
 }) {
   const needs = report.slots.filter((s) => s.need !== "solid");
@@ -64,11 +74,21 @@ export function GapsPanel({
                 <span className={`tag ${NEED_TONE[s.need]}`}>{NEED_LABEL[s.need]}</span>
                 <b>{s.label}</b>
                 <span className="gsub">
-                  {starter
-                    ? `${surname(starter.name)} · fit ${s.starter!.fit}${
-                        s.backup ? ` · cover ${s.backup.fit}` : " · no cover"
-                      }`
-                    : "no natural player"}
+                  {starter && s.starter ? (
+                    <>
+                      <PlayerLink
+                        id={s.starter.id}
+                        dataset="squad"
+                        peek={peekFor(s.starter.id, maps)}
+                        className="player-link"
+                      >
+                        {surname(starter.name)}
+                      </PlayerLink>
+                      {` · fit ${s.starter.fit}${s.backup ? ` · cover ${s.backup.fit}` : " · no cover"}`}
+                    </>
+                  ) : (
+                    "no natural player"
+                  )}
                 </span>
               </li>
             );
@@ -153,15 +173,24 @@ export function Pitch({
           const cx = px(s.slot.x);
           const cy = py(s.slot.y);
           const player = s.starter ? nameById.get(s.starter.id) : null;
+          const name = player ? surname(player.name) : "—";
           return (
             <g key={s.slotKey}>
               <circle cx={cx} cy={cy} r="17" className="token" style={{ stroke: ringOf[s.need] }} />
               <text x={cx} y={cy + 4} className="token-pos">
                 {s.label}
               </text>
-              <text x={cx} y={cy + 32} className="token-name">
-                {player ? surname(player.name) : "—"}
-              </text>
+              {s.starter ? (
+                <a href={`/scout/squad/${s.starter.id}`}>
+                  <text x={cx} y={cy + 32} className="token-name token-name-link">
+                    {name}
+                  </text>
+                </a>
+              ) : (
+                <text x={cx} y={cy + 32} className="token-name">
+                  {name}
+                </text>
+              )}
               <text x={cx} y={cy + 44} className="token-fit num">
                 {s.starter ? `fit ${s.starter.fit}` : "gap"}
               </text>

@@ -143,16 +143,20 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     if (!withMoves) return;
     const starter = withMoves.moves.find((m) => m.kind !== "depth" && m.out);
     expect(starter?.out?.name.length).toBeGreaterThan(0);
-    expect(["bench", "sell", "cover", "loan"]).toContain(starter?.out?.fate);
+    expect(["bench", "sell", "cover", "loan", "b-team"]).toContain(starter?.out?.fate);
   });
 
   it("window summary names the registration ledger (doc 20)", () => {
     const pkgs = buildPackages(ctx);
     for (const p of pkgs) {
       expect(p.windowSummary).toMatch(/\d+ in/);
-      expect(p.windowSummary).toMatch(/sold/);
-      expect(p.windowSummary).toMatch(/loaned/);
+      expect(p.windowSummary).toMatch(/squad \d+\/\d+/);
+      expect(p.windowSummary).not.toMatch(/0 loaned/);
       expect(p.xiDiff.length).toBeGreaterThan(0);
+      // Consequence names a person when a signing covers the sold starter.
+      for (const s of p.sales) {
+        expect(s.consequence).not.toMatch(/a signing in this package/);
+      }
     }
   });
 

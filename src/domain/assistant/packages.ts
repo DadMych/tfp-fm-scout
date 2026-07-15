@@ -28,7 +28,7 @@ import type { SaleRecommendation, SaleVerdict } from "./transfers/types.js";
 
 export type SuggestionKind = "fill" | "upgrade" | "succession" | "depth" | "prospect";
 
-export type MoveFate = "bench" | "sell" | "cover" | "loan";
+export type MoveFate = "bench" | "sell" | "cover" | "loan" | "b-team";
 
 export interface PackageMove {
   readonly playerId: string;
@@ -43,13 +43,19 @@ export interface PackageMove {
   readonly age: number | null;
   readonly profile: string;
   readonly why: string;
-  readonly out: { readonly name: string; readonly fate: MoveFate } | null;
+  readonly out: {
+    readonly playerId: string;
+    readonly name: string;
+    readonly fate: MoveFate;
+  } | null;
 }
 
 export interface XiSlotDiff {
   readonly slotLabel: string;
   readonly before: string;
   readonly after: string;
+  readonly beforeId: string | null;
+  readonly afterId: string | null;
   readonly changed: boolean;
 }
 
@@ -62,11 +68,14 @@ export interface PackageSale {
   readonly consequence: string;
 }
 
-/** A squad (or prospect) player leaving on loan — frees a registered place (doc 20). */
+/** A squad (or prospect) player leaving on loan / B-team — frees a registered place (doc 20). */
+export type PackageExitDest = "loan" | "b-team";
+
 export interface PackageLoan {
   readonly playerId: string;
   readonly playerName: string;
   readonly reason: string;
+  readonly destination: PackageExitDest;
 }
 
 export interface TransferPackage {
@@ -472,18 +481,29 @@ function outFor(
   pkgSales: readonly PackageSale[],
   pkgLoans: readonly PackageLoan[],
   allRows: readonly PlayerRow[],
-): { name: string; fate: MoveFate } | null {
+): { playerId: string; name: string; fate: MoveFate } | null {
   if (c.kind === "depth" || c.kind === "prospect") return null;
   const slot = ctx.slots.find((s) => s.slotKey === c.slotKey);
   const incumbentId = slot?.starter?.id;
   if (!incumbentId) return null;
   const name = surname(ctx.byId.get(incumbentId)?.player.name ?? incumbentId);
-  if (pkgSales.some((s) => s.playerId === incumbentId)) return { name, fate: "sell" };
-  if (pkgLoans.some((l) => l.playerId === incumbentId)) return { name, fate: "loan" };
+  if (pkgSales.some((s) => s.playerId === incumbentId)) {
+    return { playerId: incumbentId, name, fate: "sell" };
+  }
+  const loan = pkgLoans.find((l) => l.playerId === incumbentId);
+  if (loan) {
+    return {
+      playerId: incumbentId,
+      name,
+      fate: loan.destination === "b-team" ? "b-team" : "loan",
+    };
+  }
   const newXi = solveXI(allRows, ctx.formation);
   const shadow = deriveSlots(newXi, allRows, ctx.formation).find((s) => s.slotKey === c.slotKey);
-  if (shadow?.backup?.id === incumbentId) return { name, fate: "cover" };
-  return { name, fate: "bench" };
+  if (shadow?.backup?.id === incumbentId) {
+    return { playerId: incumbentId, name, fate: "cover" };
+  }
+  return { playerId: incumbentId, name, fate: "bench" };
 }
 
 function buildXiDiff(
@@ -500,6 +520,8 @@ function buildXiDiff(
       slotLabel: slot.label,
       before: beforeName,
       after: afterName,
+      beforeId: slot.starter?.id ?? null,
+      afterId: after?.starter?.id ?? null,
       changed: beforeName !== afterName,
     };
   });
@@ -515,19 +537,19 @@ function windowSummaryFor(
   const signings = picks.length;
   const prospects = picks.filter((p) => p.kind === "prospect").length;
   const sold = pkgSales.length;
-  const loaned = squadLoans.length;
+  const loaned = squadLoans.filter((l) => l.destination === "loan").length;
+  const bTeam = squadLoans.filter((l) => l.destination === "b-team").length;
   const residents = signings - prospects;
-  const squadAfter = ctx.squad.length + residents - sold - loaned;
-  const prospectBit =
-    prospects > 0
-      ? ` (${prospects} prospect${prospects === 1 ? "" : "s"} on loan)`
-      : "";
-  const soldBit =
-    sold > 0
-      ? `${sold} sold for ${money(income)}`
-      : "0 sold";
-  const loanBit = `${loaned} loaned`;
-  return `${signings} in${prospectBit}, ${soldBit}, ${loanBit} — squad ${squadAfter}/${ctx.squadCap}`;
+  const squadAfter = ctx.squad.length + residents - sold - loaned - bTeam;
+  const bits: string[] = [`${signings} in`];
+  if (prospects > 0) {
+    bits[0] += ` (${prospects} prospect${prospects === 1 ? "" : "s"} on loan)`;
+  }
+  if (sold > 0) bits.push(`${sold} sold for ${money(income)}`);
+  if (loaned > 0) bits.push(`${loaned} loaned`);
+  if (bTeam > 0) bits.push(`${bTeam} to B team`);
+  bits.push(`squad ${squadAfter}/${ctx.squadCap}`);
+  return bits.join(", ");
 }
 
 function fundingNoteFor(
@@ -549,12 +571,26 @@ function fundingNoteFor(
   return `To fund it: ${names} ${sellers.length === 1 ? "doesn't" : "don't"} make your XI — selling covers ${pct(share)} of this plan.`;
 }
 
-function consequenceFor(sale: SaleRecommendation): string {
+function consequenceFor(
+  sale: SaleRecommendation,
+  picks: readonly Candidate[],
+  ctx: AnalysisContext,
+): string {
+  const sellerSlot = ctx.slots.find((s) => s.starter?.id === sale.playerId);
+  if (sellerSlot) {
+    const covering = picks.find((p) => p.slotKey === sellerSlot.slotKey);
+    if (covering) {
+      return `replaced by ${surname(covering.row.player.name)} (fit ${covering.newFit})`;
+    }
+  }
   const rep = sale.replacement;
-  if (!rep || rep.playerId == null) return "replaced by a signing in this package";
-  return rep.source === "internal"
-    ? `${surname(rep.playerName!)} (fit ${rep.fitAfter}) steps in`
-    : `replaced by ${surname(rep.playerName!)} from the shortlist`;
+  if (rep?.playerId != null && rep.playerName) {
+    return rep.source === "internal"
+      ? `${surname(rep.playerName)} (fit ${rep.fitAfter}) steps in`
+      : `replaced by ${surname(rep.playerName)} from the shortlist`;
+  }
+  if (!sellerSlot) return "frees a registered place";
+  return "slot covered from within the squad";
 }
 
 function saleSlotCovered(
@@ -576,28 +612,30 @@ function saleSlotCovered(
 
 /**
  * Exits pass (doc 20): free registered places and raise cash.
- * Priority: release → sell-now → sell-high → loan-out.
+ * Priority: sell-now → sell-high → loan-out → b-team → release (penny releases last).
  */
 const EXIT_PRIORITY: Record<string, number> = {
-  release: 0,
-  "sell-now": 1,
-  "sell-high": 2,
-  "loan-out": 3,
+  "sell-now": 0,
+  "sell-high": 1,
+  "loan-out": 2,
+  "b-team": 3,
+  release: 4,
 };
 
-const EXIT_VERDICTS = new Set<SaleVerdict>(["sell-now", "sell-high", "release", "loan-out"]);
+const EXIT_VERDICTS = new Set<SaleVerdict>(["sell-now", "sell-high", "release", "loan-out", "b-team"]);
 const FUNDABLE_VERDICTS = new Set<SaleVerdict>(["sell-now", "sell-high", "release"]);
+const PLACE_ONLY_VERDICTS = new Set<SaleVerdict>(["loan-out", "b-team"]);
 
 function exitRank(s: SaleRecommendation): number {
   const base = EXIT_PRIORITY[s.verdict] ?? 9;
   // Registration culls (synthesised from "keep") come after genuine board exits.
-  const cull = s.reasons.some((r) => r.startsWith("Registration cull")) ? 4 : 0;
+  const cull = s.reasons.some((r) => r.startsWith("Registration cull")) ? 5 : 0;
   return base + cull;
 }
 
 /**
  * Expand the board with registration culls (doc 20): when the squad is over the cap,
- * fringe "keep" players can be sold or loaned to free places.
+ * fringe "keep" players can be sold, loaned, or moved to the B team.
  */
 function expandExitPool(
   ctx: AnalysisContext,
@@ -618,6 +656,7 @@ function expandExitPool(
   for (const k of keeps) {
     const row = ctx.byId.get(k.playerId);
     if (!row) continue;
+    if (ctx.starters.has(k.playerId)) continue;
     const age = row.player.age;
     if (age != null && age <= T.PROSPECT_AGE) {
       out.push({
@@ -626,8 +665,17 @@ function expandExitPool(
         reasons: ["Registration cull — develop on loan"],
         urgency: "this-window",
       });
+    } else if (age != null && age <= T.B_TEAM_AGE) {
+      out.push({
+        ...k,
+        verdict: "b-team",
+        reasons: ["Registration cull — junior side"],
+        urgency: "this-window",
+      });
     } else {
       const value = row.player.value ?? null;
+      // Don't synthesise penny releases — only cull when there is a real fee or no value listed.
+      if (value != null && value < T.MIN_FUNDING_SALE) continue;
       out.push({
         ...k,
         verdict: "release",
@@ -673,16 +721,20 @@ function exitsPass(
     if (freed >= needFree && income >= needIncome) break;
     if (taken.has(s.playerId)) continue;
 
-    if (s.verdict === "loan-out") {
+    if (PLACE_ONLY_VERDICTS.has(s.verdict)) {
       if (freed >= needFree) continue;
       const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
       const check = solveXI(withoutHim, ctx.formation).avgFit;
       if (check < afterFit - 1) continue;
       const row = ctx.byId.get(s.playerId);
+      const dest: PackageExitDest = s.verdict === "b-team" ? "b-team" : "loan";
       loans.push({
         playerId: s.playerId,
         playerName: row?.player.name ?? s.playerId,
-        reason: s.reasons[0] ?? "Leaves on loan",
+        reason:
+          s.reasons[0] ??
+          (dest === "b-team" ? "Moves to the junior side" : "Leaves on loan"),
+        destination: dest,
       });
       taken.add(s.playerId);
       freed += 1;
@@ -694,19 +746,24 @@ function exitsPass(
     const helpsCash = income < needIncome;
     if (!helpsSize && !helpsCash) continue;
 
+    const fee = s.priceBand?.ask ?? 0;
+    // Skip penny sales when funding cash — prefer real sell-high / sell-now fees.
+    if (helpsCash && !helpsSize && fee < T.MIN_FUNDING_SALE) continue;
+    // Cheap releases only as a last resort for size pressure.
+    if (s.verdict === "release" && helpsCash && !helpsSize && fee < T.MIN_FUNDING_SALE * 2) continue;
+
     const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
     const check = solveXI(withoutHim, ctx.formation).avgFit;
     if (check < afterFit) continue;
     if (!saleSlotCovered(ctx, allRows, picks, s.playerId)) continue;
 
-    const fee = s.priceBand?.ask ?? 0;
     const row = ctx.byId.get(s.playerId);
     sales.push({
       playerId: s.playerId,
       playerName: row?.player.name ?? s.playerId,
       fee,
       verdict: s.verdict,
-      consequence: consequenceFor(s),
+      consequence: consequenceFor(s, picks, ctx),
     });
     taken.add(s.playerId);
     income += fee;
@@ -752,17 +809,19 @@ function preIncomeFor(
       return (b.priceBand?.ask ?? 0) - (a.priceBand?.ask ?? 0);
     });
   for (const s of sorted) {
-    if (s.verdict === "loan-out") {
+    if (PLACE_ONLY_VERDICTS.has(s.verdict)) {
       if (freed < needFree) freed += 1;
       continue;
     }
     if (!FUNDABLE_VERDICTS.has(s.verdict)) continue;
     const fee = s.priceBand?.ask ?? 0;
+    if (fee < T.MIN_FUNDING_SALE && s.verdict === "release") continue;
     if (freed < needFree) {
       income += fee;
       freed += 1;
       continue;
     }
+    if (fee < T.MIN_FUNDING_SALE) continue;
     if (extras < 4) {
       income += fee;
       extras += 1;
@@ -816,6 +875,7 @@ function prospectLoans(picks: readonly Candidate[]): PackageLoan[] {
       playerId: p.row.player.id,
       playerName: p.row.player.name,
       reason: "Prospect — develops on loan",
+      destination: "loan" as const,
     }));
 }
 

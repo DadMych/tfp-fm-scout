@@ -10,6 +10,7 @@ export type SaleVerdict =
   | "sell-high"
   | "sell-now"
   | "loan-out"
+  | "b-team"
   | "release";
 
 export interface PriceBand {

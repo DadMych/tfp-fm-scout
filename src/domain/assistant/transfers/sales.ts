@@ -118,6 +118,8 @@ function reasonsFor(
       return ["A fee is a bonus; the squad place is the win."];
     case "loan-out":
       return ["He needs minutes you can't give him."];
+    case "b-team":
+      return ["Move him to the junior side — frees a first-team place without selling."];
     default:
       return [];
   }
@@ -177,9 +179,25 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
 
   if (isStarter && fit >= T.ELITE_FIT && age != null && age <= T.AGE_PEAK_END) {
     verdict = "untouchable";
-  } else if (!isStarter && age != null && age <= T.AGE_DEV && fit >= T.GEM_FIT && blockedBy(ctx, row)) {
+  } else if (
+    !isStarter &&
+    age != null &&
+    age <= T.AGE_DEV &&
+    (fit >= T.GEM_FIT || fringe) &&
+    (blockedBy(ctx, row) || fringe)
+  ) {
+    // Young fringe / blocked gems develop elsewhere — not sold for pennies.
     verdict = "loan-out";
-  } else if (age != null && age >= 24 && fit < T.DEADWOOD_FIT && fringe) {
+  } else if (!isStarter && age != null && age <= T.B_TEAM_AGE && fringe && fit < T.GOOD_FIT) {
+    verdict = "b-team";
+  } else if (
+    age != null &&
+    age >= 26 &&
+    fit < T.DEADWOOD_FIT &&
+    fringe &&
+    (value == null || value < p75V * T.RELEASE_VALUE_FRAC)
+  ) {
+    // Cheap releases only for older low-value fringe — not every spare body.
     verdict = "release";
   } else if (
     age != null &&
@@ -210,7 +228,7 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   const priceBand = computePriceBand(value, age, isRelease);
 
   let replacement: ReplacementChain | null = null;
-  if (verdict === "sell-now" || verdict === "release" || verdict === "loan-out") {
+  if (verdict === "sell-now" || verdict === "release" || verdict === "loan-out" || verdict === "b-team") {
     replacement = buildChain(ctx, id);
   } else if (verdict === "sell-high") {
     replacement = arbitrage
@@ -219,7 +237,7 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   }
 
   const urgency: SaleRecommendation["urgency"] =
-    verdict === "sell-now" || verdict === "release" || verdict === "loan-out"
+    verdict === "sell-now" || verdict === "release" || verdict === "loan-out" || verdict === "b-team"
       ? "this-window"
       : verdict === "sell-high"
         ? age === T.SELL_AGE_HI

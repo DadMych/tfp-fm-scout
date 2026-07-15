@@ -131,16 +131,38 @@ describe("sale verdicts", () => {
     expect(star?.verdict).toBe("untouchable");
   });
 
-  it("release: fringe player with a poor fit and a better backup at the same slot", () => {
+  it("release: older fringe with poor fit and low value vs squad", () => {
     const squad = [
-      ...FULL_4231.map((s) => player({ positions: [s], base: 13 })),
-      player({ positions: ["ST-C"], base: 4, age: 27, value: 2e6 }), // fringe, poor fit
-      player({ positions: ["ST-C"], base: 12, age: 26 }), // better backup, takes the "backup" slot
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13, value: 12e6 })),
+      player({ positions: ["ST-C"], base: 4, age: 28, value: 1e6 }), // fringe, poor fit, cheap
+      player({ positions: ["ST-C"], base: 12, age: 26, value: 8e6 }), // better backup
     ];
     const sales = buildSales(ctxWith(squad));
     const fringe = sales.find((s) => s.playerId === squad[squad.length - 2]!.id);
     expect(fringe?.verdict).toBe("release");
     expect(fringe?.priceBand).not.toBeNull();
+  });
+
+  it("loan-out: young fringe develops elsewhere", () => {
+    const squad = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13 })),
+      player({ positions: ["ST-C"], base: 12, age: 24 }), // backup
+      player({ positions: ["ST-C"], base: 10, age: 19, value: 4e6 }), // fringe kid
+    ];
+    const sales = buildSales(ctxWith(squad));
+    const kid = sales.find((s) => s.playerId === squad[squad.length - 1]!.id);
+    expect(kid?.verdict).toBe("loan-out");
+  });
+
+  it("b-team: young-ish fringe who is not first-team ready", () => {
+    const squad = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13 })),
+      player({ positions: ["ST-C"], base: 12, age: 24 }),
+      player({ positions: ["ST-C"], base: 9, age: 22, value: 3e6 }),
+    ];
+    const sales = buildSales(ctxWith(squad));
+    const kid = sales.find((s) => s.playerId === squad[squad.length - 1]!.id);
+    expect(kid?.verdict).toBe("b-team");
   });
 
   it("sell-now: old, declining starter with a ready internal backup", () => {

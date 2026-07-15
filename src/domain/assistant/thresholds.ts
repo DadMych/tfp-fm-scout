@@ -45,4 +45,10 @@ export const T = {
   PROSPECT_AGE: 21,
   /** Min top-archetype score for Prospect pipeline candidates. */
   PROSPECT_ARCH_MIN: 60,
+  /** Max age for B-team / junior registration moves (doc 20). */
+  B_TEAM_AGE: 23,
+  /** Ignore penny sales when funding a window (doc 20) — €3M floor. */
+  MIN_FUNDING_SALE: 3e6,
+  /** Release only when list value is this weak (or null) relative to squad p40. */
+  RELEASE_VALUE_FRAC: 0.4,
 } as const;

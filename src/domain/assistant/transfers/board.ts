@@ -8,7 +8,13 @@ import { buildSales } from "./sales.js";
 import { buildSuccession } from "./succession.js";
 import type { TransferBoard } from "./types.js";
 
-const VERDICT_ORDER: Record<string, number> = { "sell-now": 0, "sell-high": 1, release: 2, "loan-out": 3 };
+const VERDICT_ORDER: Record<string, number> = {
+  "sell-now": 0,
+  "sell-high": 1,
+  "loan-out": 2,
+  "b-team": 3,
+  release: 4,
+};
 
 export function buildBoard(ctx: AnalysisContext): TransferBoard {
   const all = buildSales(ctx);
