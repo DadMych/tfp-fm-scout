@@ -237,26 +237,28 @@ select.control,
 .watch-toggle:hover{color:var(--ink);}
 .rowlist .c-name{display:flex;align-items:flex-start;gap:6px;}
 .rowlist .c-name .pname{flex:1;}
-.style-reads{margin-top:16px;max-width:52ch;}
-.style-reads-h{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;}
-.style-read{font-size:15px;line-height:1.5;color:var(--ink-2);margin:0 0 8px;font-style:italic;}
-.tactic-brief{padding:22px 0 8px;border-top:1px solid var(--rule);margin-top:8px;}
-.tactic-brief-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:18px;}
-.tactic-brief-title{font-size:28px;line-height:1.1;margin:0;letter-spacing:-.02em;}
-.tactic-styles{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
-.tactic-style{padding:14px 0 0;border-top:1px solid var(--rule);}
-.tactic-style.lead{border-top-color:var(--ink);}
+/* Tactic briefing — two-column: styles left, field notes right */
+.tactic-grid{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:44px;align-items:start;}
+.tactic-lead{border-top:2px solid var(--ink);padding-top:12px;}
 .tactic-style-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;}
 .tactic-style-name{font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);}
-.tactic-style.lead .tactic-style-name{color:var(--ink);font-weight:600;}
-.tactic-style-score{font-size:28px;font-weight:700;letter-spacing:-.03em;}
-.tactic-style.lead .tactic-style-score{color:var(--red);}
-.tactic-style-blurb{font-size:14px;line-height:1.45;color:var(--ink-2);margin:10px 0 0;font-style:italic;}
+.tactic-style-name.lead{color:var(--ink);font-weight:600;}
+.tactic-style-score{font-size:28px;font-weight:700;letter-spacing:-.03em;color:var(--red);}
+.tactic-style-blurb{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin:10px 0 0;font-style:italic;}
 .tactic-style-gap{font-family:var(--sans);font-size:12px;color:var(--ink-3);margin:8px 0 0;}
-.tactic-subh{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 8px;}
+.tactic-scout-link{display:inline-block;margin-top:12px;font-family:var(--sans);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--red);border:1px solid var(--red);padding:6px 12px;text-decoration:none;}
+.tactic-scout-link:hover{background:var(--red);color:var(--paper);}
+.tactic-alt-list{list-style:none;margin:16px 0 0;padding:0;}
+.tactic-alt{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--rule);}
+.tactic-alt-name{font-family:var(--sans);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);flex:1;}
+.tactic-alt-score{font-family:var(--sans);font-size:13px;color:var(--ink);width:24px;text-align:right;}
+.tactic-reads{margin-top:18px;border-top:1px solid var(--rule);padding-top:12px;}
+.tactic-read{font-size:14.5px;line-height:1.5;color:var(--ink-2);margin:0 0 8px;font-style:italic;}
+.tactic-subh{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;}
+.tactic-col > .tactic-subh:not(:first-child){margin-top:22px;}
 .tactic-flank{font-size:15px;line-height:1.5;color:var(--ink-2);margin:0 0 8px;max-width:70ch;}
-.tactic-slot-list{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
-.tactic-slot-list li{font-size:14px;line-height:1.4;color:var(--ink-2);}
+.tactic-slot-list{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr;gap:8px;}
+.tactic-slot-list li{font-size:14px;line-height:1.45;color:var(--ink-2);}
 .tactic-slot-lab{font-family:var(--sans);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-right:6px;}
 .player-link-wrap{position:relative;display:inline;}
 .player-link,.sale-name,.move-name{color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--ink) 28%,transparent);text-underline-offset:2px;}
@@ -432,14 +434,14 @@ select.control,
 .brief .btn{margin-left:auto;}
 .lede{font-size:17px;line-height:1.55;color:var(--ink-2);font-style:italic;max-width:64ch;margin:6px 0 0;}
 
-.verdict-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px;padding:26px 0 8px;}
-.big-verdict{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1;}
-.zones{display:grid;grid-template-columns:repeat(2,auto);gap:8px 26px;}
+/* Squad board — verdict, zones, gaps and shapes beside the pitch */
+.squad-board-grid{display:grid;grid-template-columns:1fr 360px;gap:44px;align-items:start;}
+.squad-board-side{min-width:0;}
+.big-verdict{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1;margin:2px 0 16px;}
+.zones{display:grid;grid-template-columns:repeat(2,auto);gap:8px 26px;justify-content:start;}
 .zone{display:flex;align-items:center;gap:10px;font-family:var(--sans);}
 .zone .zlabel{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);width:70px;}
 .zone .zval{font-size:13px;color:var(--ink);width:22px;text-align:right;}
-
-.assist-grid{display:grid;grid-template-columns:360px 1fr;gap:40px;padding:24px 0 8px;align-items:start;}
 .pitch-wrap{background:var(--paper-2);border:1px solid var(--rule);padding:10px;}
 .pitch{width:100%;height:auto;display:block;}
 .pitch-bg{fill:transparent;stroke:var(--rule);stroke-width:1.5;}
@@ -549,10 +551,8 @@ a.dev-text:hover{color:var(--ink);text-decoration:underline;}
   .hero-lead h1,.d-hero h1,.fp-hero h1{font-size:42px;}
   .empty-sheet-title{font-size:42px;}
   .grid{grid-template-columns:1fr;}
-  .assist-grid{grid-template-columns:1fr;}
-  .tactic-styles{grid-template-columns:1fr;}
-  .tactic-slot-list{grid-template-columns:1fr;}
-  .tactic-brief-head{flex-direction:column;align-items:stretch;}
+  .squad-board-grid{grid-template-columns:1fr;}
+  .tactic-grid{grid-template-columns:1fr;}
   .plans{grid-template-columns:1fr;}
   .praise-strip{grid-template-columns:1fr;}
   .rowlist .c-verdict .why{display:none;}

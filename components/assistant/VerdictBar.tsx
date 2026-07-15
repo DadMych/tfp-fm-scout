@@ -14,40 +14,11 @@ type PeekMaps = {
   scoreById: Map<string, PlayerScores>;
 };
 
-export function VerdictBar({ report }: { report: AssistantReport }) {
-  return (
-    <div className="verdict-bar">
-      <div>
-        <SectionRule>Squad verdict</SectionRule>
-        <div className="big-verdict">
-          {report.verdict}
-          <span className="num verdict-fit"> · XI fit {report.avgFit}</span>
-        </div>
-        {report.styleReads.length > 0 ? (
-          <div className="style-reads">
-            <p className="style-reads-h">How to play it</p>
-            {report.styleReads.map((r, i) => (
-              <p key={i} className="style-read">
-                {r.text}
-              </p>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <div className="zones">
-        {(Object.keys(report.zoneStrength) as Zone[]).map((z) => (
-          <div className="zone" key={z}>
-            <span className="zlabel">{ZONE_LABEL[z]}</span>
-            <InkBar value={report.zoneStrength[z]} width={96} />
-            <span className="num zval">{report.zoneStrength[z]}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function GapsPanel({
+/**
+ * The squad board — verdict, zones, gaps and shapes beside the pitch.
+ * One section instead of three stacked ones (doc 12 §2).
+ */
+export function SquadBoard({
   report,
   nameById,
   maps,
@@ -61,58 +32,81 @@ export function GapsPanel({
   const needs = report.slots.filter((s) => s.need !== "solid");
 
   return (
-    <div className="gaps">
-      <SectionRule>Where you&apos;re short</SectionRule>
-      {needs.length === 0 ? (
-        <p className="lede">No pressing gaps — every position has a capable starter and adequate cover.</p>
-      ) : (
-        <ul className="gap-list">
-          {needs.map((s) => {
-            const starter = s.starter ? nameById.get(s.starter.id) : null;
-            return (
-              <li key={s.slotKey}>
-                <span className={`tag ${NEED_TONE[s.need]}`}>{NEED_LABEL[s.need]}</span>
-                <b>{s.label}</b>
-                <span className="gsub">
-                  {starter && s.starter ? (
-                    <>
-                      <PlayerLink
-                        id={s.starter.id}
-                        dataset="squad"
-                        peek={peekFor(s.starter.id, maps)}
-                        className="player-link"
-                      >
-                        {surname(starter.name)}
-                      </PlayerLink>
-                      {` · fit ${s.starter.fit}${s.backup ? ` · cover ${s.backup.fit}` : " · no cover"}`}
-                    </>
-                  ) : (
-                    "no natural player"
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <section className="squad-board">
+      <SectionRule gap="lg">Squad verdict</SectionRule>
+      <div className="squad-board-grid">
+        <div className="squad-board-side">
+          <div className="big-verdict">
+            {report.verdict}
+            <span className="num verdict-fit"> · XI fit {report.avgFit}</span>
+          </div>
+          <div className="zones">
+            {(Object.keys(report.zoneStrength) as Zone[]).map((z) => (
+              <div className="zone" key={z}>
+                <span className="zlabel">{ZONE_LABEL[z]}</span>
+                <InkBar value={report.zoneStrength[z]} width={96} />
+                <span className="num zval">{report.zoneStrength[z]}</span>
+              </div>
+            ))}
+          </div>
 
-      <SectionRule gap="sm">Best-fitting shapes</SectionRule>
-      <div className="form-strip" role="group" aria-label="Formation switcher">
-        {report.formationRanking.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className={`form-chip${f.id === report.formation.id ? " current" : ""}`}
-            aria-pressed={f.id === report.formation.id}
-            onClick={() => onFormation?.(f.id)}
-          >
-            <span className="fname">{f.name}</span>
-            <span className="num ffit">{f.avgFit}</span>
-            {f.holes > 0 ? <span className="fwarn">{f.holes} gap</span> : null}
-          </button>
-        ))}
+          <SectionRule gap="sm">Where you&apos;re short</SectionRule>
+          {needs.length === 0 ? (
+            <p className="lede">
+              No pressing gaps — every position has a capable starter and adequate cover.
+            </p>
+          ) : (
+            <ul className="gap-list">
+              {needs.map((s) => {
+                const starter = s.starter ? nameById.get(s.starter.id) : null;
+                return (
+                  <li key={s.slotKey}>
+                    <span className={`tag ${NEED_TONE[s.need]}`}>{NEED_LABEL[s.need]}</span>
+                    <b>{s.label}</b>
+                    <span className="gsub">
+                      {starter && s.starter ? (
+                        <>
+                          <PlayerLink
+                            id={s.starter.id}
+                            dataset="squad"
+                            peek={peekFor(s.starter.id, maps)}
+                            className="player-link"
+                          >
+                            {surname(starter.name)}
+                          </PlayerLink>
+                          {` · fit ${s.starter.fit}${s.backup ? ` · cover ${s.backup.fit}` : " · no cover"}`}
+                        </>
+                      ) : (
+                        "no natural player"
+                      )}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <SectionRule gap="sm">Best-fitting shapes</SectionRule>
+          <div className="form-strip" role="group" aria-label="Formation switcher">
+            {report.formationRanking.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={`form-chip${f.id === report.formation.id ? " current" : ""}`}
+                aria-pressed={f.id === report.formation.id}
+                onClick={() => onFormation?.(f.id)}
+              >
+                <span className="fname">{f.name}</span>
+                <span className="num ffit">{f.avgFit}</span>
+                {f.holes > 0 ? <span className="fwarn">{f.holes} gap</span> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Pitch report={report} nameById={nameById} />
       </div>
-    </div>
+    </section>
   );
 }
 

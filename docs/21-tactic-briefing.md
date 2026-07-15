@@ -35,9 +35,14 @@ prefers direct / low-block / counter.
 1. Top 3 styles for this XI in this shape
 2. **Flank advice** — left and right independently (overlap, invert/underlap, or stay home)
 3. **Slot notes** — ST target vs runner, DM progressor vs anchor, CB step-out
-4. `styleReads` — prose for VerdictBar (absorbs doc 19 §3, with stamina/crossing and aggression/pressResist)
+4. `styleReads` — general prose reads (absorbs doc 19 §3, with stamina/crossing and aggression/pressResist)
 
-UI: `TacticBriefing` between VerdictBar and the pitch. Formation chips refresh the brief.
+UI: the assistant page runs **team report → Squad board → How to play it → plans → sporting
+director → findings**. The Squad board (`SquadBoard`) merges verdict, zones, gaps and shape
+chips beside the pitch. `TacticBriefing` renders as "How to play it": lead style + ranked
+alternatives + general reads on the left, flanks and slot notes on the right — nothing is
+rendered twice (the old VerdictBar duplicated the best-fit line and flank advice). Formation
+chips refresh the brief.
 
 ## Scout presets
 

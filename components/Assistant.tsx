@@ -17,7 +17,7 @@ import { FindingsFeed } from "@/components/assistant/FindingsFeed";
 import { PackageCard } from "@/components/assistant/PackageCard";
 import { PraiseStrip } from "@/components/assistant/PraiseStrip";
 import { SportingDirector } from "@/components/assistant/SportingDirector";
-import { GapsPanel, Pitch, VerdictBar } from "@/components/assistant/VerdictBar";
+import { SquadBoard } from "@/components/assistant/VerdictBar";
 import { TacticBriefing } from "@/components/assistant/TacticBriefing";
 import { FEED_COLLAPSED_COUNT, FEED_GROUPS, type FeedGroup } from "@/components/assistant/shared";
 
@@ -185,19 +185,14 @@ export function Assistant() {
             ))}
           </div>
 
-          <VerdictBar report={report} />
+          <SquadBoard
+            report={report}
+            nameById={nameById}
+            maps={peekMaps}
+            onFormation={tryFormation}
+          />
 
           <TacticBriefing brief={report.tacticBrief} />
-
-          <div className="assist-grid">
-            <Pitch report={report} nameById={nameById} />
-            <GapsPanel
-              report={report}
-              nameById={nameById}
-              maps={peekMaps}
-              onFormation={tryFormation}
-            />
-          </div>
 
           <div className="section-label section-gap-lg">
             Transfer plans {shortlist ? `(cap ${formatMoney(report.budgetCap)})` : ""}
