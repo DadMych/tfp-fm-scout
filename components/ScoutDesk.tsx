@@ -137,6 +137,9 @@ export function ScoutDesk() {
       } else if (e.key === "Enter" && activeId) {
         e.preventDefault();
         router.push(`/scout/${kind}/${activeId}`);
+      } else if (e.key === "c" && activeId) {
+        e.preventDefault();
+        router.push(`/compare?a=${kind}:${activeId}`);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -260,7 +263,7 @@ export function ScoutDesk() {
           </select>
         </div>
         <span className="count">
-          {filtered.length} shown · <span className="kbd-hint">j/k move · s watch</span>
+          {filtered.length} shown · <span className="kbd-hint">j/k move · s watch · c compare</span>
         </span>
       </div>
 
