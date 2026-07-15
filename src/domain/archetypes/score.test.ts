@@ -66,6 +66,23 @@ describe("scoreArchetype — gates", () => {
     const s = scoreArchetype(withLowRaw, getArchetype("roadrunner"));
     expect(s.gatesPassed).toBe(false);
   });
+
+  it("uses defender cohort for Recovery Sprinter speed gate (doc 17 §7.5)", () => {
+    const ctx: ScoringContext = {
+      pct: (m) => (m === "defPosition" ? 60 : m === "speed" ? 40 : null),
+      raw: () => null,
+      cohortPct: (cohort, m) => (cohort === "defenders" && m === "speed" ? 80 : null),
+    };
+    const s = scoreArchetype(ctx, getArchetype("recoverySprinter"));
+    expect(s.gatesPassed).toBe(true);
+
+    const failsWinger: ScoringContext = {
+      pct: (m) => (m === "defPosition" ? 60 : m === "speed" ? 80 : null),
+      raw: () => null,
+      cohortPct: (cohort, m) => (cohort === "defenders" && m === "speed" ? 40 : null),
+    };
+    expect(scoreArchetype(failsWinger, getArchetype("recoverySprinter")).gatesPassed).toBe(false);
+  });
 });
 
 describe("generalArchetype (doc 06 §9)", () => {

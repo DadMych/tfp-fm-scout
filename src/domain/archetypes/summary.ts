@@ -1,3 +1,4 @@
+import type { MetricId } from "../metric-id.js";
 import type { PositionGroup } from "../positions.js";
 import { GROUP_COHORT_LABEL } from "../positions.js";
 import type { GeneralFamily } from "./registry.js";
@@ -26,9 +27,14 @@ export interface SummaryInput {
   readonly confidence: number;
   /** Every known metric with its position-group percentile. */
   readonly metrics: readonly SummaryMetric[];
+  /** Core ∪ major ∪ minor of the primary archetype — drives caveat selection (doc 06 §10). */
+  readonly profileMetrics?: readonly MetricId[];
   /** Count of players at or above this player's value within the same cohort (for counted claims). */
   readonly atOrAbove: Readonly<Record<string, number>>;
 }
+
+const PHYSICAL_HOLE_MAX = 20;
+const PROFILE_WEAK_MAX = 45;
 
 const NUMBER_WORD = ["zero", "one", "two", "three", "four", "five"] as const;
 
@@ -65,10 +71,22 @@ const WEAK_PHRASE: Record<string, string> = {
   finishing: "he is wasteful in front of goal",
   passing: "his distribution lets him down",
   tackling: "his tackling is a liability",
+  marking: "his marking is a liability",
+  positioning: "his positioning lets him down",
+  anticipation: "he reads the game too slowly",
+  dribbling: "he is loose in possession",
+  vision: "he sees too little of the play",
+  firstTouch: "his touch lets him down",
+  technique: "his technique is below the level",
+  workEngine: "he cannot sustain the running load",
+  defPosition: "he is caught out of position too often",
+  defActivity: "he does not engage enough defensively",
 };
 
-const STANDOUT_MIN_PCT = 75;
-const WEAK_MAX_PCT = 40;
+const PHYSICAL_HOLE_PHRASE: Partial<Record<string, string>> = {
+  aerial: "he offers nothing in the air",
+  speed: "he will be caught for pace",
+};
 
 const FAMILY_NOUN: Record<GeneralFamily | "Utility", Partial<Record<PositionGroup, string>> & { default: string }> = {
   Progressor: { "DM/CM": "ball-progressing midfielder", CB: "ball-playing defender", default: "deep playmaker" },
@@ -86,6 +104,8 @@ const FAMILY_NOUN: Record<GeneralFamily | "Utility", Partial<Record<PositionGrou
   Commander: { default: "commanding keeper" },
   Sweeper: { default: "sweeper-keeper" },
 };
+
+const STANDOUT_MIN_PCT = 75;
 
 function ageWord(age: number | null): string {
   if (age == null) return "";
@@ -127,11 +147,26 @@ function standoutClause(input: SummaryInput): string | null {
 }
 
 function caveatClause(input: SummaryInput): string | null {
-  const candidates = input.metrics
-    .filter((m) => m.metric in WEAK_PHRASE && m.pct < WEAK_MAX_PCT)
-    .sort((a, b) => a.pct - b.pct);
-  const worst = candidates[0];
-  return worst ? (WEAK_PHRASE[worst.metric] as string) : null;
+  const byMetric = new Map(input.metrics.map((m) => [m.metric, m.pct]));
+
+  for (const metric of ["aerial", "speed"] as const) {
+    const pct = byMetric.get(metric);
+    if (pct != null && pct < PHYSICAL_HOLE_MAX) {
+      return PHYSICAL_HOLE_PHRASE[metric] ?? null;
+    }
+  }
+
+  const profileSet = input.profileMetrics ? new Set<string>(input.profileMetrics) : null;
+  const relevant = profileSet
+    ? input.metrics.filter((m) => profileSet.has(m.metric))
+    : input.metrics;
+  if (relevant.length === 0) return null;
+
+  const minPct = Math.min(...relevant.map((m) => m.pct));
+  if (minPct >= PROFILE_WEAK_MAX) return null;
+
+  const weakest = [...relevant].sort((a, b) => a.pct - b.pct)[0]!;
+  return WEAK_PHRASE[weakest.metric] ?? null;
 }
 
 export function generateSummary(input: SummaryInput): string {

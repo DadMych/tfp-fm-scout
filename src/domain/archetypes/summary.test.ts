@@ -15,13 +15,16 @@ const BASE: SummaryInput = {
     { metric: "firstTouch", pct: 80 },
     { metric: "aerial", pct: 30 },
   ],
+  profileMetrics: [
+    "passing", "vision", "pressResist", "firstTouch", "technique", "decisions", "dribbling", "anticipation",
+  ],
   atOrAbove: { passing: 4 },
 };
 
 describe("generateSummary — docs/06 §10 canonical string", () => {
   it("produces the exact documented sentence", () => {
     expect(generateSummary(BASE)).toBe(
-      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers among midfielders in this division, though he offers little in the air.",
+      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers among midfielders in this division.",
     );
   });
 });
@@ -65,5 +68,33 @@ describe("generateSummary — variations", () => {
     expect(s).toBe(
       "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers among midfielders in this division.",
     );
+  });
+
+  it("flags a hard aerial hole before profile weaknesses (doc 06 §10)", () => {
+    const s = generateSummary({
+      ...BASE,
+      profileMetrics: ["passing", "vision", "pressResist", "firstTouch", "technique", "decisions", "dribbling", "anticipation"],
+      metrics: [
+        { metric: "passing", pct: 92 },
+        { metric: "vision", pct: 84 },
+        { metric: "aerial", pct: 12 },
+      ],
+    });
+    expect(s).toContain("though he offers nothing in the air");
+  });
+
+  it("picks the weakest profile metric, not an irrelevant one (doc 17 §7.6)", () => {
+    const s = generateSummary({
+      ...BASE,
+      profileMetrics: ["passing", "vision", "pressResist", "firstTouch", "technique", "decisions", "dribbling", "anticipation"],
+      metrics: [
+        { metric: "passing", pct: 92 },
+        { metric: "vision", pct: 84 },
+        { metric: "dribbling", pct: 35 },
+        { metric: "finishing", pct: 10 },
+      ],
+    });
+    expect(s).toContain("though he is loose in possession");
+    expect(s).not.toContain("wasteful in front of goal");
   });
 });

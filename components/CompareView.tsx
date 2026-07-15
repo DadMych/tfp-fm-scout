@@ -7,7 +7,8 @@ import { parseCompareRefs, serializeCompareRefs, type PlayerRef } from "@/lib/co
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { ATTRIBUTES, attributesByCategory, type AttributeCategory, type AttributeId } from "@/src/domain/attributes.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
-import { bestAttrMid, bestPairForSlot, COMPARE_DERIVED } from "@/src/domain/compare.js";
+import { bestAttrMid, presetPairForSlot, COMPARE_DERIVED } from "@/src/domain/compare.js";
+import { DEFAULT_FORMATION_ID } from "@/src/domain/assistant/defaults.js";
 import type { Player } from "@/src/domain/player.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import type { PositionSlot } from "@/src/domain/positions.js";
@@ -60,7 +61,8 @@ function sharedSlots(players: readonly ResolvedPlayer[]): PositionSlot[] {
 export function CompareView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { shortlist, squad, ready } = useDatasets();
+  const { shortlist, squad, ready, lastAssistantRun } = useDatasets();
+  const formationId = lastAssistantRun?.formationId ?? DEFAULT_FORMATION_ID;
   const refs = useMemo(() => parseCompareRefs(searchParams), [searchParams]);
   const [slotPick, setSlotPick] = useState<PositionSlot | "">("");
 
@@ -256,11 +258,11 @@ export function CompareView() {
                 </thead>
                 <tbody>
                   {players.map(({ ref, p }) => {
-                    const pair = bestPairForSlot(p.attrs, slot);
+                    const pair = presetPairForSlot(p.attrs, formationId, slot);
                     const top =
                       pair != null &&
                       players.every((x) => {
-                        const other = bestPairForSlot(x.p.attrs, slot);
+                        const other = presetPairForSlot(x.p.attrs, formationId, slot);
                         return !other || pair.score >= other.score;
                       });
                     return (

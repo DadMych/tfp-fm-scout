@@ -16,6 +16,7 @@ import type { AttributeId } from "../attributes.js";
 import { getArchetype } from "../archetypes/registry.js";
 import { getRole } from "../roles/registry.js";
 import type { SlotNeed } from "./slots.js";
+import { deriveSlots } from "./slots.js";
 import { solveXI, slotFit, type PlayerRow } from "./xi.js";
 import type { AnalysisContext } from "./context.js";
 import { T } from "./thresholds.js";
@@ -449,9 +450,27 @@ function consequenceFor(sale: SaleRecommendation): string {
  * that don't lower the package's post-signing XI — either the seller is fringe, or a
  * signing/backup already covers his slot. Bounded to the top few candidates by fee.
  */
+function saleSlotCovered(
+  ctx: AnalysisContext,
+  allRows: readonly PlayerRow[],
+  picks: readonly Candidate[],
+  sellerId: string,
+): boolean {
+  const sellerSlot = ctx.slots.find((s) => s.starter?.id === sellerId);
+  if (!sellerSlot?.starter) return true;
+  if (picks.some((p) => p.slotKey === sellerSlot.slotKey)) return true;
+  const without = allRows.filter((r) => r.player.id !== sellerId);
+  const xi = solveXI(without, ctx.formation);
+  const shadowSlots = deriveSlots(xi, without, ctx.formation);
+  const slot = shadowSlots.find((s) => s.slotKey === sellerSlot.slotKey);
+  const backupFit = slot?.backup?.fit ?? 0;
+  return backupFit >= sellerSlot.starter.fit - T.SUCC_READY_GAP;
+}
+
 function fundingPass(
   ctx: AnalysisContext,
   allRows: readonly PlayerRow[],
+  picks: readonly Candidate[],
   afterFit: number,
   totalCost: number,
   saleCandidates: readonly SaleRecommendation[],
@@ -469,6 +488,7 @@ function fundingPass(
     const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
     const check = solveXI(withoutHim, ctx.formation).avgFit;
     if (check < afterFit) continue;
+    if (!saleSlotCovered(ctx, allRows, picks, s.playerId)) continue;
     const row = ctx.byId.get(s.playerId);
     sales.push({
       playerId: s.playerId,
@@ -572,7 +592,7 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
 
     const totalCost = picks.reduce((s, p) => s + (p.cost ?? 0), 0);
     const afterVerdict = verdictOf(afterFit);
-    const { sales: pkgSales, income } = fundingPass(ctx, allRows, afterFit, totalCost, saleCandidates);
+    const { sales: pkgSales, income } = fundingPass(ctx, allRows, picks, afterFit, totalCost, saleCandidates);
     const netSpend = totalCost - income;
     const fundingNote = fundingNoteFromSales(pkgSales, totalCost) ?? fundingNoteFor(totalCost, cap, unused);
     const solves = insightIds.filter((id) => picks.some((p) => id.endsWith(`:${p.slotKey}`)));
@@ -665,7 +685,7 @@ function buildChurnPackage(
   if (afterFit <= ctx.avgFit) return null;
 
   const totalCost = picks.reduce((s, p) => s + (p.cost ?? 0), 0);
-  const { sales: pkgSales, income } = fundingPass(ctx, allRows, afterFit, totalCost, saleCandidates);
+  const { sales: pkgSales, income } = fundingPass(ctx, allRows, picks, afterFit, totalCost, saleCandidates);
   const netSpend = totalCost - income;
   if (netSpend > 0 || pkgSales.length === 0) return null;
 

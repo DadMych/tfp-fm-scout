@@ -8,6 +8,8 @@
 
 import type { Player } from "./player.js";
 import type { PlayerScores } from "./scoring/dataset.js";
+import { DEFAULT_FORMATION_ID } from "./assistant/defaults.js";
+import { bestPairFitForGroup, type PlayerRow } from "./assistant/xi.js";
 import { playerGroups, type PositionGroup } from "./positions.js";
 import { getArchetype } from "./archetypes/registry.js";
 import type { Badge } from "./archetypes/score.js";
@@ -37,12 +39,11 @@ export interface Recommendation {
 
 /**
  * What the user's own squad looks like, so shortlist players can be judged against it.
- * Keyed on best-role fit (absolute, 0–100 from attribute midpoints) rather than the
- * archetype score, because archetype scores are percentiles *within a dataset* and so are
- * not comparable between the squad and the shortlist. Role fit is comparable.
+ * Uses preset pairFit under the active formation — the same currency as the Fit column.
  */
 export interface SquadContext {
-  /** Best best-role fit already available per position group. */
+  readonly formationId: string;
+  /** Best pairFit already available per position group. */
   readonly bestByGroup: Readonly<Partial<Record<PositionGroup, number>>>;
 }
 
@@ -72,18 +73,28 @@ const RANK: Record<Verdict, number> = {
 export function buildSquadContext(
   players: readonly Player[],
   scores: readonly PlayerScores[],
+  formationId: string = DEFAULT_FORMATION_ID,
 ): SquadContext {
   const byId = new Map(scores.map((s) => [s.playerId, s]));
   const bestByGroup: Partial<Record<PositionGroup, number>> = {};
   for (const p of players) {
     const s = byId.get(p.id);
     if (!s) continue;
-    const fit = s.bestRole?.score ?? 0;
+    const row: PlayerRow = { player: p, scores: s };
     for (const g of playerGroups(p.positions)) {
+      const fit = bestPairFitForGroup(row, formationId, g);
       if (fit > (bestByGroup[g] ?? -1)) bestByGroup[g] = fit;
     }
   }
-  return { bestByGroup };
+  return { formationId, bestByGroup };
+}
+
+function rowFor(p: Player, s: PlayerScores): PlayerRow {
+  return { player: p, scores: s };
+}
+
+function fitInGroup(p: Player, s: PlayerScores, ctx: SquadContext, group: PositionGroup): number {
+  return bestPairFitForGroup(rowFor(p, s), ctx.formationId, group);
 }
 
 function valueMillions(p: Player): number | null {
@@ -100,7 +111,7 @@ interface MarginInfo {
 /** Best margin across the player's position groups (negative margins included). */
 function bestMargin(
   p: Player,
-  roleFit: number,
+  s: PlayerScores,
   ctx: SquadContext | undefined,
 ): MarginInfo | null {
   if (!ctx) return null;
@@ -109,7 +120,8 @@ function bestMargin(
     const cur = ctx.bestByGroup[g];
     const empty = cur == null;
     const incumbent = cur ?? 0;
-    const margin = roleFit - incumbent;
+    const fit = fitInGroup(p, s, ctx, g);
+    const margin = fit - incumbent;
     if (!best || margin > best.margin) {
       best = { group: g, margin, best: incumbent, empty };
     }
@@ -120,10 +132,10 @@ function bestMargin(
 /** Best squad group the player could slot into, with the margin he'd add (or null). */
 function upgradeOver(
   p: Player,
-  roleFit: number,
+  s: PlayerScores,
   ctx: SquadContext | undefined,
 ): { group: PositionGroup; margin: number; best: number; empty: boolean } | null {
-  const m = bestMargin(p, roleFit, ctx);
+  const m = bestMargin(p, s, ctx);
   if (!m || m.margin < 5) return null;
   return m;
 }
@@ -163,9 +175,8 @@ export function recommend(
   const vm = valueMillions(p);
   const perM = vm != null && vm > 0 ? score / vm : null;
   const conf = Math.round(s.confidence * 100);
-  const roleFit = s.bestRole?.score ?? 0;
-  const margin = bestMargin(p, roleFit, ctx);
-  const upgrade = upgradeOver(p, roleFit, ctx);
+  const margin = bestMargin(p, s, ctx);
+  const upgrade = upgradeOver(p, s, ctx);
   const hasSquad = ctx != null;
 
   const reasons: string[] = [];

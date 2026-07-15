@@ -126,6 +126,15 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     groupRankers.set(group, buildRankers(players, derivedByPlayer, cohort));
   }
 
+  // CB ∪ FB/WB cohort for defender-specific archetype gates (doc 17 §7.5).
+  const defenderCohort = players.filter(
+    (p) => !isGoalkeeper(p) && (inGroup(p, "CB") || inGroup(p, "FB/WB")),
+  );
+  const defenderRankers =
+    defenderCohort.length > 0
+      ? buildRankers(players, derivedByPlayer, defenderCohort)
+      : null;
+
   return players.map((p) => {
     const pop: Population = isGoalkeeper(p) ? "gk" : "outfield";
     const derived = derivedByPlayer.get(p.id) as DerivedMetrics;
@@ -147,6 +156,12 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     const ctx = {
       pct: (m: MetricId) => datasetPercentiles[m] ?? null,
       raw: (m: MetricId) => metricValue(p.attrs, derived, m),
+      cohortPct: (cohort: "defenders", m: MetricId) => {
+        if (cohort !== "defenders" || !defenderRankers) return null;
+        const v = metricValue(p.attrs, derived, m);
+        if (v == null) return null;
+        return defenderRankers.get(m)!.pct(v);
+      },
     };
 
     // Roles: score all; best role prefers ones playable in the player's positions.
@@ -184,15 +199,20 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
       const pctv = percentiles[metric];
       if (pctv != null) metrics.push({ metric, pct: pctv });
     }
+    const primaryDef = general.primaryId ? getArchetype(general.primaryId) : null;
+    const profileMetrics = primaryDef
+      ? [...primaryDef.core, ...primaryDef.major, ...primaryDef.minor]
+      : undefined;
     const summary = generateSummary({
       age: p.age,
       positionGroup: primaryGroup(p),
       family: general.family,
-      primaryBlurb: general.primaryId ? getArchetype(general.primaryId).blurb : null,
+      primaryBlurb: primaryDef?.blurb ?? null,
       secondaryBlurb: general.runnerUpId ? getArchetype(general.runnerUpId).blurb : null,
       confidence,
       metrics,
       atOrAbove,
+      ...(profileMetrics ? { profileMetrics } : {}),
     });
 
     return {

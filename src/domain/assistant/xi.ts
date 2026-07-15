@@ -7,11 +7,12 @@
 
 import type { Player } from "../player.js";
 import type { PositionSlot } from "../positions.js";
+import { playerGroups, slotToGroups, type PositionGroup } from "../positions.js";
 import type { PlayerScores } from "../scoring/dataset.js";
 import { ROLES, type RoleId } from "../roles/registry.js";
 import { pairScore } from "../roles/score.js";
+import { getFormation, type Formation } from "../squad/formations.js";
 import { getSlotPair } from "../squad/tactic-presets.js";
-import type { Formation } from "../squad/formations.js";
 
 export interface PlayerRow {
   readonly player: Player;
@@ -57,6 +58,29 @@ export function slotFit(row: PlayerRow, formationId: string, ref: SlotRef): numb
   const pair = getSlotPair(formationId, ref.key);
   if (!pair) return legacySlotFit(row.scores, ref.slot);
   return Math.round(pairScore(row.player.attrs, pair.ip, pair.oop));
+}
+
+/** Best preset pairFit for a player within one position group (doc 17 §9.1). */
+export function bestPairFitForGroup(
+  row: PlayerRow,
+  formationId: string,
+  group: PositionGroup,
+): number {
+  if (!playerGroups(row.player.positions).includes(group)) return 0;
+  const formation = getFormation(formationId);
+  let best = 0;
+  for (const fs of formation.slots) {
+    if (!row.player.positions.includes(fs.slot)) continue;
+    if (!slotToGroups(fs.slot).includes(group)) continue;
+    const fit = slotFit(row, formationId, fs);
+    if (fit > best) best = fit;
+  }
+  return best;
+}
+
+/** First formation slot key for a position slot (compare / preset pair lookup). */
+export function slotKeyForPosition(formationId: string, slot: PositionSlot): string | null {
+  return getFormation(formationId).slots.find((fs) => fs.slot === slot)?.key ?? null;
 }
 
 const HOLE_COST = 1_000;

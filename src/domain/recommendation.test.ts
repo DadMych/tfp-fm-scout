@@ -5,20 +5,29 @@ import type { Player } from "./player.js";
 import { buildScores, type PlayerScores } from "./scoring/dataset.js";
 import { buildSquadContext, recommend } from "./recommendation.js";
 
-function attrs(v: number): AttrVector {
+function attrs(v: number, bump?: Partial<Record<string, number>>): AttrVector {
   const out: AttrVector = {};
   for (const a of ATTRIBUTES) out[a.id] = { min: v, max: v };
+  if (bump) {
+    for (const [k, d] of Object.entries(bump)) {
+      if (d == null) continue;
+      out[k as keyof AttrVector] = { min: v + d, max: v + d };
+    }
+  }
   return out;
 }
 
-function player(id: string, over: Partial<Player> & { v: number }): Player {
-  const { v, ...rest } = over;
+function player(
+  id: string,
+  over: Partial<Player> & { v: number; bump?: Partial<Record<string, number>> },
+): Player {
+  const { v, bump, ...rest } = over;
   return {
     id,
     name: `P${id}`,
     age: 25,
     positions: ["M-C"],
-    attrs: attrs(v),
+    attrs: attrs(v, bump),
     club: null,
     nationality: null,
     value: null,
@@ -117,11 +126,9 @@ describe("recommend", () => {
   });
 
   it("demotes an elite covered by the squad (doc 17 §1)", () => {
-    const target = player("t", { v: 18, age: 26, positions: ["AM-R"] });
-    const squad = [player("sq", { v: 17, positions: ["AM-R"] })];
-    const ctx = buildSquadContext(squad, [
-      { ...stubScores({ score: 96, roleFit: 83 }), playerId: squad[0]!.id },
-    ]);
+    const squad = [player("sq", { v: 18, positions: ["AM-R"] })];
+    const target = player("t", { v: 17, age: 26, positions: ["AM-R"] });
+    const ctx = buildSquadContext(squad, buildScores(squad));
     const rec = recommend(target, stubScores({ score: 96, roleFit: 80 }), ctx);
     expect(rec.verdict).not.toBe("Priority target");
     expect(rec.verdict).not.toBe("Squad upgrade");
@@ -135,11 +142,14 @@ describe("recommend", () => {
   });
 
   it("caps marginal squad improvement at proven performer (doc 17 §1)", () => {
-    const target = player("t", { v: 18, age: 27, positions: ["AM-R"] });
     const squad = [player("sq", { v: 17, positions: ["AM-R"] })];
-    const ctx = buildSquadContext(squad, [
-      { ...stubScores({ score: 80, roleFit: 80 }), playerId: squad[0]!.id },
-    ]);
+    const target = player("t", {
+      v: 17,
+      bump: { dribbling: 1, pace: 1 },
+      age: 27,
+      positions: ["AM-R"],
+    });
+    const ctx = buildSquadContext(squad, buildScores(squad));
     const rec = recommend(target, stubScores({ score: 96, roleFit: 83 }), ctx);
     expect(rec.verdict).toBe("Proven performer");
     expect(rec.verdict).not.toBe("Priority target");

@@ -22,6 +22,7 @@ import type { Player } from "@/src/domain/player.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { ImportError } from "@/src/import/parse.js";
 import { buildSquadContext, type SquadContext } from "@/src/domain/recommendation.js";
+import { DEFAULT_FORMATION_ID } from "@/src/domain/assistant/defaults.js";
 import { playerIdentityKey } from "@/src/domain/player-identity.js";
 import { importDataset, scorePlayers } from "@/lib/import-client";
 import {
@@ -358,8 +359,15 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     [raw.squad, scoreByKind.squad],
   );
   const squadContext = useMemo(
-    () => (squad ? buildSquadContext(squad.dataset.players, squad.scores) : null),
-    [squad],
+    () =>
+      squad
+        ? buildSquadContext(
+            squad.dataset.players,
+            squad.scores,
+            lastAssistantRun?.formationId ?? DEFAULT_FORMATION_ID,
+          )
+        : null,
+    [squad, lastAssistantRun?.formationId],
   );
 
   const value = useMemo<StoreState>(

@@ -25,11 +25,16 @@ export type GeneralFamily =
 
 export type Population = "outfield" | "gk";
 
+/** Cohort for percentile gates that are not population-wide (doc 06 / doc 17 §7.5). */
+export type GateCohort = "defenders";
+
 export interface Gate {
   readonly metric: MetricId;
   /** `pct` = percentile within the population; `raw` = attribute midpoint (physics floor). */
   readonly kind: "pct" | "raw";
   readonly min: number;
+  /** When set, `pct` gates rank within this cohort instead of the whole population. */
+  readonly cohort?: GateCohort;
 }
 
 type ArchetypeTemplate = {
@@ -45,6 +50,7 @@ type ArchetypeTemplate = {
 };
 
 const pct = (metric: MetricId, min: number): Gate => ({ metric, kind: "pct", min });
+const pctDef = (metric: MetricId, min: number): Gate => ({ metric, kind: "pct", min, cohort: "defenders" });
 const raw = (metric: MetricId, min: number): Gate => ({ metric, kind: "raw", min });
 
 export const ARCHETYPES = [
@@ -84,7 +90,7 @@ export const ARCHETYPES = [
   // ---------- Destroyer ----------
   { id: "duelWinner", name: "Duel Winner", family: "Destroyer", pop: "outfield", blurb: "wins his individual battles on the ground and in the air", gates: [pct("tackling", 70), pct("physicality", 60)], core: ["tackling", "strength", "aggression", "bravery"], major: ["heading", "jumpingReach", "anticipation"], minor: ["marking", "balance", "determination"] },
   { id: "readerOfTheGame", name: "Reader of the Game", family: "Destroyer", pop: "outfield", blurb: "intercepts and positions rather than diving in", gates: [pct("defPosition", 75), pct("anticipation", 70)], core: ["anticipation", "positioning", "concentration", "decisions"], major: ["marking", "composure"], minor: ["tackling", "teamwork"] },
-  { id: "recoverySprinter", name: "Recovery Sprinter", family: "Destroyer", pop: "outfield", blurb: "defends the space behind with pace", gates: [pct("speed", 75), pct("defPosition", 50)], core: ["pace", "acceleration", "anticipation"], major: ["positioning", "tackling", "concentration", "agility"], minor: ["marking", "bravery"] },
+  { id: "recoverySprinter", name: "Recovery Sprinter", family: "Destroyer", pop: "outfield", blurb: "defends the space behind with pace", gates: [pctDef("speed", 75), pct("defPosition", 50)], core: ["pace", "acceleration", "anticipation"], major: ["positioning", "tackling", "concentration", "agility"], minor: ["marking", "bravery"] },
   { id: "destroyer", name: "Destroyer", family: "Destroyer", pop: "outfield", blurb: "breaks up play by force", gates: [pct("tackling", 75), pct("aggression", 65)], core: ["tackling", "aggression", "workRate"], major: ["anticipation", "strength", "bravery", "stamina"], minor: ["positioning", "determination"] },
   { id: "manMarker", name: "Man-Marker", family: "Destroyer", pop: "outfield", blurb: "locks onto and smothers a danger man", gates: [pct("marking", 75), pct("concentration", 60)], core: ["marking", "concentration", "tackling", "anticipation"], major: ["positioning", "aggression", "strength", "pace"], minor: ["bravery", "determination"] },
   { id: "anchor", name: "Anchor", family: "Destroyer", pop: "outfield", blurb: "is a positional shield that never leaves its post", gates: [pct("defPosition", 70), pct("teamwork", 55)], core: ["positioning", "concentration", "tackling", "teamwork"], major: ["anticipation", "decisions", "marking", "composure"], minor: ["strength", "workRate"] },

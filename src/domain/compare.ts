@@ -3,8 +3,10 @@ import type { AttrVector } from "./attr-value.js";
 import { midOf } from "./attr-value.js";
 import type { DerivedId } from "./derived.js";
 import type { PositionSlot } from "./positions.js";
-import { ROLES } from "./roles/registry.js";
+import { getRole, ROLES } from "./roles/registry.js";
 import { pairScore } from "./roles/score.js";
+import { getSlotPair } from "./squad/tactic-presets.js";
+import { slotKeyForPosition } from "./assistant/xi.js";
 
 /** Eight derived metrics for cross-player radar (doc 08 §5). */
 export const COMPARE_DERIVED: readonly DerivedId[] = [
@@ -49,6 +51,27 @@ export function bestPairForSlot(attrs: AttrVector, slot: PositionSlot): RolePair
     }
   }
   return best;
+}
+
+/** Preset IP+OOP pair at a formation slot (doc 17 §9.4 — same currency as XI/fit). */
+export function presetPairForSlot(
+  attrs: AttrVector,
+  formationId: string,
+  slot: PositionSlot,
+): RolePairFit | null {
+  const key = slotKeyForPosition(formationId, slot);
+  if (!key) return bestPairForSlot(attrs, slot);
+  const pair = getSlotPair(formationId, key);
+  if (!pair) return bestPairForSlot(attrs, slot);
+  const ip = getRole(pair.ip);
+  const oop = getRole(pair.oop);
+  return {
+    ipId: pair.ip,
+    oopId: pair.oop,
+    ipName: ip.name,
+    oopName: oop.name,
+    score: Math.round(pairScore(attrs, pair.ip, pair.oop)),
+  };
 }
 
 /** Highest midpoint among players with a known value at this attribute. */

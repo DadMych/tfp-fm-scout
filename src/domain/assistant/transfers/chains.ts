@@ -42,7 +42,11 @@ const EMPTY_CHAIN = (slot: FormationSlot["slot"], fitBefore: number): Replacemen
 
 /** Best succession path for a player if he left today: free from the bench, or bought
  * from the shortlist with the sale funding the purchase. */
-export function buildChain(ctx: AnalysisContext, playerId: string): ReplacementChain | null {
+export function buildChain(
+  ctx: AnalysisContext,
+  playerId: string,
+  excludeIds: ReadonlySet<string> = new Set(),
+): ReplacementChain | null {
   const row = ctx.byId.get(playerId);
   if (!row) return null;
   const fs = primaryFormationSlot(ctx, playerId);
@@ -55,6 +59,7 @@ export function buildChain(ctx: AnalysisContext, playerId: string): ReplacementC
   for (const r of ctx.squad) {
     if (r.player.id === playerId) continue;
     if (ctx.starters.has(r.player.id)) continue;
+    if (excludeIds.has(r.player.id)) continue;
     if (!r.player.positions.includes(slot)) continue;
     const fit = slotFit(r, ctx.formation.id, fs);
     if (!internal || fit > internal.fit) internal = { id: r.player.id, name: r.player.name, fit };

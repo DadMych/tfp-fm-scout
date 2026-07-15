@@ -2,7 +2,6 @@
  * DEV rules — development & versatility (docs/11-assistant-analytics.md §7).
  */
 
-import { getRole } from "../../roles/registry.js";
 import { playerGroups } from "../../positions.js";
 import type { AnalysisContext } from "../context.js";
 import type { RawInsight } from "../types.js";
@@ -74,24 +73,32 @@ export function run(ctx: AnalysisContext): RawInsight[] {
     }
   }
 
-  // DEV-4: starters out of role.
+  // DEV-4: starters out of role (pairFit currency — doc 17 §9.2).
   for (const s of ctx.slots) {
     if (!s.starter) continue;
     const row = ctx.byId.get(s.starter.id);
-    const bestRole = row?.scores.bestRole;
-    if (!row || !bestRole) continue;
-    const roleDef = getRole(bestRole.id);
-    if (roleDef.slots.includes(s.slot.slot)) continue; // already playing his natural role's slot
-    if (bestRole.score - s.starter.fit < 8) continue;
+    if (!row) continue;
+    const currentFit = s.starter.fit;
+    let bestFit = currentFit;
+    let bestLabel = s.label;
+    for (const slot of ctx.slots) {
+      if (!row.player.positions.includes(slot.slot.slot)) continue;
+      const fit = slotFit(row, ctx.formation.id, slot.slot);
+      if (fit > bestFit) {
+        bestFit = fit;
+        bestLabel = slot.label;
+      }
+    }
+    if (bestFit - currentFit < 8) continue;
     out.push({
       id: insightId("dev.wasted-role", s.slotKey),
       cls: "development",
       severity: "medium",
       title: `${surname(row.player.name)} is playing out of role`,
-      detail: `${surname(row.player.name)}'s best role (${roleDef.name}) rates ${Math.round(bestRole.score)}, well above the ${s.starter.fit} he offers at ${s.label} — his attributes suit a different job than the one he has.`,
+      detail: `${surname(row.player.name)} projects to ${bestFit} at ${bestLabel}, well above the ${currentFit} he offers at ${s.label} — his attributes suit a different job than the one he has.`,
       evidence: [
-        { label: "Best role", value: `${roleDef.name} (${Math.round(bestRole.score)})` },
-        { label: `Fit at ${s.label}`, value: `${s.starter.fit}` },
+        { label: `Best slot (${bestLabel})`, value: `${bestFit}` },
+        { label: `Fit at ${s.label}`, value: `${currentFit}` },
       ],
       subjects: [row.player.id],
       slotKey: s.slotKey,

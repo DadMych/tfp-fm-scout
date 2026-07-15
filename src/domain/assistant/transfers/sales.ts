@@ -139,7 +139,27 @@ export function buildSales(ctx: AnalysisContext): SaleRecommendation[] {
   const p75V = percentile(values, 75);
   const p90V = percentile(values, 90);
 
-  return ctx.squad.map((row) => buildOne(ctx, row, p75V, p90V));
+  const results = ctx.squad.map((row) => buildOne(ctx, row, p75V, p90V));
+  const actionable = new Set(
+    results
+      .filter((s) => s.verdict === "sell-now" || s.verdict === "sell-high" || s.verdict === "release")
+      .map((s) => s.playerId),
+  );
+
+  return results.map((rec) => {
+    const heirId = rec.replacement?.playerId;
+    if (!heirId || !actionable.has(heirId)) return rec;
+    const chain = buildChain(ctx, rec.playerId, actionable);
+    const evidence = rec.evidence.filter((e) => e.label !== "Replacement");
+    if (chain?.playerId) {
+      evidence.push({ label: "Replacement", value: `${chain.playerName} (fit ${chain.fitAfter})` });
+    }
+    return {
+      ...rec,
+      replacement: chain?.source === "none" ? null : chain,
+      evidence,
+    };
+  });
 }
 
 function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: number): SaleRecommendation {

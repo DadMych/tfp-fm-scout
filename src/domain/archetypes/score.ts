@@ -1,4 +1,4 @@
-import { ARCHETYPES, type ArchetypeDef, type ArchetypeId, type GeneralFamily } from "./registry.js";
+import { ARCHETYPES, type ArchetypeDef, type ArchetypeId, type GeneralFamily, type GateCohort } from "./registry.js";
 import type { MetricId } from "../metric-id.js";
 
 /**
@@ -15,6 +15,8 @@ const GATE_CAP = 40;
 export interface ScoringContext {
   pct(metric: MetricId): number | null;
   raw(metric: MetricId): number | null;
+  /** Percentile within a special cohort (e.g. CB + FB/WB for Recovery Sprinter). */
+  cohortPct?(cohort: GateCohort, metric: MetricId): number | null;
 }
 
 export interface ArchetypeScore {
@@ -48,7 +50,12 @@ export function scoreArchetype(ctx: ScoringContext, def: ArchetypeDef): Archetyp
   const base = usedWeight === 0 ? 0 : weighted / usedWeight;
 
   const gatesPassed = def.gates.every((g) => {
-    const v = g.kind === "pct" ? ctx.pct(g.metric) : ctx.raw(g.metric);
+    const v =
+      g.kind === "pct"
+        ? g.cohort && ctx.cohortPct
+          ? ctx.cohortPct(g.cohort, g.metric)
+          : ctx.pct(g.metric)
+        : ctx.raw(g.metric);
     return v != null && v >= g.min;
   });
 
