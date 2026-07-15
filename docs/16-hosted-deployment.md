@@ -5,8 +5,8 @@ decisions that doc 02 left open ("any managed Postgres") now that the database e
 a **Neon** Postgres project in `eu-central-1`. Where this doc conflicts with doc 02, this
 doc wins — doc 02 has been amended to match.
 
-> **Status:** P4 nearly complete — Drizzle schema, Auth.js (password + Google), hosted store
-> seam, persistence E2E, and password reset are landed. Vercel deploy remains.
+> **Status:** P4 code complete — hosted accounts, persistence E2E, and password reset are
+> landed. **Vercel deploy** (§8) is the remaining ops step.
 
 ---
 
@@ -106,7 +106,21 @@ later without moving the seam again.
 | `DATABASE_URL` | Neon pooled string (in `.env`) | Project env var |
 | `DATABASE_URL_UNPOOLED` | Neon direct string (add at P4 start) | Project env var (migrations run from CI) |
 | `AUTH_SECRET` | `openssl rand -base64 32` | Separate value per environment |
+| `AUTH_URL` | `http://127.0.0.1:3000` (Playwright/E2E) | Production origin, e.g. `https://tfpdev.com` |
 | `GOOGLE_CLIENT_ID/SECRET` | OAuth client "TFP FM dev" (localhost callback) | OAuth client "TFP FM" (prod callback) |
+| `RESEND_API_KEY` | Optional — reset link logged to console in dev | Required in production for password reset |
+| `EMAIL_FROM` | `onboarding@resend.dev` for testing | Verified sender domain on Resend |
+
+## 8. Vercel deploy checklist
+
+1. **Neon `main` branch** has migrations applied: `DATABASE_URL_UNPOOLED=… pnpm db:migrate`.
+2. **Create Vercel project** from this repo; framework preset Next.js; build command `pnpm build`.
+3. **Set production env vars** from §6 (pooled `DATABASE_URL` for runtime; unpooled only for migrate CI).
+4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google`.
+5. **Resend** verified domain + `EMAIL_FROM` for password reset in production.
+6. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk; forgot-password email arrives.
+
+Logged-out visitors still get the full local-first app (IndexedDB) when no session is present.
 
 ## 7. Order of work when P4 opens
 
