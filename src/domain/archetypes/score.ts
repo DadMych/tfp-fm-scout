@@ -1,4 +1,5 @@
-import { ARCHETYPES, type ArchetypeDef, type GeneralFamily } from "./registry.js";
+import { ARCHETYPES, type ArchetypeDef, type ArchetypeId, type GeneralFamily } from "./registry.js";
+import type { MetricId } from "../metric-id.js";
 
 /**
  * Archetype scoring (docs/06-archetypes.md §2).
@@ -12,12 +13,12 @@ const GATE_CAP = 40;
 
 /** Lookups the caller provides from the dataset: percentile and raw midpoint per metric. */
 export interface ScoringContext {
-  pct(metric: string): number | null;
-  raw(metric: string): number | null;
+  pct(metric: MetricId): number | null;
+  raw(metric: MetricId): number | null;
 }
 
 export interface ArchetypeScore {
-  readonly id: string;
+  readonly id: ArchetypeId;
   readonly score: number; // 0–100
   readonly gatesPassed: boolean;
   readonly confidence: number; // 0–1: share of weight mass with a known percentile
@@ -77,9 +78,9 @@ export interface GeneralArchetype {
   readonly family: GeneralFamily | "Utility";
   /** Second family when the top two are a close cross-family hybrid (doc 06 §9). */
   readonly hybridWith: GeneralFamily | null;
-  readonly primaryId: string | null;
+  readonly primaryId: ArchetypeId | null;
   /** Runner-up archetype id when a hybrid applies (drives the "and also" summary clause). */
-  readonly runnerUpId: string | null;
+  readonly runnerUpId: ArchetypeId | null;
 }
 
 /**
@@ -99,7 +100,7 @@ export function generalArchetype(scores: readonly ArchetypeScore[]): GeneralArch
 
   const primaryFamily = famOf(primary.id);
   let hybridWith: GeneralFamily | null = null;
-  let runnerUpId: string | null = null;
+  let runnerUpId: ArchetypeId | null = null;
   const runnerUp = eligible.find((s) => famOf(s.id) !== primaryFamily);
   if (runnerUp && primary.score - runnerUp.score <= 6) {
     hybridWith = famOf(runnerUp.id);
@@ -108,7 +109,7 @@ export function generalArchetype(scores: readonly ArchetypeScore[]): GeneralArch
   return { family: primaryFamily, hybridWith, primaryId: primary.id, runnerUpId };
 }
 
-function famOf(id: string): GeneralFamily {
+function famOf(id: ArchetypeId): GeneralFamily {
   const a = ARCHETYPES.find((x) => x.id === id);
   if (!a) throw new Error(`Unknown archetype id: ${id}`);
   return a.family;

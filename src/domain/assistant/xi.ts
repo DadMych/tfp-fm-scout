@@ -8,7 +8,7 @@
 import type { Player } from "../player.js";
 import type { PositionSlot } from "../positions.js";
 import type { PlayerScores } from "../scoring/dataset.js";
-import { ROLES } from "../roles/registry.js";
+import { ROLES, type RoleId } from "../roles/registry.js";
 import { pairScore } from "../roles/score.js";
 import { getSlotPair } from "../squad/tactic-presets.js";
 import type { Formation } from "../squad/formations.js";
@@ -30,8 +30,8 @@ export interface XiSolution {
   readonly holes: readonly string[];
 }
 
-const ROLES_BY_SLOT: Map<PositionSlot, string[]> = (() => {
-  const m = new Map<PositionSlot, string[]>();
+const ROLES_BY_SLOT: Map<PositionSlot, RoleId[]> = (() => {
+  const m = new Map<PositionSlot, RoleId[]>();
   for (const role of ROLES) {
     for (const slot of role.slots) {
       const list = m.get(slot) ?? [];

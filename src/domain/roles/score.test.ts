@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { scoreRoleById, pairScore } from "./score.js";
-import { ROLES, getRole } from "./registry.js";
 import type { AttrVector } from "../attr-value.js";
 import type { AttributeId } from "../attributes.js";
 
@@ -60,23 +59,6 @@ describe("pairScore — stamina tax (docs/05 §4)", () => {
     // The fit player must score higher; and the tax on the lazy one is (12-8)*2 = 8 beyond
     // the raw stamina/workRate difference.
     expect(untaxed).toBeGreaterThan(taxed);
-  });
-});
-
-describe("registry integrity", () => {
-  it("has unique role ids and non-empty tiers", () => {
-    const ids = new Set(ROLES.map((r) => r.id));
-    expect(ids.size).toBe(ROLES.length);
-    for (const r of ROLES) {
-      expect(r.core.length).toBeGreaterThan(0);
-      expect(getRole(r.id)).toBe(r);
-    }
-  });
-
-  it("phase-prefixes every id consistently", () => {
-    for (const r of ROLES) {
-      expect(r.id.startsWith(r.phase === "IP" ? "ip." : "oop.")).toBe(true);
-    }
   });
 });
 

@@ -9,22 +9,10 @@ import { midOf, type AttrVector } from "./attr-value.js";
  * percentile ranking live elsewhere; this module is just the arithmetic.
  */
 
-export type DerivedId =
-  | "speed"
-  | "workEngine"
-  | "aerial"
-  | "pressResist"
-  | "creativity"
-  | "defActivity"
-  | "defPosition"
-  | "finishingPkg"
-  | "mobility"
-  | "physicality";
-
 export type DerivedMetrics = Record<DerivedId, number | null>;
 
 /** Attributes each metric depends on (drives null-propagation and confidence). */
-export const DERIVED_INPUTS: Record<DerivedId, readonly AttributeId[]> = {
+export const DERIVED_INPUTS = {
   speed: ["acceleration", "pace"],
   workEngine: ["workRate", "stamina"],
   aerial: ["jumpingReach", "heading", "strength"],
@@ -35,7 +23,9 @@ export const DERIVED_INPUTS: Record<DerivedId, readonly AttributeId[]> = {
   finishingPkg: ["finishing", "composure", "offTheBall"],
   mobility: ["agility", "balance", "acceleration"],
   physicality: ["strength", "jumpingReach", "stamina", "balance"],
-};
+} as const satisfies Record<string, readonly AttributeId[]>;
+
+export type DerivedId = keyof typeof DERIVED_INPUTS;
 
 const MAX_ATTR = 20;
 

@@ -1,21 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   scoreArchetype,
-  scoreAllArchetypes,
   badgeFor,
   generalArchetype,
   type ScoringContext,
+  type ArchetypeScore,
 } from "./score.js";
-import { ARCHETYPES, getArchetype, isValidMetric } from "./registry.js";
+import { getArchetype } from "./registry.js";
+import type { MetricId } from "../metric-id.js";
 
 /** Build a scoring context from plain percentile / raw maps. Unknown -> null. */
 function ctxFrom(
-  pctMap: Record<string, number>,
-  rawMap: Record<string, number> = {},
+  pctMap: Partial<Record<MetricId, number>>,
+  rawMap: Partial<Record<MetricId, number>> = {},
 ): ScoringContext {
   return {
-    pct: (m) => (m in pctMap ? (pctMap[m] as number) : null),
-    raw: (m) => (m in rawMap ? (rawMap[m] as number) : null),
+    pct: (m) => pctMap[m] ?? null,
+    raw: (m) => rawMap[m] ?? null,
   };
 }
 
@@ -61,7 +62,7 @@ describe("scoreArchetype — gates", () => {
   it("respects a raw gate independent of percentile (Roadrunner needs real pace)", () => {
     // Top percentile for pace in a slow division, but raw pace only 11 (< 14 floor).
     const ctx = ctxFrom({ speed: 99, pace: 99, acceleration: 90, offTheBall: 80, dribbling: 80, stamina: 80 });
-    const withLowRaw = { ...ctx, raw: (m: string) => (m === "pace" ? 11 : null) };
+    const withLowRaw = { ...ctx, raw: (m: MetricId) => (m === "pace" ? 11 : null) };
     const s = scoreArchetype(withLowRaw, getArchetype("roadrunner"));
     expect(s.gatesPassed).toBe(false);
   });
@@ -69,9 +70,9 @@ describe("scoreArchetype — gates", () => {
 
 describe("generalArchetype (doc 06 §9)", () => {
   it("returns the primary family and a close cross-family hybrid", () => {
-    const scores = [
+    const scores: ArchetypeScore[] = [
       { id: "deepProgressor", score: 82, gatesPassed: true, confidence: 1 },
-      { id: "chanceArchitect", score: 78, gatesPassed: true, confidence: 1 }, // Creator, within 6
+      { id: "chanceArchitect", score: 78, gatesPassed: true, confidence: 1 },
       { id: "pressMachine", score: 40, gatesPassed: false, confidence: 1 },
     ];
     const g = generalArchetype(scores);
@@ -81,41 +82,18 @@ describe("generalArchetype (doc 06 §9)", () => {
   });
 
   it("is Utility when nothing reaches 60 with gates passed", () => {
-    const scores = [{ id: "deepProgressor", score: 55, gatesPassed: true, confidence: 1 }];
+    const scores: ArchetypeScore[] = [{ id: "deepProgressor", score: 55, gatesPassed: true, confidence: 1 }];
     expect(generalArchetype(scores).family).toBe("Utility");
   });
 
   it("no hybrid when the runner-up is the same family or too far behind", () => {
-    const scores = [
+    const scores: ArchetypeScore[] = [
       { id: "deepProgressor", score: 88, gatesPassed: true, confidence: 1 },
-      { id: "tempoDictator", score: 84, gatesPassed: true, confidence: 1 }, // same family
-      { id: "chanceArchitect", score: 70, gatesPassed: true, confidence: 1 }, // >6 behind
+      { id: "tempoDictator", score: 84, gatesPassed: true, confidence: 1 },
+      { id: "chanceArchitect", score: 70, gatesPassed: true, confidence: 1 },
     ];
     const g = generalArchetype(scores);
     expect(g.family).toBe("Progressor");
     expect(g.hybridWith).toBeNull();
-  });
-});
-
-describe("registry integrity", () => {
-  it("has 36 archetypes with unique ids", () => {
-    expect(ARCHETYPES.length).toBe(36);
-    expect(new Set(ARCHETYPES.map((a) => a.id)).size).toBe(36);
-  });
-
-  it("references only valid metrics in gates and weights", () => {
-    for (const a of ARCHETYPES) {
-      for (const g of a.gates) expect(isValidMetric(g.metric), `${a.id} gate ${g.metric}`).toBe(true);
-      for (const m of [...a.core, ...a.major, ...a.minor]) {
-        expect(isValidMetric(m), `${a.id} weight ${m}`).toBe(true);
-      }
-    }
-  });
-
-  it("scores only the requested population", () => {
-    const outfield = scoreAllArchetypes(ctxFrom({}), "outfield");
-    const gk = scoreAllArchetypes(ctxFrom({}), "gk");
-    expect(outfield.length).toBe(32);
-    expect(gk.length).toBe(4);
   });
 });

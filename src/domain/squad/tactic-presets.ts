@@ -4,11 +4,11 @@
  */
 
 import { FORMATIONS } from "./formations.js";
-import { getRole } from "../roles/registry.js";
+import { getRole, type RoleId } from "../roles/registry.js";
 
 export interface SlotRolePair {
-  readonly ip: string;
-  readonly oop: string;
+  readonly ip: RoleId;
+  readonly oop: RoleId;
 }
 
 export interface TacticPreset {
@@ -17,19 +17,19 @@ export interface TacticPreset {
   readonly slots: Readonly<Record<string, SlotRolePair>>;
 }
 
-const GK: SlotRolePair = { ip: "ip.goalkeeper", oop: "oop.goalkeeper" };
-const CB: SlotRolePair = { ip: "ip.ballPlayingCentreBack", oop: "oop.stoppingCentreBack" };
-const FB: SlotRolePair = { ip: "ip.fullBack", oop: "oop.pressingFullBack" };
-const DM_SCREEN: SlotRolePair = { ip: "ip.halfBack", oop: "oop.screeningDefensiveMidfielder" };
-const CM_BOX: SlotRolePair = { ip: "ip.boxToBoxMidfielder", oop: "oop.pressingCentralMidfielder" };
-const CM_PLAY: SlotRolePair = { ip: "ip.midfieldPlaymaker", oop: "oop.screeningCentralMidfielder" };
-const AM: SlotRolePair = { ip: "ip.advancedPlaymaker", oop: "oop.trackingAttackingMidfielder" };
-const WING: SlotRolePair = { ip: "ip.insideWinger", oop: "oop.trackingWinger" };
-const WIDE_FWD: SlotRolePair = { ip: "ip.wideForward", oop: "oop.wideOutletWinger" };
-const ST: SlotRolePair = { ip: "ip.centreForward", oop: "oop.trackingCentreForward" };
-const WB_ADV: SlotRolePair = { ip: "ip.advancedWingBack", oop: "oop.pressingWingBack" };
-const WM: SlotRolePair = { ip: "ip.wideMidfielder", oop: "oop.trackingWideMidfielder" };
-const ST_TARGET: SlotRolePair = { ip: "ip.targetForward", oop: "oop.trackingCentreForward" };
+const GK = { ip: "ip.goalkeeper", oop: "oop.goalkeeper" } satisfies SlotRolePair;
+const CB = { ip: "ip.ballPlayingCentreBack", oop: "oop.stoppingCentreBack" } satisfies SlotRolePair;
+const FB = { ip: "ip.fullBack", oop: "oop.pressingFullBack" } satisfies SlotRolePair;
+const DM_SCREEN = { ip: "ip.halfBack", oop: "oop.screeningDefensiveMidfielder" } satisfies SlotRolePair;
+const CM_BOX = { ip: "ip.boxToBoxMidfielder", oop: "oop.pressingCentralMidfielder" } satisfies SlotRolePair;
+const CM_PLAY = { ip: "ip.midfieldPlaymaker", oop: "oop.screeningCentralMidfielder" } satisfies SlotRolePair;
+const AM = { ip: "ip.advancedPlaymaker", oop: "oop.trackingAttackingMidfielder" } satisfies SlotRolePair;
+const WING = { ip: "ip.insideWinger", oop: "oop.trackingWinger" } satisfies SlotRolePair;
+const WIDE_FWD = { ip: "ip.wideForward", oop: "oop.wideOutletWinger" } satisfies SlotRolePair;
+const ST = { ip: "ip.centreForward", oop: "oop.trackingCentreForward" } satisfies SlotRolePair;
+const WB_ADV = { ip: "ip.advancedWingBack", oop: "oop.pressingWingBack" } satisfies SlotRolePair;
+const WM = { ip: "ip.wideMidfielder", oop: "oop.trackingWideMidfielder" } satisfies SlotRolePair;
+const ST_TARGET = { ip: "ip.targetForward", oop: "oop.trackingCentreForward" } satisfies SlotRolePair;
 
 const PRESETS: readonly TacticPreset[] = [
   {

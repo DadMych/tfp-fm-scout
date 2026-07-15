@@ -1,10 +1,11 @@
 import { ATTRIBUTES, type AttributeId } from "../attributes.js";
 import { midOf, uncertainty } from "../attr-value.js";
-import { computeDerived, DERIVED_INPUTS, type DerivedMetrics, type DerivedId } from "../derived.js";
+import { computeDerived, type DerivedMetrics, type DerivedId } from "../derived.js";
+import { METRIC_IDS, isDerivedId, type MetricId } from "../metric-id.js";
 import { makeRanker, type Ranker } from "../percentile.js";
 import { playerGroups, type PositionGroup } from "../positions.js";
 import { isGoalkeeper, type Player } from "../player.js";
-import { ROLES } from "../roles/registry.js";
+import { ROLES, type RoleId } from "../roles/registry.js";
 import { scoreRole, type RoleScore } from "../roles/score.js";
 import {
   scoreAllArchetypes,
@@ -14,7 +15,7 @@ import {
   type GeneralArchetype,
   type Badge,
 } from "../archetypes/score.js";
-import { getArchetype } from "../archetypes/registry.js";
+import { getArchetype, type ArchetypeId } from "../archetypes/registry.js";
 import { generateSummary, type SummaryMetric } from "../archetypes/summary.js";
 
 /**
@@ -31,21 +32,17 @@ export interface PlayerScores {
   readonly pop: Population;
   readonly derived: DerivedMetrics;
   /** metric id -> position-group percentile for radar/dossier display. */
-  readonly percentiles: Readonly<Record<string, number | null>>;
+  readonly percentiles: Readonly<Partial<Record<MetricId, number | null>>>;
   /** metric id -> population-wide percentile for archetype gates (doc 06). */
-  readonly datasetPercentiles: Readonly<Record<string, number | null>>;
-  readonly roles: Readonly<Record<string, RoleScore>>;
+  readonly datasetPercentiles: Readonly<Partial<Record<MetricId, number | null>>>;
+  readonly roles: Readonly<Partial<Record<RoleId, RoleScore>>>;
   readonly archetypes: readonly ArchetypeScore[];
   readonly general: GeneralArchetype;
   readonly summary: string;
   readonly confidence: number;
-  readonly topArchetype: { id: string; score: number; badge: Badge } | null;
-  readonly bestRole: { id: string; score: number } | null;
+  readonly topArchetype: { id: ArchetypeId; score: number; badge: Badge } | null;
+  readonly bestRole: { id: RoleId; score: number } | null;
 }
-
-const ATTR_IDS = ATTRIBUTES.map((a) => a.id);
-const DERIVED_IDS = Object.keys(DERIVED_INPUTS) as DerivedId[];
-const METRIC_IDS: readonly string[] = [...ATTR_IDS, ...DERIVED_IDS];
 
 const POSITION_GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
 
@@ -60,16 +57,16 @@ const GK_EXPECTED = [
   "passing" as AttributeId,
 ];
 
-function isDerived(metric: string): metric is DerivedId {
-  return metric in DERIVED_INPUTS;
+function isDerived(metric: MetricId): metric is DerivedId {
+  return isDerivedId(metric);
 }
 
 function metricValue(
   attrs: Player["attrs"],
   derived: DerivedMetrics,
-  metric: string,
+  metric: MetricId,
 ): number | null {
-  return isDerived(metric) ? derived[metric] : midOf(attrs, metric as AttributeId);
+  return isDerived(metric) ? derived[metric] : midOf(attrs, metric);
 }
 
 function confidenceFor(attrs: Player["attrs"], expected: readonly AttributeId[]): number {
@@ -135,9 +132,9 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     const datasetRank = rankers[pop];
     const groupRank = groupRankers.get(primaryGroup(p)) ?? datasetRank;
 
-    const datasetPercentiles: Record<string, number | null> = {};
-    const percentiles: Record<string, number | null> = {};
-    const atOrAbove: Record<string, number> = {};
+    const datasetPercentiles: Partial<Record<MetricId, number | null>> = {};
+    const percentiles: Partial<Record<MetricId, number | null>> = {};
+    const atOrAbove: Partial<Record<MetricId, number>> = {};
     for (const metric of METRIC_IDS) {
       const v = metricValue(p.attrs, derived, metric);
       const dr = datasetRank.get(metric) as Ranker;
@@ -148,18 +145,18 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     }
 
     const ctx = {
-      pct: (m: string) => datasetPercentiles[m] ?? null,
-      raw: (m: string) => metricValue(p.attrs, derived, m),
+      pct: (m: MetricId) => datasetPercentiles[m] ?? null,
+      raw: (m: MetricId) => metricValue(p.attrs, derived, m),
     };
 
     // Roles: score all; best role prefers ones playable in the player's positions.
-    const roles: Record<string, RoleScore> = {};
+    const roles: Partial<Record<RoleId, RoleScore>> = {};
     for (const role of ROLES) roles[role.id] = scoreRole(p.attrs, role);
     const posSet = new Set(p.positions);
     let bestRole: PlayerScores["bestRole"] = null;
     let bestEligible = -1;
     let bestAny = -1;
-    let bestAnyId = "";
+    let bestAnyId: RoleId | "" = "";
     for (const role of ROLES) {
       const s = roles[role.id]!.score;
       if (s > bestAny) { bestAny = s; bestAnyId = role.id; }

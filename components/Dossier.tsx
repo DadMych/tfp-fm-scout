@@ -10,7 +10,7 @@ import {
 } from "@/src/domain/attributes.js";
 import type { Player } from "@/src/domain/player.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
-import { getRole } from "@/src/domain/roles/registry.js";
+import { getRole, isRoleId } from "@/src/domain/roles/registry.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { recommend } from "@/src/domain/recommendation.js";
 import { buildContext, type AnalysisContext } from "@/src/domain/assistant/context.js";
@@ -150,7 +150,11 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
 
   const posSet = new Set(p.positions);
   const roles = Object.entries(s.roles)
-    .map(([rid, r]) => ({ rid, r, eligible: getRole(rid).slots.some((slot) => posSet.has(slot)) }))
+    .flatMap(([rid, r]) =>
+      r && isRoleId(rid)
+        ? [{ rid, r, eligible: getRole(rid).slots.some((slot) => posSet.has(slot)) }]
+        : [],
+    )
     .sort((a, b) => b.r.score - a.r.score)
     .slice(0, 8);
 

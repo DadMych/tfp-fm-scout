@@ -17,8 +17,9 @@ import { type AttrValue } from "../domain/attr-value.js";
 import type { Player } from "../domain/player.js";
 import { getArchetype } from "../domain/archetypes/registry.js";
 import { badgeFor, type Badge } from "../domain/archetypes/score.js";
-import { getRole } from "../domain/roles/registry.js";
+import { getRole, isRoleId } from "../domain/roles/registry.js";
 import type { PlayerScores } from "../domain/scoring/dataset.js";
+import type { MetricId } from "../domain/metric-id.js";
 import type { ReportMeta } from "./broadsheet.js";
 import {
   esc,
@@ -48,7 +49,7 @@ export function dossierHref(p: Player): string {
 
 const BACK_HREF = "../index.html";
 
-const RADAR_OUTFIELD: readonly string[] = [
+const RADAR_OUTFIELD = [
   "finishingPkg",
   "creativity",
   "pressResist",
@@ -59,9 +60,9 @@ const RADAR_OUTFIELD: readonly string[] = [
   "workEngine",
   "defActivity",
   "defPosition",
-];
+] as const satisfies readonly MetricId[];
 
-const RADAR_GK: readonly string[] = [
+const RADAR_GK = [
   "reflexes",
   "handling",
   "aerialReach",
@@ -72,7 +73,7 @@ const RADAR_GK: readonly string[] = [
   "positioning",
   "composure",
   "agility",
-];
+] as const satisfies readonly MetricId[];
 
 const RADAR_SHORT: Record<string, string> = {
   finishingPkg: "Finishing",
@@ -238,7 +239,11 @@ function identityBand(s: PlayerScores): string {
 function roleTable(p: Player, s: PlayerScores): string {
   const posSet = new Set(p.positions);
   const ranked = Object.entries(s.roles)
-    .map(([id, r]) => ({ id, r, eligible: getRole(id).slots.some((slot) => posSet.has(slot)) }))
+    .flatMap(([id, r]) =>
+      r && isRoleId(id)
+        ? [{ id, r, eligible: getRole(id).slots.some((slot) => posSet.has(slot)) }]
+        : [],
+    )
     .sort((a, b) => b.r.score - a.r.score)
     .slice(0, 8);
   const rows = ranked

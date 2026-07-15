@@ -3,6 +3,7 @@
  */
 
 import { DERIVED_INPUTS, type DerivedId } from "../derived.js";
+import { percentileFor } from "../metric-id.js";
 import { getArchetype } from "../archetypes/registry.js";
 import type { ArchetypeDef } from "../archetypes/registry.js";
 import { playerGroups } from "../positions.js";
@@ -34,7 +35,7 @@ export function similarVector(scores: PlayerScores): readonly { metric: string; 
   const metrics = [...DERIVED_IDS, ...archMetrics.filter((m) => !DERIVED_IDS.includes(m as DerivedId))];
   return metrics.map((metric) => ({
     metric,
-    value: scores.percentiles[metric] ?? 0,
+    value: percentileFor(scores.percentiles, metric) ?? 0,
   }));
 }
 

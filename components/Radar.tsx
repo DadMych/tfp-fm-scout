@@ -1,3 +1,4 @@
+import type { MetricId } from "@/src/domain/metric-id.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { metricLabel } from "@/src/report/format.js";
 
@@ -12,7 +13,7 @@ const RADAR_OUTFIELD = [
   "workEngine",
   "defActivity",
   "defPosition",
-];
+] as const satisfies readonly MetricId[];
 
 const RADAR_GK = [
   "reflexes",
@@ -25,7 +26,7 @@ const RADAR_GK = [
   "positioning",
   "composure",
   "agility",
-];
+] as const satisfies readonly MetricId[];
 
 const SHORT: Record<string, string> = {
   finishingPkg: "Finishing",

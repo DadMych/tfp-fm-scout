@@ -1,10 +1,9 @@
-import { ATTRIBUTES } from "../attributes.js";
-import { DERIVED_INPUTS } from "../derived.js";
+import type { MetricId } from "../metric-id.js";
 
 /**
  * Archetype registry (docs/06-archetypes.md §3 + §9).
  *
- * A `metric` is either an AttributeId or a DerivedId (both are plain strings here).
+ * A `metric` is either an AttributeId or a DerivedId (see `MetricId`).
  * Gates are hard requirements: fail any and the score is capped at 40 (partial fit).
  * Weights use the ×3/×2/×1 tier system. `family` is the canonical general archetype (§9).
  */
@@ -27,28 +26,28 @@ export type GeneralFamily =
 export type Population = "outfield" | "gk";
 
 export interface Gate {
-  readonly metric: string;
+  readonly metric: MetricId;
   /** `pct` = percentile within the population; `raw` = attribute midpoint (physics floor). */
   readonly kind: "pct" | "raw";
   readonly min: number;
 }
 
-export interface ArchetypeDef {
+type ArchetypeTemplate = {
   readonly id: string;
   readonly name: string;
   readonly family: GeneralFamily;
   readonly pop: Population;
-  readonly blurb: string; // primary-behaviour clause used by the summary line (doc 06 §10)
+  readonly blurb: string;
   readonly gates: readonly Gate[];
-  readonly core: readonly string[]; // ×3
-  readonly major: readonly string[]; // ×2
-  readonly minor: readonly string[]; // ×1
-}
+  readonly core: readonly MetricId[];
+  readonly major: readonly MetricId[];
+  readonly minor: readonly MetricId[];
+};
 
-const pct = (metric: string, min: number): Gate => ({ metric, kind: "pct", min });
-const raw = (metric: string, min: number): Gate => ({ metric, kind: "raw", min });
+const pct = (metric: MetricId, min: number): Gate => ({ metric, kind: "pct", min });
+const raw = (metric: MetricId, min: number): Gate => ({ metric, kind: "raw", min });
 
-export const ARCHETYPES: readonly ArchetypeDef[] = [
+export const ARCHETYPES = [
   // ---------- Progressor ----------
   { id: "deepProgressor", name: "Deep Progressor", family: "Progressor", pop: "outfield", blurb: "breaks lines from the base of midfield", gates: [pct("passing", 70), pct("composure", 55)], core: ["passing", "vision", "pressResist"], major: ["firstTouch", "technique", "decisions"], minor: ["dribbling", "anticipation"] },
   { id: "tempoDictator", name: "Tempo Dictator", family: "Progressor", pop: "outfield", blurb: "sets the rhythm and is always an option", gates: [pct("decisions", 65), pct("composure", 65)], core: ["decisions", "composure", "passing", "teamwork"], major: ["vision", "firstTouch", "concentration"], minor: ["positioning", "technique"] },
@@ -104,22 +103,17 @@ export const ARCHETYPES: readonly ArchetypeDef[] = [
   { id: "modernDistributor", name: "Modern Distributor", family: "Distributor", pop: "gk", blurb: "plays as an eleventh outfielder", gates: [pct("kicking", 65), pct("composure", 60)], core: ["passing", "kicking", "firstTouch", "composure"], major: ["vision", "decisions", "throwing"], minor: ["reflexes", "handling"] },
   { id: "boxCommander", name: "Box Commander", family: "Commander", pop: "gk", blurb: "owns his penalty area", gates: [pct("commandOfArea", 70), pct("aerialReach", 65)], core: ["commandOfArea", "aerialReach", "communication"], major: ["punching", "handling", "bravery", "jumpingReach"], minor: ["leadership", "concentration"] },
   { id: "sweeperKeeper", name: "Sweeper-Keeper", family: "Sweeper", pop: "gk", blurb: "defends the space behind the line", gates: [pct("rushingOut", 65), pct("acceleration", 55)], core: ["rushingOut", "oneOnOnes", "acceleration", "anticipation"], major: ["positioning", "composure", "reflexes"], minor: ["pace", "agility", "kicking"] },
-];
+] as const satisfies readonly ArchetypeTemplate[];
 
-const BY_ID = new Map<string, ArchetypeDef>(ARCHETYPES.map((a) => [a.id, a]));
+export type ArchetypeId = (typeof ARCHETYPES)[number]["id"];
+export type ArchetypeDef = (typeof ARCHETYPES)[number];
 
-export function getArchetype(id: string): ArchetypeDef {
+const BY_ID = new Map<ArchetypeId, (typeof ARCHETYPES)[number]>(
+  ARCHETYPES.map((a) => [a.id, a]),
+);
+
+export function getArchetype(id: ArchetypeId): (typeof ARCHETYPES)[number] {
   const a = BY_ID.get(id);
   if (!a) throw new Error(`Unknown archetype id: ${id}`);
   return a;
-}
-
-/** Valid metric ids = attribute ids + derived ids. Used to validate the registry. */
-const VALID_METRICS = new Set<string>([
-  ...ATTRIBUTES.map((a) => a.id),
-  ...Object.keys(DERIVED_INPUTS),
-]);
-
-export function isValidMetric(metric: string): boolean {
-  return VALID_METRICS.has(metric);
 }

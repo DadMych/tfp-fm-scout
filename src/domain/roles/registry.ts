@@ -14,7 +14,7 @@ import type { PositionSlot } from "../positions.js";
 export type RolePhase = "IP" | "OOP";
 
 export interface RoleDef {
-  readonly id: string; // `${phase}.${key}`, e.g. "ip.midfieldPlaymaker"
+  readonly id: RoleId;
   readonly key: string;
   readonly name: string;
   readonly phase: RolePhase;
@@ -139,11 +139,14 @@ const RAW: readonly RawRole[] = [
   { key: "trackingCentreForward", name: "Tracking Centre Forward", phase: "OOP", slots: ST, core: ["workRate", "teamwork", "stamina", "anticipation"], major: ["positioning", "tackling", "decisions", "aggression"], minor: ["marking", "determination"] },
   { key: "targetForward", name: "Target Forward", phase: "both", slots: ST, core: ["heading", "strength", "jumpingReach", "bravery"], major: ["firstTouch", "finishing", "offTheBall", "balance"], minor: ["composure", "teamwork", "aggression"] },
   { key: "poacher", name: "Poacher", phase: "both", slots: ST, core: ["finishing", "offTheBall", "anticipation", "composure"], major: ["acceleration", "firstTouch", "concentration"], minor: ["pace", "agility", "heading"] },
-];
+] as const satisfies readonly RawRole[];
 
-function expand(raw: RawRole): RoleDef[] {
+type RoleKey = (typeof RAW)[number]["key"];
+export type RoleId = `ip.${RoleKey}` | `oop.${RoleKey}`;
+
+function expand(raw: (typeof RAW)[number]): RoleDef[] {
   const build = (phase: RolePhase): RoleDef => ({
-    id: `${phase.toLowerCase()}.${raw.key}`,
+    id: `${phase.toLowerCase()}.${raw.key}` as RoleId,
     key: raw.key,
     name: raw.name,
     phase,
@@ -158,12 +161,16 @@ function expand(raw: RawRole): RoleDef[] {
 
 export const ROLES: readonly RoleDef[] = RAW.flatMap(expand);
 
-const BY_ID = new Map<string, RoleDef>(ROLES.map((r) => [r.id, r]));
+const BY_ID = new Map<RoleId, RoleDef>(ROLES.map((r) => [r.id, r]));
 
-export function getRole(id: string): RoleDef {
+export function getRole(id: RoleId): RoleDef {
   const r = BY_ID.get(id);
   if (!r) throw new Error(`Unknown role id: ${id}`);
   return r;
+}
+
+export function isRoleId(id: string): id is RoleId {
+  return BY_ID.has(id as RoleId);
 }
 
 export function rolesForPhase(phase: RolePhase): RoleDef[] {
