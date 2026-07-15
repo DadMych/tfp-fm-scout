@@ -1,34 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Masthead } from "@/components/kit/Masthead";
-import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
+import { BroadsheetIllustration } from "@/components/kit/BroadsheetIllustration";
 import { Uploader } from "@/components/Uploader";
 import { useDatasets } from "@/lib/store";
-import { pickLead } from "@/src/domain/front-page.js";
-
-const UPLOAD_FEATURE_ARCH = "lineBreaker" as const;
 
 export default function UploadPage() {
   const router = useRouter();
   const { shortlist, loadText } = useDatasets();
   const [loadingSample, setLoadingSample] = useState(false);
-
-  const leadArt = useMemo(() => {
-    if (!shortlist) return null;
-    const rows = shortlist.dataset.players.map((p) => ({
-      p,
-      s: shortlist.scoreById.get(p.id)!,
-    }));
-    const lead = pickLead(rows);
-    if (!lead) return null;
-    return {
-      id: lead.s.topArchetype?.id ?? null,
-      family: lead.s.general.family,
-      name: lead.p.name,
-    };
-  }, [shortlist]);
 
   async function loadSample() {
     setLoadingSample(true);
@@ -55,13 +37,7 @@ export default function UploadPage() {
             database, work out his best roles and archetypes, and tell you plainly who to chase.
           </p>
         </div>
-        {leadArt?.id ? (
-          <ArchetypeArt id={leadArt.id} size="hero" priority caption />
-        ) : leadArt ? (
-          <ArchetypeArtFallback family={leadArt.family} size="hero" />
-        ) : (
-          <ArchetypeArt id={UPLOAD_FEATURE_ARCH} size="hero" priority caption />
-        )}
+        <BroadsheetIllustration id="empty-desk" width={440} className="upload-hero-art" priority />
       </section>
 
       <div className="uploads">

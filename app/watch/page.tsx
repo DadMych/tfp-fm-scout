@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { Masthead } from "@/components/kit/Masthead";
 import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
-import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
 import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -152,9 +152,8 @@ export default function WatchPage() {
                     <VerdictBadge rec={e.rec} />
                   </td>
                   <td className="c-arch">
-                    <ArchetypeCell id={e.archId} family={e.family}>
-                      <span className="aname">{e.arch}</span>
-                    </ArchetypeCell>
+                    {e.archId ? <ArchetypeIcon id={e.archId} size={16} /> : null}
+                    <span className="aname">{e.arch}</span>
                   </td>
                   <td className="c-num">
                     <span className="score num">{e.score}</span>

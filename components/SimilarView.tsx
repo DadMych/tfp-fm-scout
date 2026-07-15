@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { WatchToggle } from "@/components/kit/WatchToggle";
-import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
-import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
 import { parseAnchorRef, similarHref, type PlayerRef } from "@/lib/scout-anchor-url";
 import { serializeCompareRefs } from "@/lib/compare-url";
@@ -81,25 +80,6 @@ export function SimilarView() {
         right={poolKind ? `Searching the ${poolKind}` : ""}
       />
 
-      <section className="watch-hero">
-        <div>
-          <p className="eyebrow">
-            {anchor.scores.topArchetype
-              ? getArchetype(anchor.scores.topArchetype.id).name
-              : anchor.scores.general.family}
-          </p>
-          <h1>
-            <Link href={`/scout/${anchorRef.kind}/${anchorRef.id}`}>{anchor.player.name}</Link>
-          </h1>
-          <p className="standfirst">{anchor.scores.summary}</p>
-        </div>
-        {anchor.scores.topArchetype ? (
-          <ArchetypeArt id={anchor.scores.topArchetype.id} size="hero" caption />
-        ) : (
-          <ArchetypeArtFallback family={anchor.scores.general.family} size="hero" />
-        )}
-      </section>
-
       {hits.length === 0 ? (
         <div className="empty">No close matches in the loaded export.</div>
       ) : (
@@ -132,9 +112,10 @@ export function SimilarView() {
                     </Link>
                   </td>
                   <td className="c-arch">
-                    <ArchetypeCell id={scores?.topArchetype?.id ?? null} family={scores?.general.family ?? "Utility"}>
-                      <span className="aname">{arch?.name ?? "Utility"}</span>
-                    </ArchetypeCell>
+                    {scores?.topArchetype ? (
+                      <ArchetypeIcon id={scores.topArchetype.id} size={16} />
+                    ) : null}
+                    <span className="aname">{arch?.name ?? "Utility"}</span>
                   </td>
                   <td className="c-num">
                     <span className="score num">{hit.similarity}%</span>

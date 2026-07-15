@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { WatchToggle } from "@/components/kit/WatchToggle";
-import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
-import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
 import { parseAnchorRef, upgradesHref } from "@/lib/scout-anchor-url";
 import { useDatasets } from "@/lib/store";
@@ -158,25 +157,6 @@ export function UpgradesView() {
         right={`${formationName} · budget ${formatMoney(budgetCap)}`}
       />
 
-      <section className="watch-hero">
-        <div>
-          <p className="eyebrow">
-            {incumbent.scores.topArchetype
-              ? getArchetype(incumbent.scores.topArchetype.id).name
-              : incumbent.scores.general.family}
-          </p>
-          <h1>
-            <Link href={`/scout/squad/${anchorRef.id}`}>{incumbent.player.name}</Link>
-          </h1>
-          <p className="standfirst">{incumbent.scores.summary}</p>
-        </div>
-        {incumbent.scores.topArchetype ? (
-          <ArchetypeArt id={incumbent.scores.topArchetype.id} size="hero" caption />
-        ) : (
-          <ArchetypeArtFallback family={incumbent.scores.general.family} size="hero" />
-        )}
-      </section>
-
       {hits.length === 0 ? (
         <div className="empty">
           No shortlist player beats him by +5 pair fit within budget at {slot.label}.
@@ -200,31 +180,32 @@ export function UpgradesView() {
               const scores = shortlist.scoreById.get(hit.playerId);
               const arch = scores?.topArchetype ? getArchetype(scores.topArchetype.id) : null;
               return (
-              <tr className="player" key={hit.playerId}>
-                <td className="c-name">
-                  {player ? <WatchToggle player={player} /> : null}
-                  <Link className="pname" href={`/scout/shortlist/${hit.playerId}`}>
-                    {hit.name}
-                  </Link>
-                </td>
-                <td className="c-arch">
-                  <ArchetypeCell id={scores?.topArchetype?.id ?? null} family={scores?.general.family ?? "Utility"}>
+                <tr className="player" key={hit.playerId}>
+                  <td className="c-name">
+                    {player ? <WatchToggle player={player} /> : null}
+                    <Link className="pname" href={`/scout/shortlist/${hit.playerId}`}>
+                      {hit.name}
+                    </Link>
+                  </td>
+                  <td className="c-arch">
+                    {scores?.topArchetype ? (
+                      <ArchetypeIcon id={scores.topArchetype.id} size={16} />
+                    ) : null}
                     <span className="aname">{arch?.name ?? "Utility"}</span>
-                  </ArchetypeCell>
-                </td>
-                <td className="c-num">
-                  <span className="score num">{hit.pairScore}</span>
-                </td>
-                <td className="c-num num">+{hit.delta}</td>
-                <td className="c-num num">
-                  {hit.ageDelta != null ? (hit.ageDelta > 0 ? `+${hit.ageDelta}` : hit.ageDelta) : "—"}
-                </td>
-                <td className="c-num num">{hit.value != null ? formatMoney(hit.value) : "—"}</td>
-                <td className="c-detail">
-                  {hit.advantages.map((e) => `${e.name} +${e.delta}`).join(" · ")}
-                  {hit.downgrade ? ` · ${hit.downgrade.name} ${hit.downgrade.delta}` : ""}
-                </td>
-              </tr>
+                  </td>
+                  <td className="c-num">
+                    <span className="score num">{hit.pairScore}</span>
+                  </td>
+                  <td className="c-num num">+{hit.delta}</td>
+                  <td className="c-num num">
+                    {hit.ageDelta != null ? (hit.ageDelta > 0 ? `+${hit.ageDelta}` : hit.ageDelta) : "—"}
+                  </td>
+                  <td className="c-num num">{hit.value != null ? formatMoney(hit.value) : "—"}</td>
+                  <td className="c-detail">
+                    {hit.advantages.map((e) => `${e.name} +${e.delta}`).join(" · ")}
+                    {hit.downgrade ? ` · ${hit.downgrade.name} ${hit.downgrade.delta}` : ""}
+                  </td>
+                </tr>
               );
             })}
           </tbody>

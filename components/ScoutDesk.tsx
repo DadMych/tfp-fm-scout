@@ -13,7 +13,7 @@ import { standouts } from "@/src/domain/front-page.js";
 import { recommend, type Recommendation, type Verdict } from "@/src/domain/recommendation.js";
 import { formatMoney, scoutGradeRank } from "@/src/report/format.js";
 import { VerdictBadge } from "@/components/VerdictBadge";
-import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { WatchToggle } from "@/components/kit/WatchToggle";
 import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { InkBar } from "@/components/kit/InkBar";
@@ -34,7 +34,6 @@ interface Row {
   badge: string | null;
   archId: ArchetypeId | null;
   archName: string;
-  family: string;
   grade: string | null;
   rec: Recommendation;
   standout: { label: string; pct: number } | null;
@@ -102,7 +101,6 @@ export function ScoutDesk() {
         badge: s.topArchetype?.badge ?? null,
         archId: s.topArchetype?.id ?? null,
         archName: arch?.name ?? "Utility",
-        family: s.general.family,
         grade: p.scoutGrade ?? null,
         rec: recommend(p, s, ctx),
         standout: standouts(s, 1)[0] ?? null,
@@ -413,12 +411,11 @@ export function ScoutDesk() {
                 <div className="why">{r.rec.headline}</div>
               </td>
               <td className="c-arch">
-                <ArchetypeCell id={r.archId} family={r.family}>
-                  <span className="aname">{r.archName}</span>
-                  {r.badge ? (
-                    <span className={`stamp ${r.badge === "Elite" ? "gold" : ""}`}>{r.badge}</span>
-                  ) : null}
-                </ArchetypeCell>
+                {r.archId ? <ArchetypeIcon id={r.archId} size={16} /> : null}
+                <span className="aname">{r.archName}</span>
+                {r.badge ? (
+                  <span className={`stamp ${r.badge === "Elite" ? "gold" : ""}`}>{r.badge}</span>
+                ) : null}
               </td>
               <td className="c-standout">
                 {r.standout ? (

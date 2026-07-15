@@ -124,6 +124,7 @@ export function FrontPage() {
         right={`${watchList.length} on watch · engine ${ENGINE_VERSION}`}
       />
 
+      <div className="fp-body">
       {lead ? (
         <section className="fp-hero">
           <div>
@@ -253,6 +254,7 @@ export function FrontPage() {
         <Link className="btn ghost" href="/upload">
           Upload another file
         </Link>
+      </div>
       </div>
     </>
   );
