@@ -16,7 +16,7 @@ export default function UploadPage() {
     try {
       const res = await fetch("/sample-shortlist.csv");
       const text = await res.text();
-      loadText("shortlist", text, "sample-shortlist.csv", "Sample shortlist");
+      await loadText("shortlist", text, "sample-shortlist.csv", "Sample shortlist");
       router.push("/");
     } finally {
       setLoadingSample(false);

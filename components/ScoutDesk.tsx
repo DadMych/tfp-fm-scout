@@ -40,7 +40,8 @@ export function ScoutDesk() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initial = useMemo(() => parseScoutFilters(searchParams), [searchParams]);
-  const { shortlist, squad, squadContext, ready, isWatched, toggleWatch, lastAssistantRun } = useDatasets();
+  const { shortlist, squad, squadContext, ready, isWatched, toggleWatch, lastAssistantRun, importStatus } =
+    useDatasets();
   const [kind, setKind] = useState<DatasetKind>(initial.kind);
   const bundle = kind === "squad" ? squad : shortlist;
 
@@ -192,6 +193,11 @@ export function ScoutDesk() {
   }
 
   if (!ready) return <div className="empty">Loading your data…</div>;
+
+  const deskStatus = importStatus[kind];
+  if (!bundle && deskStatus) {
+    return <div className="empty import-progress">{deskStatus}</div>;
+  }
 
   if (!bundle) {
     return (

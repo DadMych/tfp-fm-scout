@@ -23,9 +23,10 @@ function rowsFromBundle(bundle: NonNullable<ReturnType<typeof useDatasets>["shor
 }
 
 export function FrontPage() {
-  const { shortlist, squad, squadContext, ready, watchList, lastAssistantRun } = useDatasets();
+  const { shortlist, squad, squadContext, ready, watchList, importStatus, lastAssistantRun } = useDatasets();
 
   const bundle = shortlist ?? squad;
+  const pending = importStatus.shortlist ?? importStatus.squad;
   const rows = useMemo(() => (bundle ? rowsFromBundle(bundle) : []), [bundle]);
 
   const lead = useMemo(() => pickLead(rows), [rows]);
@@ -66,6 +67,15 @@ export function FrontPage() {
   }, [squad, shortlist, lastAssistantRun]);
 
   if (!ready) return <div className="empty">Setting the page…</div>;
+
+  if (!bundle && pending) {
+    return (
+      <>
+        <Dateline left="The Scouting Post" center="Import in progress" right="" />
+        <div className="empty import-progress">{pending}</div>
+      </>
+    );
+  }
 
   if (!bundle) {
     return (

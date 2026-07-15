@@ -5,8 +5,8 @@
  *
  * The user's squad and shortlist live entirely in the browser: parsed from an FM26 export,
  * kept in React state, and mirrored to localStorage so a reload doesn't lose them. Only the
- * raw parsed players are persisted; scores/recommendations are recomputed on load because they
- * are pure and cheap. This whole module is the seam a real DB + auth will replace later.
+ * raw parsed players are persisted; scores are recomputed in a Web Worker on load. This whole
+ * module is the seam a real DB + auth will replace later.
  */
 
 import {
@@ -15,14 +15,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { Player } from "@/src/domain/player.js";
-import { buildScores, type PlayerScores } from "@/src/domain/scoring/dataset.js";
-import { parseExport, ImportError } from "@/src/import/parse.js";
+import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
+import { ImportError } from "@/src/import/parse.js";
 import { buildSquadContext, type SquadContext } from "@/src/domain/recommendation.js";
 import { playerIdentityKey } from "@/src/domain/player-identity.js";
+import { importDataset, scorePlayers } from "@/lib/import-client";
 import {
   createWatchEntry,
   isPlayerWatched,
@@ -51,9 +53,10 @@ interface StoreState {
   readonly squad: DatasetBundle | null;
   readonly squadContext: SquadContext | null;
   readonly ready: boolean;
+  readonly importStatus: Partial<Record<DatasetKind, string>>;
   readonly lastAssistantRun: LastAssistantRun | null;
   readonly watchList: readonly WatchEntry[];
-  loadText(kind: DatasetKind, text: string, source: string, label?: string): number;
+  loadText(kind: DatasetKind, text: string, source: string, label?: string): Promise<number>;
   clear(kind: DatasetKind): void;
   setLastAssistantRun(run: LastAssistantRun): void;
   toggleWatch(p: Player): void;
@@ -78,23 +81,27 @@ const Ctx = createContext<StoreState | null>(null);
 
 type Persisted = Partial<Record<DatasetKind, Dataset>>;
 
-function bundle(dataset: Dataset | null): DatasetBundle | null {
-  if (!dataset) return null;
-  const scores = buildScores(dataset.players);
+function makeBundle(
+  dataset: Dataset | null | undefined,
+  scores: PlayerScores[] | undefined,
+): DatasetBundle | null {
+  if (!dataset || !scores) return null;
   return { dataset, scores, scoreById: new Map(scores.map((s) => [s.playerId, s])) };
 }
 
 export function DatasetProvider({ children }: { children: ReactNode }) {
   const [raw, setRaw] = useState<Persisted>({});
+  const [scoreByKind, setScoreByKind] = useState<Partial<Record<DatasetKind, PlayerScores[]>>>({});
+  const [importStatus, setImportStatus] = useState<Partial<Record<DatasetKind, string>>>({});
   const [lastAssistantRun, setLastAssistantRunState] = useState<LastAssistantRun | null>(null);
   const [watchList, setWatchList] = useState<WatchEntry[]>([]);
   const [ready, setReady] = useState(false);
+  const scoringRef = useRef(new Set<DatasetKind>());
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(KEY);
       if (stored) {
-        // Hydrate once on mount; client-only store has no SSR snapshot to match.
         // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional localStorage hydration
         setRaw(JSON.parse(stored) as Persisted);
       }
@@ -133,6 +140,31 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     }
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    for (const kind of ["shortlist", "squad"] as const) {
+      const ds = raw[kind];
+      if (!ds || scoreByKind[kind] || scoringRef.current.has(kind)) continue;
+      scoringRef.current.add(kind);
+      setImportStatus((s) => ({
+        ...s,
+        [kind]: `Scoring ${ds.players.length.toLocaleString()} players against the database…`,
+      }));
+      void scorePlayers(ds.players, (msg) => setImportStatus((s) => ({ ...s, [kind]: msg })))
+        .then((scores) => {
+          setScoreByKind((prev) => ({ ...prev, [kind]: scores }));
+        })
+        .finally(() => {
+          scoringRef.current.delete(kind);
+          setImportStatus((s) => {
+            const next = { ...s };
+            delete next[kind];
+            return next;
+          });
+        });
+    }
+  }, [ready, raw, scoreByKind]);
 
   const persist = useCallback((next: Persisted | ((prev: Persisted) => Persisted)) => {
     setRaw((prev) => {
@@ -214,29 +246,48 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   );
 
   const loadText = useCallback(
-    (kind: DatasetKind, text: string, source: string, label?: string): number => {
-      const { players, report } = parseExport(text, kind);
-      if (players.length === 0 && report.rowsSkipped.length > 0) {
-        throw new ImportError(
-          "UNRECOGNIZED_FORMAT",
-          "No players found — is this an FM26 player-list export?",
+    async (kind: DatasetKind, text: string, source: string, label?: string): Promise<number> => {
+      scoringRef.current.add(kind);
+      setImportStatus((s) => ({ ...s, [kind]: "Reading your export…" }));
+      try {
+        const data = await importDataset(text, kind, (msg) =>
+          setImportStatus((s) => ({ ...s, [kind]: msg })),
         );
+        if (data.players.length === 0 && data.report.rowsSkipped.length > 0) {
+          throw new ImportError(
+            "UNRECOGNIZED_FORMAT",
+            "No players found — is this an FM26 player-list export?",
+          );
+        }
+        const dataset: Dataset = {
+          label: label ?? source,
+          source,
+          players: data.players,
+          maskedShare: data.report.maskedAttributeShare,
+          importedAt: new Date().toISOString(),
+        };
+        setScoreByKind((prev) => ({ ...prev, [kind]: data.scores }));
+        persist((prev) => ({ ...prev, [kind]: dataset }));
+        return data.players.length;
+      } finally {
+        scoringRef.current.delete(kind);
+        setImportStatus((s) => {
+          const next = { ...s };
+          delete next[kind];
+          return next;
+        });
       }
-      const dataset: Dataset = {
-        label: label ?? source,
-        source,
-        players,
-        maskedShare: report.maskedAttributeShare,
-        importedAt: new Date().toISOString(),
-      };
-      persist((prev) => ({ ...prev, [kind]: dataset }));
-      return players.length;
     },
     [persist],
   );
 
   const clear = useCallback(
     (kind: DatasetKind) => {
+      setScoreByKind((prev) => {
+        const next = { ...prev };
+        delete next[kind];
+        return next;
+      });
       persist((prev) => {
         const next = { ...prev };
         delete next[kind];
@@ -246,8 +297,6 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
-  // Demo deep-link: `?demo=1` seeds the sample shortlist when nothing is loaded, so the app
-  // can be shared/previewed without a manual upload.
   useEffect(() => {
     if (!ready || raw.shortlist) return;
     if (!new URLSearchParams(window.location.search).has("demo")) return;
@@ -257,16 +306,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/sample-shortlist.csv");
         const text = await res.text();
         if (cancelled) return;
-        const { players, report } = parseExport(text, "shortlist");
-        persist({
-          shortlist: {
-            label: "Sample shortlist",
-            source: "sample-shortlist.csv",
-            players,
-            maskedShare: report.maskedAttributeShare,
-            importedAt: new Date().toISOString(),
-          },
-        });
+        await loadText("shortlist", text, "sample-shortlist.csv", "Sample shortlist");
       } catch {
         // Sample unavailable — leave the empty state in place.
       }
@@ -274,10 +314,16 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [ready, raw.shortlist, persist]);
+  }, [ready, raw.shortlist, loadText]);
 
-  const shortlist = useMemo(() => bundle(raw.shortlist ?? null), [raw.shortlist]);
-  const squad = useMemo(() => bundle(raw.squad ?? null), [raw.squad]);
+  const shortlist = useMemo(
+    () => makeBundle(raw.shortlist, scoreByKind.shortlist),
+    [raw.shortlist, scoreByKind.shortlist],
+  );
+  const squad = useMemo(
+    () => makeBundle(raw.squad, scoreByKind.squad),
+    [raw.squad, scoreByKind.squad],
+  );
   const squadContext = useMemo(
     () => (squad ? buildSquadContext(squad.dataset.players, squad.scores) : null),
     [squad],
@@ -289,6 +335,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       squad,
       squadContext,
       ready,
+      importStatus,
       lastAssistantRun,
       watchList,
       loadText,
@@ -305,6 +352,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       squad,
       squadContext,
       ready,
+      importStatus,
       lastAssistantRun,
       watchList,
       loadText,

@@ -15,8 +15,9 @@ export function Uploader({
   title: string;
   hint: string;
 }) {
-  const { loadText, clear, shortlist, squad } = useDatasets();
+  const { loadText, clear, shortlist, squad, importStatus } = useDatasets();
   const bundle = kind === "squad" ? squad : shortlist;
+  const status = importStatus[kind];
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function Uploader({
     try {
       const buf = await file.arrayBuffer();
       const text = decodeExportText(new Uint8Array(buf));
-      const n = loadText(kind, text, file.name);
+      const n = await loadText(kind, text, file.name);
       if (n === 0) setError("No players found — is this an FM26 player-list export?");
     } catch (e) {
       if (e instanceof ImportError) setError(e.message);
@@ -68,6 +69,7 @@ export function Uploader({
         }}
       />
       <h3>{title}</h3>
+      {status && !filled ? <div className="import-progress">{status}</div> : null}
       {filled ? (
         <>
           <div className="meta">
@@ -83,8 +85,8 @@ export function Uploader({
         <>
           <div className="hint">{hint}</div>
           <div>
-            <button className="file-btn" onClick={() => inputRef.current?.click()}>
-              {busy ? "Reading…" : "Choose a file"}
+            <button className="file-btn" onClick={() => inputRef.current?.click()} disabled={busy || !!status}>
+              {busy || status ? "Working…" : "Choose a file"}
             </button>{" "}
             <span className="hint">or drop it here</span>
           </div>

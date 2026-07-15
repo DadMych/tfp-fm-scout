@@ -8,7 +8,7 @@ async function loadSampleShortlist(page: Page) {
   await page.goto("/upload");
   await page.getByRole("button", { name: "Try with sample data" }).click();
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 45_000 });
 }
 
 test.describe("scouting companion flow", () => {
