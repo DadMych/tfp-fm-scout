@@ -175,9 +175,9 @@ export function FrontPage() {
       ) : null}
 
       {bargain ? (
-        <div className="valuepick">
-          <span className="vp-label">Value pick</span>
-          <span className="vp-body">
+        <section className="fp-valuepick">
+          <SectionRule>Value pick</SectionRule>
+          <p className="vp-body">
             <WatchToggle player={bargain.p} />
             <Link href={`/scout/${kind}/${bargain.p.id}`}>{bargain.p.name}</Link>
             {" — "}
@@ -191,8 +191,8 @@ export function FrontPage() {
                 , age <span className="num">{bargain.p.age}</span>
               </>
             ) : null}
-          </span>
-        </div>
+          </p>
+        </section>
       ) : null}
 
       {teamReport ? (

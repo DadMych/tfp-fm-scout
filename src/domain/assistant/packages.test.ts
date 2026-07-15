@@ -160,6 +160,32 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     }
   });
 
+  it("never sells assets a plan doesn't need to sell (doc 20 three-pass exits)", () => {
+    const pkgs = buildPackages(ctx);
+    for (const p of pkgs) {
+      if (p.id === "churn") continue; // churn's whole point is selling to fund
+      const stratCap = p.netSpend + p.remaining;
+      if (p.totalCost <= stratCap && p.sales.length > 0) {
+        // Sales without funding pressure are only allowed for registration size,
+        // and then only after loans: total exits must not overshoot the squeeze.
+        const prospects = p.moves.filter((m) => m.kind === "prospect").length;
+        const residents = p.moves.length - prospects;
+        const needFree = Math.max(0, squad.length + residents - ctx.squadCap);
+        expect(p.sales.length + p.loans.length - prospects).toBeLessThanOrEqual(needFree);
+      }
+    }
+  });
+
+  it("moneyball signs players with a future, not post-peak stopgaps", () => {
+    const pkgs = buildPackages(ctx);
+    const mb = pkgs.find((p) => p.id === "moneyball");
+    if (!mb) return;
+    for (const m of mb.moves) {
+      expect(m.age).not.toBeNull();
+      expect(m.age!).toBeLessThanOrEqual(T.AGE_PEAK_END);
+    }
+  });
+
   it("never admits a downgrade when the slot already has a starter (doc 17 §10.3)", () => {
     const pkgs = buildPackages(ctx);
     for (const p of pkgs) {

@@ -27,13 +27,19 @@ Every package carries an **exits** block drawn from `buildSales` verdicts:
 | `b-team` | Junior / B-team move — frees a place, no fee |
 | `release` | Sale of last resort — frees a place; only older low-value fringe |
 
-Priority when picking exits: **sell-now → sell-high → loan-out → b-team → release**, then
-**registration culls** synthesised from fringe `keep` players (loan if ≤21, B-team if ≤23,
-release only when value ≥ `MIN_FUNDING_SALE` or unknown) when board exits alone cannot land
-under the cap.
+Priority when picking exits — three passes:
 
-Penny sales (`ask < MIN_FUNDING_SALE`) do not fund a window. Cheap releases are last resort
-for size pressure only.
+1. **Cash**: sales (sell-now → sell-high → release) only up to what the plan actually
+   needs beyond the cap; penny fees (< `MIN_FUNDING_SALE`) never fund a window.
+2. **Places**: loans and B-team moves free registration slots without selling assets.
+3. **Last resort**: further sales for size only when loans cannot free enough places.
+
+Registration culls are synthesised from fringe `keep` players (loan if ≤21, B-team if
+≤23, release only when value ≥ `MIN_FUNDING_SALE` or unknown) and rank after genuine
+board exits within each pass.
+
+**No plan sells a player it doesn't need to sell.** A plan whose cost fits the cap
+attaches zero sales unless loans can't cover the registration squeeze.
 
 If the engine cannot free enough places to land ≤ `squadCap`, the package is discarded.
 

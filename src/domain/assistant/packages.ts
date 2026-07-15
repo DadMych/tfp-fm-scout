@@ -231,7 +231,9 @@ const STRATEGIES: readonly Strategy[] = [
     max: 5,
     capFraction: 1,
     spender: false,
-    filter: (c) => c.cost != null && c.cost > 0 && c.delta > 0,
+    // Value has to survive: no post-peak signings, whatever the price tag.
+    filter: (c) =>
+      c.cost != null && c.cost > 0 && c.delta > 0 && c.age != null && c.age <= T.AGE_PEAK_END,
     cmp: (a, b) => b.delta / (b.cost || 1) - a.delta / (a.cost || 1),
   },
   {
@@ -717,46 +719,14 @@ function exitsPass(
   let freed = 0;
   const taken = new Set<string>();
 
-  for (const s of sorted) {
-    if (freed >= needFree && income >= needIncome) break;
-    if (taken.has(s.playerId)) continue;
-
-    if (PLACE_ONLY_VERDICTS.has(s.verdict)) {
-      if (freed >= needFree) continue;
-      const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
-      const check = solveXI(withoutHim, ctx.formation).avgFit;
-      if (check < afterFit - 1) continue;
-      const row = ctx.byId.get(s.playerId);
-      const dest: PackageExitDest = s.verdict === "b-team" ? "b-team" : "loan";
-      loans.push({
-        playerId: s.playerId,
-        playerName: row?.player.name ?? s.playerId,
-        reason:
-          s.reasons[0] ??
-          (dest === "b-team" ? "Moves to the junior side" : "Leaves on loan"),
-        destination: dest,
-      });
-      taken.add(s.playerId);
-      freed += 1;
-      continue;
-    }
-
-    if (!FUNDABLE_VERDICTS.has(s.verdict)) continue;
-    const helpsSize = freed < needFree;
-    const helpsCash = income < needIncome;
-    if (!helpsSize && !helpsCash) continue;
-
+  const trySale = (s: SaleRecommendation, minFee: number): boolean => {
+    if (taken.has(s.playerId)) return false;
     const fee = s.priceBand?.ask ?? 0;
-    // Skip penny sales when funding cash — prefer real sell-high / sell-now fees.
-    if (helpsCash && !helpsSize && fee < T.MIN_FUNDING_SALE) continue;
-    // Cheap releases only as a last resort for size pressure.
-    if (s.verdict === "release" && helpsCash && !helpsSize && fee < T.MIN_FUNDING_SALE * 2) continue;
-
+    if (fee < minFee) return false;
     const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
     const check = solveXI(withoutHim, ctx.formation).avgFit;
-    if (check < afterFit) continue;
-    if (!saleSlotCovered(ctx, allRows, picks, s.playerId)) continue;
-
+    if (check < afterFit) return false;
+    if (!saleSlotCovered(ctx, allRows, picks, s.playerId)) return false;
     const row = ctx.byId.get(s.playerId);
     sales.push({
       playerId: s.playerId,
@@ -768,6 +738,43 @@ function exitsPass(
     taken.add(s.playerId);
     income += fee;
     freed += 1;
+    return true;
+  };
+
+  const fundable = sorted.filter((s) => FUNDABLE_VERDICTS.has(s.verdict));
+  const placeOnly = sorted.filter((s) => PLACE_ONLY_VERDICTS.has(s.verdict));
+
+  // Pass 1 — cash: sell only what the plan actually needs to fund, real fees only.
+  for (const s of fundable) {
+    if (income >= needIncome) break;
+    trySale(s, T.MIN_FUNDING_SALE);
+  }
+
+  // Pass 2 — places: loans and B-team moves free registration without selling assets.
+  for (const s of placeOnly) {
+    if (freed >= needFree) break;
+    if (taken.has(s.playerId)) continue;
+    const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
+    const check = solveXI(withoutHim, ctx.formation).avgFit;
+    if (check < afterFit - 1) continue;
+    const row = ctx.byId.get(s.playerId);
+    const dest: PackageExitDest = s.verdict === "b-team" ? "b-team" : "loan";
+    loans.push({
+      playerId: s.playerId,
+      playerName: row?.player.name ?? s.playerId,
+      reason:
+        s.reasons[0] ??
+        (dest === "b-team" ? "Moves to the junior side" : "Leaves on loan"),
+      destination: dest,
+    });
+    taken.add(s.playerId);
+    freed += 1;
+  }
+
+  // Pass 3 — last resort: sell for size only when loans can't free enough places.
+  for (const s of fundable) {
+    if (freed >= needFree) break;
+    trySale(s, 0);
   }
 
   const squadAfter = ctx.squad.length + residents - sales.length - loans.length;
@@ -1023,10 +1030,14 @@ function buildChurnPackage(
     max: T.PKG_MAX_SIGNINGS,
     capFraction: 1,
     spender: true,
+    // A rebuild buys players with a future — not stopgap veterans.
+    filter: (c) => c.age != null && c.age <= T.AGE_PEAK_END,
     cmp: byFitThenCostDesc,
   };
   const churnCap = ctx.budgetCap > 0 ? Math.min(availableFunds, ctx.budgetCap) : availableFunds;
-  const pool = candidates.slice().sort((a, b) => strat.cmp(a, b, ctx));
+  const pool = candidates
+    .filter((c) => strat.filter!(c, ctx))
+    .sort((a, b) => strat.cmp(a, b, ctx));
   const { picks: rawPicks } = assemble(pool, Math.round(churnCap), strat);
   if (rawPicks.length === 0) return null;
   const picks = rawPicks;
