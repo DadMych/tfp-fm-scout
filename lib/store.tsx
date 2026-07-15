@@ -4,7 +4,7 @@
  * Client-side dataset store (no backend yet).
  *
  * The user's squad and shortlist live entirely in the browser: parsed from an FM26 export,
- * kept in React state, and mirrored to localStorage so a reload doesn't lose them. Only the
+ * kept in React state, and mirrored to IndexedDB so a reload doesn't lose them. Only the
  * raw parsed players are persisted; scores are recomputed in a Web Worker on load. This whole
  * module is the seam a real DB + auth will replace later.
  */
@@ -25,6 +25,12 @@ import { ImportError } from "@/src/import/parse.js";
 import { buildSquadContext, type SquadContext } from "@/src/domain/recommendation.js";
 import { playerIdentityKey } from "@/src/domain/player-identity.js";
 import { importDataset, scorePlayers } from "@/lib/import-client";
+import {
+  loadClientStorage,
+  saveAssistantSettings,
+  saveDatasets,
+  saveWatchList,
+} from "@/lib/client-storage";
 import {
   createWatchEntry,
   isPlayerWatched,
@@ -66,11 +72,6 @@ interface StoreState {
   isWatched(p: Player): boolean;
 }
 
-const KEY = "tfp.datasets.v1";
-const SETTINGS_KEY = "tfp.assistant.v1";
-const WATCH_KEY = "tfp.watch.v2";
-const WATCH_KEY_LEGACY = "tfp.watch.v1";
-
 export interface LastAssistantRun {
   readonly formationId: string;
   readonly budget: number;
@@ -99,46 +100,24 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const scoringRef = useRef(new Set<DatasetKind>());
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(KEY);
-      if (stored) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional localStorage hydration
-        setRaw(JSON.parse(stored) as Persisted);
-      }
-      const settings = localStorage.getItem(SETTINGS_KEY);
-      if (settings) setLastAssistantRunState(JSON.parse(settings) as LastAssistantRun);
-      const watch = localStorage.getItem(WATCH_KEY);
-      if (watch) {
-        setWatchList(JSON.parse(watch) as WatchEntry[]);
-      } else {
-        const legacy = localStorage.getItem(WATCH_KEY_LEGACY);
-        if (legacy) {
-          const ids = JSON.parse(legacy) as string[];
-          const migrated: WatchEntry[] = [];
-          const stored = localStorage.getItem(KEY);
-          if (stored) {
-            const data = JSON.parse(stored) as Persisted;
-            for (const id of ids) {
-              for (const kind of ["shortlist", "squad"] as const) {
-                const p = data[kind]?.players.find((x) => x.id === id);
-                if (p) {
-                  migrated.push(createWatchEntry(p));
-                  break;
-                }
-              }
-            }
-          }
-          setWatchList(migrated);
-          if (migrated.length > 0) {
-            localStorage.setItem(WATCH_KEY, JSON.stringify(migrated));
-            localStorage.removeItem(WATCH_KEY_LEGACY);
-          }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const snapshot = await loadClientStorage();
+        if (cancelled) return;
+        setRaw(snapshot.datasets as Persisted);
+        if (snapshot.assistant != null) {
+          setLastAssistantRunState(snapshot.assistant as LastAssistantRun);
         }
+        setWatchList(snapshot.watchList);
+      } catch {
+        // Corrupt or unavailable storage — start empty rather than crash.
       }
-    } catch {
-      // Corrupt or unavailable storage — start empty rather than crash.
-    }
-    setReady(true);
+      if (!cancelled) setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -169,22 +148,18 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const persist = useCallback((next: Persisted | ((prev: Persisted) => Persisted)) => {
     setRaw((prev) => {
       const resolved = typeof next === "function" ? next(prev) : next;
-      try {
-        localStorage.setItem(KEY, JSON.stringify(resolved));
-      } catch {
-        // Over quota or private mode: keep it in memory for this session.
-      }
+      void saveDatasets(resolved).catch(() => {
+        // Private mode or IDB unavailable: keep it in memory for this session.
+      });
       return resolved;
     });
   }, []);
 
   const setLastAssistantRun = useCallback((run: LastAssistantRun) => {
     setLastAssistantRunState(run);
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(run));
-    } catch {
+    void saveAssistantSettings(run).catch(() => {
       // Session-only if storage is unavailable.
-    }
+    });
   }, []);
 
   const toggleWatch = useCallback((p: Player) => {
@@ -194,12 +169,9 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       const next = exists
         ? prev.filter((e) => e.identityKey !== key)
         : [...prev, createWatchEntry(p)];
-      try {
-        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-        localStorage.removeItem(WATCH_KEY_LEGACY);
-      } catch {
+      void saveWatchList(next).catch(() => {
         // Session-only.
-      }
+      });
       return next;
     });
   }, []);
@@ -207,11 +179,9 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const setWatchStatus = useCallback((identityKey: string, status: WatchStatus) => {
     setWatchList((prev) => {
       const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, status } : e));
-      try {
-        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-      } catch {
+      void saveWatchList(next).catch(() => {
         // Session-only.
-      }
+      });
       return next;
     });
   }, []);
@@ -219,11 +189,9 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const setWatchNote = useCallback((identityKey: string, note: string) => {
     setWatchList((prev) => {
       const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, note } : e));
-      try {
-        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-      } catch {
+      void saveWatchList(next).catch(() => {
         // Session-only.
-      }
+      });
       return next;
     });
   }, []);
@@ -231,11 +199,9 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const removeWatch = useCallback((identityKey: string) => {
     setWatchList((prev) => {
       const next = prev.filter((e) => e.identityKey !== identityKey);
-      try {
-        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
-      } catch {
+      void saveWatchList(next).catch(() => {
         // Session-only.
-      }
+      });
       return next;
     });
   }, []);

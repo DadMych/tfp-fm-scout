@@ -2,7 +2,7 @@
 
 Hosted multi-user web app. Users upload FM26 exports; we parse, store, and serve analysis. Built to be operable by a tiny team: one deployable web process + Postgres + object storage, no microservices.
 
-> **Current stage (July 2026):** the shipped build is a **local-first Next.js app** — parsing and scoring run in the browser; datasets persist in `localStorage`. The stack table below is the **destination** architecture (doc 15, phase P4). The UI follows doc 09's **Broadsheet** direction with hand-rolled CSS, not Tailwind/shadcn. **Hosting decisions are now pinned in [doc 16](16-hosted-deployment.md)** (Neon Postgres + Auth.js credentials/Google); doc 16 wins over this doc where they differ.
+> **Current stage (July 2026):** the shipped build is a **local-first Next.js app** — parsing and scoring run in the browser; datasets persist in **IndexedDB** (migrated from legacy `localStorage`). The stack table below is the **destination** architecture (doc 15, phase P4). The UI follows doc 09's **Broadsheet** direction with hand-rolled CSS, not Tailwind/shadcn. **Hosting decisions are now pinned in [doc 16](16-hosted-deployment.md)** (Neon Postgres + Auth.js credentials/Google); doc 16 wins over this doc where they differ.
 
 ## Stack (decided — do not relitigate)
 

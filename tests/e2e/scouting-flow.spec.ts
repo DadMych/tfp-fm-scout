@@ -14,7 +14,15 @@ async function loadSampleShortlist(page: Page) {
 test.describe("scouting companion flow", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(async () => {
+      localStorage.clear();
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.deleteDatabase("tfp-fm");
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => resolve();
+      });
+    });
   });
 
   test("upload → front page → ledger → dossier → watch → compare", async ({ page }) => {
