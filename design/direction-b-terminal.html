@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFP FM — Terminal</title>
+<style>
+  :root {
+    --bg: #05070a;
+    --panel: #0b1017;
+    --line: #16202b;
+    --line-2: #1e2b39;
+    --fg: #c4d0dc;
+    --fg-dim: #5f6f80;
+    --fg-faint: #3a4854;
+    --green: #39d98a;
+    --amber: #e8b84b;
+    --red: #ef6b5f;
+    --cyan: #52c7d8;
+    --mono: "SF Mono", "JetBrains Mono", "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  a { color: inherit; text-decoration: none; }
+
+  /* top command bar */
+  .topbar { display: flex; align-items: center; gap: 0; border-bottom: 1px solid var(--line); background: var(--panel); height: 34px; }
+  .topbar .brand { padding: 0 14px; color: var(--green); font-weight: 700; letter-spacing: .04em; border-right: 1px solid var(--line); height: 100%; display: flex; align-items: center; }
+  .topbar .tab { padding: 0 16px; height: 100%; display: flex; align-items: center; color: var(--fg-dim); border-right: 1px solid var(--line); letter-spacing: .05em; }
+  .topbar .tab.on { color: var(--fg); background: #0f1620; box-shadow: inset 0 -2px 0 var(--green); }
+  .topbar .spacer { flex: 1; }
+  .topbar .cmd { padding: 0 14px; color: var(--fg-faint); }
+  .topbar .cmd b { color: var(--fg-dim); }
+
+  .statusline { display: flex; gap: 26px; padding: 6px 16px; border-bottom: 1px solid var(--line); color: var(--fg-dim); font-size: 12px; letter-spacing: .04em; }
+  .statusline b { color: var(--fg); }
+
+  .grid { display: grid; grid-template-columns: 1.55fr 1fr; }
+  .grid > * { border-bottom: 1px solid var(--line); }
+  .grid > .left { border-right: 1px solid var(--line); }
+
+  .block { padding: 16px 18px; }
+  .block + .block { border-top: 1px solid var(--line); }
+  .caption { color: var(--fg-faint); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 14px; }
+
+  /* header block */
+  .phead { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .phead h1 { font-size: 26px; margin: 0 0 4px; font-weight: 700; letter-spacing: .01em; }
+  .phead .sub { color: var(--fg-dim); letter-spacing: .04em; }
+  .ticker { text-align: right; color: var(--fg-dim); font-size: 12px; }
+  .ticker .big { color: var(--green); font-size: 20px; font-weight: 700; }
+
+  .kv { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: 16px; }
+  .kv > div { background: var(--panel); padding: 9px 11px; }
+  .kv .kk { color: var(--fg-faint); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .kv .vv { color: var(--fg); font-size: 15px; margin-top: 3px; }
+
+  /* identity meters */
+  .arch { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px dotted var(--line-2); }
+  .arch:last-child { border-bottom: 0; }
+  .arch .tag { width: 15px; color: var(--fg-faint); }
+  .arch .an { width: 170px; }
+  .arch .an b { color: var(--fg); font-weight: 600; }
+  .arch .an span { color: var(--fg-faint); display: block; font-size: 11px; letter-spacing: .04em; }
+  .meter { flex: 1; height: 16px; background: #0a0f15; border: 1px solid var(--line-2); position: relative; }
+  .meter i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #1f7a52, var(--green)); }
+  .meter.mid i { background: linear-gradient(90deg, #6a5a1f, var(--amber)); }
+  .arch .sc { width: 34px; text-align: right; font-weight: 700; color: var(--green); }
+  .arch .sc.mid { color: var(--amber); }
+  .badge { font-size: 10px; letter-spacing: .14em; padding: 1px 6px; border: 1px solid currentColor; color: var(--green); }
+  .badge.mid { color: var(--amber); }
+
+  /* attribute matrix */
+  table.mtx { width: 100%; border-collapse: collapse; }
+  table.mtx th { text-align: left; color: var(--fg-faint); font-weight: 500; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; padding: 0 0 8px; border-bottom: 1px solid var(--line-2); }
+  table.mtx td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+  table.mtx td.k { color: var(--fg-dim); }
+  table.mtx td.n { text-align: right; width: 30px; color: var(--fg); }
+  table.mtx td.p { width: 92px; padding-left: 12px; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+  .bar { height: 8px; background: #0a0f15; position: relative; border: 1px solid var(--line); }
+  .bar i { position:absolute; inset: 0 auto 0 0; }
+  .p0 i{background:#5b2a26} .p1 i{background:#7a5320} .p2 i{background:#3a4854} .p3 i{background:#237a6a} .p4 i{background:var(--green)}
+  .rng { color: var(--amber); background: repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(232,184,75,.14) 3px,rgba(232,184,75,.14) 4px); padding: 0 3px; }
+  .msk { color: var(--fg-faint); }
+
+  /* role matrix heat */
+  .heat { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .heat th { color: var(--fg-faint); font-weight: 500; font-size: 10.5px; letter-spacing: .08em; padding: 6px 8px; text-align: center; border: 1px solid var(--line); }
+  .heat td.rl { color: var(--fg-dim); text-align: left; padding: 6px 10px; border: 1px solid var(--line); white-space: nowrap; }
+  .heat td.c { text-align: center; padding: 6px 8px; border: 1px solid var(--line); font-weight: 600; color: #05070a; }
+  .h90{background:#39d98a} .h80{background:#4bbf85} .h70{background:#63a877} .h60{background:#6d8a6a;color:#dfe} .h50{background:#3a4a4a;color:#9fb} .h40{background:#26333a;color:#7f93a0}
+
+  .radar-axis { fill: var(--fg-faint); font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+  .foot { display: flex; justify-content: space-between; padding: 10px 16px; color: var(--fg-faint); font-size: 11px; letter-spacing: .06em; border-top: 1px solid var(--line); }
+  .foot .act span { color: var(--fg-dim); margin-right: 18px; }
+  .foot .act b { color: var(--green); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">TFP//FM</div>
+    <a class="tab" href="#">SQUAD</a>
+    <a class="tab on" href="#">SCOUT</a>
+    <a class="tab" href="#">SHORTLIST</a>
+    <a class="tab" href="#">COMPARE</a>
+    <a class="tab" href="#">IMPORTS</a>
+    <div class="spacer"></div>
+    <div class="cmd"><b>⌘K</b> search · <b>J/K</b> nav · <b>S</b> shortlist</div>
+  </div>
+  <div class="statusline">
+    <span>DATASET <b>Empire FC · Serie B 29/30</b></span>
+    <span>ROWS <b class="num">18,204</b></span>
+    <span>ENGINE <b class="num">v1.3.0</b></span>
+    <span>CONFIDENCE <b class="num">0.82</b></span>
+    <span>CCY <b>EUR</b></span>
+  </div>
+
+  <div class="grid">
+    <div class="left">
+      <div class="block">
+        <div class="phead">
+          <div>
+            <h1>RICCI, Matteo</h1>
+            <div class="sub">DM, M(C) · 21y · L-foot · Italy · Cesena</div>
+          </div>
+          <div class="ticker">
+            <div class="big num">€8.2M</div>
+            <div class="num">€14K p/w · exp 30·06·27</div>
+          </div>
+        </div>
+        <div class="kv">
+          <div><div class="kk">Best role</div><div class="vv num">82 HB/ScrDM</div></div>
+          <div><div class="kk">Top archetype</div><div class="vv num">87 Deep Prog</div></div>
+          <div><div class="kk">Height</div><div class="vv num">179 cm</div></div>
+          <div><div class="kk">Weak foot</div><div class="vv">Strong R</div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="caption">Attribute matrix · value / percentile in cohort</p>
+        <div class="cols3">
+          <table class="mtx">
+            <tr><th>Technical</th><th class="n"></th><th class="p"></th></tr>
+            <tr><td class="k">Passing</td><td class="n num">16</td><td class="p"><span class="bar p4"><i style="width:92%"></i></span></td></tr>
+            <tr><td class="k">First Touch</td><td class="n num">15</td><td class="p"><span class="bar p4"><i style="width:80%"></i></span></td></tr>
+            <tr><td class="k">Technique</td><td class="n num">15</td><td class="p"><span class="bar p3"><i style="width:74%"></i></span></td></tr>
+            <tr><td class="k">Tackling</td><td class="n"><span class="rng num">11–13</span></td><td class="p"><span class="bar p2"><i style="width:60%"></i></span></td></tr>
+            <tr><td class="k">Dribbling</td><td class="n num">12</td><td class="p"><span class="bar p2"><i style="width:55%"></i></span></td></tr>
+            <tr><td class="k">Finishing</td><td class="n msk">?</td><td class="p"></td></tr>
+          </table>
+          <table class="mtx">
+            <tr><th>Mental</th><th class="n"></th><th class="p"></th></tr>
+            <tr><td class="k">Composure</td><td class="n num">16</td><td class="p"><span class="bar p4"><i style="width:88%"></i></span></td></tr>
+            <tr><td class="k">Vision</td><td class="n num">15</td><td class="p"><span class="bar p4"><i style="width:84%"></i></span></td></tr>
+            <tr><td class="k">Work Rate</td><td class="n num">16</td><td class="p"><span class="bar p4"><i style="width:88%"></i></span></td></tr>
+            <tr><td class="k">Positioning</td><td class="n num">14</td><td class="p"><span class="bar p3"><i style="width:80%"></i></span></td></tr>
+            <tr><td class="k">Decisions</td><td class="n num">14</td><td class="p"><span class="bar p3"><i style="width:70%"></i></span></td></tr>
+            <tr><td class="k">Anticipation</td><td class="n num">13</td><td class="p"><span class="bar p2"><i style="width:60%"></i></span></td></tr>
+          </table>
+          <table class="mtx">
+            <tr><th>Physical</th><th class="n"></th><th class="p"></th></tr>
+            <tr><td class="k">Stamina</td><td class="n num">17</td><td class="p"><span class="bar p4"><i style="width:88%"></i></span></td></tr>
+            <tr><td class="k">Agility</td><td class="n num">14</td><td class="p"><span class="bar p3"><i style="width:66%"></i></span></td></tr>
+            <tr><td class="k">Balance</td><td class="n num">14</td><td class="p"><span class="bar p3"><i style="width:70%"></i></span></td></tr>
+            <tr><td class="k">Acceleration</td><td class="n num">13</td><td class="p"><span class="bar p2"><i style="width:55%"></i></span></td></tr>
+            <tr><td class="k">Pace</td><td class="n num">12</td><td class="p"><span class="bar p1"><i style="width:50%"></i></span></td></tr>
+            <tr><td class="k">Strength</td><td class="n num">12</td><td class="p"><span class="bar p1"><i style="width:45%"></i></span></td></tr>
+          </table>
+          <table class="mtx">
+            <tr><th>Derived pct</th><th class="n"></th><th class="p"></th></tr>
+            <tr><td class="k">Work engine</td><td class="n num">88</td><td class="p"><span class="bar p4"><i style="width:88%"></i></span></td></tr>
+            <tr><td class="k">Creativity</td><td class="n num">84</td><td class="p"><span class="bar p4"><i style="width:84%"></i></span></td></tr>
+            <tr><td class="k">Def position</td><td class="n num">80</td><td class="p"><span class="bar p3"><i style="width:80%"></i></span></td></tr>
+            <tr><td class="k">Press resist</td><td class="n num">78</td><td class="p"><span class="bar p3"><i style="width:78%"></i></span></td></tr>
+            <tr><td class="k">Mobility</td><td class="n num">66</td><td class="p"><span class="bar p2"><i style="width:66%"></i></span></td></tr>
+            <tr><td class="k">Aerial</td><td class="n num">30</td><td class="p"><span class="bar p0"><i style="width:30%"></i></span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="caption">Role-pair heatmap · IP × OOP · pairScore</p>
+        <table class="heat">
+          <tr><th>IP ↓ / OOP →</th><th>Screening DM</th><th>Pressing DM</th><th>Holding FB</th><th>Tracking AM</th></tr>
+          <tr><td class="rl">Half-Back</td><td class="c h80">82</td><td class="c h70">74</td><td class="c h60">66</td><td class="c h60">63</td></tr>
+          <tr><td class="rl">Deep-Lying PM</td><td class="c h80">80</td><td class="c h70">72</td><td class="c h60">64</td><td class="c h70">70</td></tr>
+          <tr><td class="rl">Inverted FB</td><td class="c h70">71</td><td class="c h60">67</td><td class="c h70">73</td><td class="c h50">58</td></tr>
+          <tr><td class="rl">Midfield PM</td><td class="c h60">69</td><td class="c h60">61</td><td class="c h50">55</td><td class="c h70">71</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="block">
+        <p class="caption">Player identity · archetype fit</p>
+        <div class="arch">
+          <span class="tag num">1</span>
+          <span class="an"><b>Deep Progressor</b><span>build-up through the lines</span></span>
+          <span class="meter"><i style="width:87%"></i></span>
+          <span class="sc num">87</span>
+        </div>
+        <div class="arch">
+          <span class="tag num">2</span>
+          <span class="an"><b>Tempo Dictator</b><span>controls rhythm</span></span>
+          <span class="meter mid"><i style="width:74%"></i></span>
+          <span class="sc mid num">74</span>
+        </div>
+        <div class="arch">
+          <span class="tag num">3</span>
+          <span class="an"><b>Press Resister</b><span>escapes pressure</span></span>
+          <span class="meter mid"><i style="width:71%"></i></span>
+          <span class="sc mid num">71</span>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:8px;">
+          <span class="badge">ELITE · DEEP PROGRESSOR</span>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="caption">Percentile radar · vs cohort</p>
+        <svg viewBox="0 0 300 300" width="100%" role="img" aria-label="Radar percentiles">
+          <g fill="none" stroke="#16202b" stroke-width="1">
+            <polygon points="150,90 192.4,107.6 210,150 192.4,192.4 150,210 107.6,192.4 90,150 107.6,107.6"/>
+            <polygon points="150,66 209.4,90.6 234,150 209.4,209.4 150,234 90.6,209.4 66,150 90.6,90.6"/>
+            <polygon points="150,30 234.85,65.15 270,150 234.85,234.85 150,270 65.15,234.85 30,150 65.15,65.15"/>
+          </g>
+          <g stroke="#16202b" stroke-width="1">
+            <line x1="150" y1="150" x2="150" y2="30"/><line x1="150" y1="150" x2="234.85" y2="65.15"/>
+            <line x1="150" y1="150" x2="270" y2="150"/><line x1="150" y1="150" x2="234.85" y2="234.85"/>
+            <line x1="150" y1="150" x2="150" y2="270"/><line x1="150" y1="150" x2="65.15" y2="234.85"/>
+            <line x1="150" y1="150" x2="30" y2="150"/><line x1="150" y1="150" x2="65.15" y2="65.15"/>
+          </g>
+          <polygon points="150,75.6 224.7,75.3 186,150 216.2,216.2 150,250.8 88.9,211.1 54,150 94,94"
+                   fill="rgba(57,217,138,.14)" stroke="#39d98a" stroke-width="2"/>
+          <g fill="#39d98a">
+            <circle cx="150" cy="75.6" r="2.4"/><circle cx="224.7" cy="75.3" r="2.4"/><circle cx="186" cy="150" r="2.4"/>
+            <circle cx="216.2" cy="216.2" r="2.4"/><circle cx="150" cy="250.8" r="2.4"/><circle cx="88.9" cy="211.1" r="2.4"/>
+            <circle cx="54" cy="150" r="2.4"/><circle cx="94" cy="94" r="2.4"/>
+          </g>
+          <text class="radar-axis" x="150" y="24" text-anchor="middle">SPEED 62</text>
+          <text class="radar-axis" x="248" y="58" text-anchor="middle">WORK 88</text>
+          <text class="radar-axis" x="286" y="153" text-anchor="end">AER 30</text>
+          <text class="radar-axis" x="248" y="250" text-anchor="middle">PRES-R 78</text>
+          <text class="radar-axis" x="150" y="288" text-anchor="middle">CREATE 84</text>
+          <text class="radar-axis" x="52" y="250" text-anchor="middle">DEF-A 72</text>
+          <text class="radar-axis" x="14" y="153" text-anchor="start">DEF-P 80</text>
+          <text class="radar-axis" x="52" y="58" text-anchor="middle">MOB 66</text>
+        </svg>
+      </div>
+
+      <div class="block">
+        <p class="caption">Similar profiles · cohort cosine</p>
+        <table class="mtx">
+          <tr><td class="k">Baldi, L. — Frosinone · 23</td><td class="n num">94%</td></tr>
+          <tr><td class="k">Novak, P. — Brescia · 20</td><td class="n num">91%</td></tr>
+          <tr><td class="k">Costa, R. — Bari · 25</td><td class="n num">88%</td></tr>
+          <tr><td class="k">Eh0, A. — Pisa · 19</td><td class="n num">86%</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="act"><b>[S]</b> shortlist <span>·</span> <b>[C]</b> compare <span>·</span> <b>[U]</b> upgrades over <span>·</span> <b>[F]</b> find similar</div>
+    <div>analysed with TFP//FM · engine v1.3.0</div>
+  </div>
+</body>
+</html>

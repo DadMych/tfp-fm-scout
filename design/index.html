@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFP FM — Design directions</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0b0e13;
+    color: #e7ebf2;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 64px 8vw 40px;
+    border-bottom: 1px solid #1c2330;
+  }
+  .kicker {
+    font-size: 12px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: #6b7686;
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1.02;
+    margin: 0;
+    font-weight: 640;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
+  }
+  header p {
+    max-width: 62ch;
+    color: #9aa4b2;
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 22px 0 0;
+  }
+  main {
+    padding: 40px 8vw 96px;
+    display: grid;
+    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+  a.card {
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid #1c2330;
+    background: #10141c;
+    padding: 30px 28px 26px;
+    display: flex;
+    flex-direction: column;
+    min-height: 260px;
+    transition: border-color .18s ease, transform .18s ease, background .18s ease;
+  }
+  a.card:hover { border-color: #2f3b4e; transform: translateY(-3px); background: #131824; }
+  .idx { font-variant-numeric: tabular-nums; color: #4f5a6b; font-size: 13px; letter-spacing: .1em; }
+  .name { font-size: 26px; font-weight: 620; margin: 14px 0 6px; letter-spacing: -0.01em; }
+  .tag { color: #7f8a9a; font-size: 14.5px; line-height: 1.55; }
+  .swatches { margin-top: auto; display: flex; gap: 8px; padding-top: 26px; }
+  .sw { width: 34px; height: 34px; border-radius: 3px; border: 1px solid rgba(255,255,255,.08); }
+  .go { margin-top: 18px; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #22e58c; }
+  footer { padding: 0 8vw 80px; color: #5b6575; font-size: 13.5px; line-height: 1.7; max-width: 70ch; }
+</style>
+</head>
+<body>
+  <header>
+    <p class="kicker">TFP FM · Design code</p>
+    <h1>Три направления визуального языка. Открой каждое, выбери одно.</h1>
+    <p>Одна и та же страница игрока отрисована тремя разными почерками. Разница не в цветах, а в характере: как подаётся плотность данных, что первым ловит глаз и какое ощущение остаётся. Нигде нет карточек-плиток ради плиток, буллет-списков и декоративного шума — только то, что несёт смысл.</p>
+  </header>
+  <main>
+    <a class="card" href="direction-a-broadsheet.html">
+      <span class="idx">01</span>
+      <span class="name">Broadsheet</span>
+      <span class="tag">Редакция футбольной газеты. Крупные засечки, тонкие линейки, воздух. Игрок читается как разворот, а не как дашборд.</span>
+      <div class="swatches">
+        <span class="sw" style="background:#f4f1ea"></span>
+        <span class="sw" style="background:#141210"></span>
+        <span class="sw" style="background:#b23b2e"></span>
+        <span class="sw" style="background:#c9a24b"></span>
+      </div>
+      <span class="go">Смотреть →</span>
+    </a>
+    <a class="card" href="direction-b-terminal.html">
+      <span class="idx">02</span>
+      <span class="name">Terminal</span>
+      <span class="tag">Bloomberg для футбола. Моноширинный, предельно плотный, высокий контраст. Для тех, кто живёт в цифрах и перепахивает базы на 20 тысяч строк.</span>
+      <div class="swatches">
+        <span class="sw" style="background:#05070a"></span>
+        <span class="sw" style="background:#0e141b"></span>
+        <span class="sw" style="background:#39d98a"></span>
+        <span class="sw" style="background:#e8b84b"></span>
+      </div>
+      <span class="go">Смотреть →</span>
+    </a>
+    <a class="card" href="direction-c-studio.html">
+      <span class="idx">03</span>
+      <span class="name">Studio</span>
+      <span class="tag">Аналитический отдел клуба. Тёмный, спокойный, выверенный. Между редакторской подачей и терминалом — рабочий инструмент, которым приятно пользоваться каждый день.</span>
+      <div class="swatches">
+        <span class="sw" style="background:#0b0e13"></span>
+        <span class="sw" style="background:#161b24"></span>
+        <span class="sw" style="background:#22e58c"></span>
+        <span class="sw" style="background:#4da3ff"></span>
+      </div>
+      <span class="go">Смотреть →</span>
+    </a>
+  </main>
+  <footer>
+    Во всех трёх соблюдается правило честности чисел: точное значение, диапазон и «неизвестно» выглядят по-разному, а цвет всегда кодирует перцентиль внутри набора данных, а не сырую оценку 1–20. Выбранное направление станет основой для токенов и компонентов на этапе разработки.
+  </footer>
+</body>
+</html>

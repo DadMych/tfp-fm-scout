@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFP FM — Broadsheet</title>
+<style>
+  :root {
+    --paper: #f4f1ea;
+    --paper-2: #ece7dc;
+    --ink: #17140f;
+    --ink-2: #4a453b;
+    --ink-3: #857e6f;
+    --rule: #d8d1c2;
+    --red: #b23b2e;
+    --gold: #a9812f;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 40px 80px; }
+
+  /* masthead */
+  .masthead {
+    display: flex; align-items: baseline; justify-content: space-between;
+    border-bottom: 3px double var(--ink); padding: 22px 0 12px; margin-bottom: 0;
+  }
+  .logo { font-weight: 700; letter-spacing: -.01em; font-size: 22px; }
+  .logo span { color: var(--red); }
+  .masthead nav { font-family: var(--sans); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); display: flex; gap: 26px; }
+  .masthead nav a { color: inherit; text-decoration: none; }
+  .masthead nav a.on { color: var(--ink); border-bottom: 2px solid var(--red); padding-bottom: 4px; }
+
+  .dateline {
+    font-family: var(--sans); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-3); display: flex; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid var(--rule);
+  }
+
+  /* headline block */
+  .hero { display: grid; grid-template-columns: 1fr 300px; gap: 48px; padding: 34px 0 30px; border-bottom: 1px solid var(--rule); }
+  .eyebrow { font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--red); margin: 0 0 14px; }
+  h1 { font-size: 66px; line-height: .98; margin: 0; font-weight: 700; letter-spacing: -.02em; }
+  .standfirst { font-size: 20px; line-height: 1.5; color: var(--ink-2); margin: 20px 0 0; max-width: 40ch; font-style: italic; }
+  .facts { font-family: var(--sans); border-top: 2px solid var(--ink); padding-top: 12px; }
+  .facts dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 16px; margin: 0; font-size: 13.5px; }
+  .facts dt { color: var(--ink-3); letter-spacing: .04em; }
+  .facts dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .facts .row { display: contents; }
+  .facts dd b { font-weight: 600; }
+
+  /* identity */
+  .identity { padding: 30px 0; border-bottom: 1px solid var(--rule); }
+  .section-label { font-family: var(--sans); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 20px; display:flex; align-items:center; gap:14px;}
+  .section-label::after { content:""; flex:1; height:1px; background: var(--rule); }
+  .arch-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .arch { padding: 0 30px; border-left: 1px solid var(--rule); }
+  .arch:first-child { padding-left: 0; border-left: 0; }
+  .arch .rank { font-family: var(--sans); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); }
+  .arch .score { font-size: 52px; font-weight: 700; letter-spacing: -.03em; line-height: 1; margin: 8px 0 4px; }
+  .arch .score.lead { color: var(--red); }
+  .arch .aname { font-size: 21px; font-weight: 600; }
+  .arch .badge { font-family: var(--sans); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); margin-top: 6px; }
+  .arch .desc { font-size: 15px; line-height: 1.5; color: var(--ink-2); margin-top: 12px; font-style: italic; }
+
+  /* two column body */
+  .body { display: grid; grid-template-columns: 300px 1fr; gap: 48px; padding-top: 30px; }
+  figure { margin: 0; }
+  figure figcaption { font-family: var(--sans); font-size: 11.5px; letter-spacing: .1em; color: var(--ink-3); text-align: center; margin-top: 10px; text-transform: uppercase; }
+  .radar-axis { font-family: var(--sans); font-size: 10px; fill: var(--ink-3); letter-spacing: .05em; }
+
+  /* attribute tables set as newspaper columns */
+  .attrs { column-gap: 40px; }
+  .attr-group { break-inside: avoid; margin-bottom: 26px; }
+  .attr-group h3 { font-family: var(--sans); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--ink); color: var(--ink); }
+  table.attr { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.attr td { padding: 3px 0; border-bottom: 1px solid var(--rule); }
+  table.attr td.k { color: var(--ink-2); }
+  table.attr td.v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; width: 46px; }
+  /* percentile ink dots */
+  .pv { display: inline-flex; align-items: baseline; gap: 8px; justify-content: flex-end; }
+  .pctbar { width: 44px; height: 6px; background: var(--paper-2); position: relative; align-self:center; }
+  .pctbar i { position:absolute; left:0; top:0; bottom:0; background: var(--ink); }
+  .pctbar.hi i { background: var(--red); }
+  .ranged { font-style: italic; color: var(--ink-2); background: repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,.06) 3px, rgba(0,0,0,.06) 4px); padding: 0 4px; }
+  .masked { color: var(--ink-3); opacity: .5; }
+
+  .pull { font-size: 26px; line-height: 1.35; font-style: italic; color: var(--ink); border-left: 3px solid var(--red); padding: 4px 0 4px 22px; margin: 6px 0 30px; }
+  .footline { font-family: var(--sans); font-size: 12px; color: var(--ink-3); letter-spacing: .04em; border-top: 1px solid var(--rule); margin-top: 40px; padding-top: 16px; display:flex; justify-content: space-between;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div class="logo">The <span>Scouting</span> Post</div>
+    <nav>
+      <a href="#">Squad</a>
+      <a href="#" class="on">Scout</a>
+      <a href="#">Shortlists</a>
+      <a href="#">Compare</a>
+    </nav>
+  </div>
+  <div class="dateline">
+    <span>Save · Empire FC 2029/30</span>
+    <span>Serie B Database · 18,204 players</span>
+    <span>Confidence 0.82</span>
+  </div>
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Defensive Midfielder · Age 21 · Left foot</p>
+      <h1>Matteo Ricci</h1>
+      <p class="standfirst">A metronome in the making — sees the pass before the press arrives, and rarely gives the ball back.</p>
+    </div>
+    <div class="facts">
+      <dl>
+        <div class="row"><dt>Club</dt><dd>Cesena</dd></div>
+        <div class="row"><dt>Nation</dt><dd>Italy</dd></div>
+        <div class="row"><dt>Positions</dt><dd>DM, M (C)</dd></div>
+        <div class="row"><dt>Value</dt><dd><b>€8.2M</b></dd></div>
+        <div class="row"><dt>Wage</dt><dd class="num">€14K p/w</dd></div>
+        <div class="row"><dt>Contract</dt><dd class="num">30 Jun 2027</dd></div>
+        <div class="row"><dt>Height</dt><dd class="num">1.79 m</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <section class="identity">
+    <p class="section-label">What kind of footballer is he</p>
+    <div class="arch-row">
+      <div class="arch">
+        <div class="rank">Primary identity</div>
+        <div class="score lead num">87</div>
+        <div class="aname">Deep Progressor</div>
+        <div class="badge">— Elite —</div>
+        <div class="desc">Moves the ball from deep zones through the lines. This is the one you build around.</div>
+      </div>
+      <div class="arch">
+        <div class="rank">Secondary</div>
+        <div class="score num">74</div>
+        <div class="aname">Tempo Dictator</div>
+        <div class="badge">— Strong —</div>
+        <div class="desc">Sets the rhythm, always an option, never rushed under pressure.</div>
+      </div>
+      <div class="arch">
+        <div class="rank">Also</div>
+        <div class="score num">71</div>
+        <div class="aname">Press Resister</div>
+        <div class="badge">— Strong —</div>
+        <div class="desc">Receives with a man on his back and comes out the other side.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="body">
+    <aside>
+      <figure>
+        <svg viewBox="0 0 300 300" width="100%" role="img" aria-label="Percentile radar: work engine 88, creativity 84, defensive positioning 80, press resistance 78, mobility 66, speed 62, defensive activity 72, aerial 30">
+          <!-- grid rings -->
+          <g fill="none" stroke="#d8d1c2" stroke-width="1">
+            <polygon points="150,66 209.4,90.6 234,150 209.4,209.4 150,234 90.6,209.4 66,150 90.6,90.6"/>
+            <polygon points="150,30 234.85,65.15 270,150 234.85,234.85 150,270 65.15,234.85 30,150 65.15,65.15"/>
+          </g>
+          <g stroke="#d8d1c2" stroke-width="1">
+            <line x1="150" y1="150" x2="150" y2="30"/>
+            <line x1="150" y1="150" x2="234.85" y2="65.15"/>
+            <line x1="150" y1="150" x2="270" y2="150"/>
+            <line x1="150" y1="150" x2="234.85" y2="234.85"/>
+            <line x1="150" y1="150" x2="150" y2="270"/>
+            <line x1="150" y1="150" x2="65.15" y2="234.85"/>
+            <line x1="150" y1="150" x2="30" y2="150"/>
+            <line x1="150" y1="150" x2="65.15" y2="65.15"/>
+          </g>
+          <!-- data -->
+          <polygon points="150,75.6 224.7,75.3 186,150 216.2,216.2 150,250.8 88.9,211.1 54,150 94,94"
+                   fill="rgba(178,59,46,.16)" stroke="#b23b2e" stroke-width="2"/>
+          <!-- labels -->
+          <text class="radar-axis" x="150" y="22" text-anchor="middle">SPEED</text>
+          <text class="radar-axis" x="244" y="60" text-anchor="middle">WORK</text>
+          <text class="radar-axis" x="282" y="153" text-anchor="middle">AERIAL</text>
+          <text class="radar-axis" x="244" y="248" text-anchor="middle">PRESS-R</text>
+          <text class="radar-axis" x="150" y="286" text-anchor="middle">CREATE</text>
+          <text class="radar-axis" x="56" y="248" text-anchor="middle">DEF-ACT</text>
+          <text class="radar-axis" x="18" y="153" text-anchor="middle">DEF-POS</text>
+          <text class="radar-axis" x="56" y="60" text-anchor="middle">MOBIL</text>
+        </svg>
+        <figcaption>Percentile vs midfielders in this database</figcaption>
+      </figure>
+    </aside>
+
+    <div>
+      <p class="pull">In this division he is a 92nd-percentile passer. Only four midfielders keep the ball better under pressure.</p>
+
+      <div class="attrs" style="column-count:2;">
+        <div class="attr-group">
+          <h3>Technical</h3>
+          <table class="attr">
+            <tr><td class="k">Passing</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:92%"></i></span>16</span></td></tr>
+            <tr><td class="k">First Touch</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:80%"></i></span>15</span></td></tr>
+            <tr><td class="k">Technique</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:74%"></i></span>15</span></td></tr>
+            <tr><td class="k">Dribbling</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:55%"></i></span>12</span></td></tr>
+            <tr><td class="k">Tackling</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:60%"></i></span><span class="ranged num">11–13</span></span></td></tr>
+            <tr><td class="k">Finishing</td><td class="v"><span class="pv"><span class="masked">?</span></span></td></tr>
+          </table>
+        </div>
+        <div class="attr-group">
+          <h3>Mental</h3>
+          <table class="attr">
+            <tr><td class="k">Composure</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:88%"></i></span>16</span></td></tr>
+            <tr><td class="k">Vision</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:84%"></i></span>15</span></td></tr>
+            <tr><td class="k">Decisions</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:70%"></i></span>14</span></td></tr>
+            <tr><td class="k">Anticipation</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:60%"></i></span>13</span></td></tr>
+            <tr><td class="k">Positioning</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:80%"></i></span>14</span></td></tr>
+            <tr><td class="k">Work Rate</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:88%"></i></span>16</span></td></tr>
+          </table>
+        </div>
+        <div class="attr-group">
+          <h3>Physical</h3>
+          <table class="attr">
+            <tr><td class="k">Stamina</td><td class="v"><span class="pv"><span class="pctbar hi"><i style="width:88%"></i></span>17</span></td></tr>
+            <tr><td class="k">Acceleration</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:55%"></i></span>13</span></td></tr>
+            <tr><td class="k">Pace</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:50%"></i></span>12</span></td></tr>
+            <tr><td class="k">Agility</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:66%"></i></span>14</span></td></tr>
+            <tr><td class="k">Strength</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:45%"></i></span>12</span></td></tr>
+            <tr><td class="k">Balance</td><td class="v"><span class="pv"><span class="pctbar"><i style="width:70%"></i></span>14</span></td></tr>
+          </table>
+        </div>
+        <div class="attr-group">
+          <h3>Best role pairs</h3>
+          <table class="attr">
+            <tr><td class="k">Half-Back · Screening DM</td><td class="v num">82</td></tr>
+            <tr><td class="k">Deep-Lying PM · Screening DM</td><td class="v num">80</td></tr>
+            <tr><td class="k">Inverted FB · Holding FB</td><td class="v num">73</td></tr>
+            <tr><td class="k">Midfield PM · Tracking AM</td><td class="v num">71</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="footline">
+        <span>Add to shortlist · Compare · Find similar · Find upgrades over him</span>
+        <span>Analysed with TFP FM</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

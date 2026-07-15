@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.next/
+next-env.d.ts
+.pnpm-store/
+tsconfig.tsbuildinfo
+coverage/
+*.log
+.DS_Store
+.env
+.env.local
+
+# Real FM26 exports dropped in for local scoring (keep the folder, not the data)
+data/*
+!data/.gitkeep
+
+# Generated scout reports / previews
+out/
+
+# FM26 export plugin build artifacts
+tools/fm26_export/plugin/bin/
+tools/fm26_export/plugin/obj/
+tools/fm26_export/plugin_displayfix/bin/
+tools/fm26_export/plugin_displayfix/obj/
+tools/fm26_export/BETA/FM26DisplayFix/

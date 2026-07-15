@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFP FM — Studio</title>
+<style>
+  :root {
+    --bg: #0b0e13;
+    --panel: #12171f;
+    --raised: #171d27;
+    --line: #212a37;
+    --line-soft: #1a222d;
+    --fg: #e7ecf3;
+    --fg-2: #9aa6b6;
+    --fg-3: #616d7e;
+    --green: #22e58c;
+    --amber: #f5b940;
+    --red: #f4574d;
+    --blue: #4da3ff;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  .num { font-variant-numeric: tabular-nums; }
+  a { color: inherit; text-decoration: none; }
+
+  /* shell */
+  .shell { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+  .rail { border-right: 1px solid var(--line); padding: 18px 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .rail .mark { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, var(--green), #0f9d63); color: #04140c; font-weight: 800; display: grid; place-items: center; font-size: 15px; margin-bottom: 18px; }
+  .rail a { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; color: var(--fg-3); font-size: 11px; letter-spacing: .04em; }
+  .rail a.on { color: var(--fg); background: var(--raised); box-shadow: inset 0 0 0 1px var(--line); }
+  .rail a small { display: block; font-size: 9px; margin-top: 3px; letter-spacing: .08em; }
+
+  .main { min-width: 0; }
+  .topbar { height: 58px; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 26px; gap: 18px; }
+  .switcher { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-size: 13.5px; }
+  .switcher .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .switcher b { font-weight: 600; }
+  .switcher span { color: var(--fg-3); }
+  .search { flex: 1; max-width: 420px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--fg-3); font-size: 13px; display: flex; justify-content: space-between; }
+  .search kbd { color: var(--fg-3); border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; font-size: 11px; }
+  .spacer { flex: 1; }
+  .btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+  .btn.primary { background: var(--green); color: #04140c; }
+  .btn.ghost { border: 1px solid var(--line); color: var(--fg-2); }
+
+  .content { padding: 26px; }
+  .crumbs { color: var(--fg-3); font-size: 12.5px; letter-spacing: .02em; margin-bottom: 18px; }
+  .crumbs b { color: var(--fg-2); font-weight: 500; }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: start; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .hero .who h1 { font-size: 34px; margin: 0; font-weight: 680; letter-spacing: -.015em; }
+  .hero .meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .chip { font-size: 12.5px; color: var(--fg-2); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+  .chip b { color: var(--fg); font-weight: 600; }
+  .hero .commercials { display: flex; gap: 26px; text-align: right; }
+  .hero .commercials .c .l { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
+  .hero .commercials .c .v { font-size: 20px; font-weight: 680; margin-top: 4px; }
+  .conf { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--fg-3); font-size: 12px; }
+  .conf .track { width: 90px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .conf .track i { display: block; height: 100%; width: 82%; background: var(--green); }
+
+  /* identity */
+  .h2 { font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--fg-3); margin: 28px 0 14px; }
+  .identity { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .acard { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px 18px 16px; position: relative; overflow: hidden; }
+  .acard.lead { box-shadow: inset 0 0 0 1px rgba(34,229,140,.25); background: linear-gradient(180deg, rgba(34,229,140,.06), transparent 60%), var(--panel); }
+  .acard .rk { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); }
+  .acard .top { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8px; }
+  .acard .nm { font-size: 18px; font-weight: 650; }
+  .acard .sc { font-size: 30px; font-weight: 720; letter-spacing: -.02em; }
+  .acard.lead .sc { color: var(--green); }
+  .acard .mid .sc { color: var(--amber); }
+  .acard .bd { font-size: 13.5px; line-height: 1.5; color: var(--fg-2); margin-top: 10px; }
+  .tier { position: absolute; top: 16px; right: 18px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; }
+  .tier.elite { color: var(--green); background: rgba(34,229,140,.12); }
+  .tier.strong { color: var(--amber); background: rgba(245,185,64,.12); }
+
+  /* body grid */
+  .grid2 { display: grid; grid-template-columns: 340px 1fr; gap: 22px; margin-top: 8px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px; }
+  .card .ttl { font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); margin: 0 0 14px; }
+  .radar-axis { fill: var(--fg-3); font-size: 9.5px; font-family: var(--sans); letter-spacing: .04em; }
+
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 12px; margin-left: auto; }
+  .toggle span { padding: 4px 10px; color: var(--fg-3); }
+  .toggle span.on { background: var(--raised); color: var(--fg); }
+  .rowttl { display: flex; align-items: center; }
+
+  /* attributes */
+  .attrwrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 26px; }
+  .grp h4 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-2); margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
+  .attr { display: grid; grid-template-columns: 1fr 30px; align-items: center; gap: 10px; padding: 5px 0; }
+  .attr .n { color: var(--fg-2); font-size: 13.5px; }
+  .attr .val { text-align: right; font-weight: 650; font-size: 14px; }
+  .attr .track { grid-column: 1 / -1; height: 4px; border-radius: 3px; background: var(--line); margin-top: -2px; overflow: hidden; }
+  .attr .track i { display: block; height: 100%; }
+  .q4 i{background:var(--green)} .q3 i{background:#3fb98f} .q2 i{background:var(--fg-3)} .q1 i{background:#a8663a} .q0 i{background:var(--red)}
+  .rng { font-size: 12.5px; color: var(--amber); }
+  .rng::before { content:""; }
+  .msk { color: var(--fg-3); opacity: .55; }
+
+  /* role heat */
+  .heat { border-collapse: separate; border-spacing: 4px; width: 100%; }
+  .heat th { font-size: 11px; color: var(--fg-3); font-weight: 500; padding: 4px; text-align: center; }
+  .heat td.rl { text-align: left; color: var(--fg-2); font-size: 13px; padding-right: 10px; white-space: nowrap; }
+  .heat td.c { text-align: center; border-radius: 8px; font-weight: 650; font-size: 13px; padding: 9px 0; color: #04140c; }
+  .g90{background:#22e58c}.g80{background:#37c98a}.g70{background:#4aa47f;color:#eafff4}.g60{background:#3f5f5a;color:#cfeee0}.g50{background:#2a3843;color:#9fb6c6}
+
+  .actions { display: flex; gap: 10px; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .foot { color: var(--fg-3); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="rail">
+      <div class="mark">T</div>
+      <a href="#"><span>▦</span><small>HOME</small></a>
+      <a href="#"><span>◑</span><small>SQUAD</small></a>
+      <a href="#" class="on"><span>◎</span><small>SCOUT</small></a>
+      <a href="#"><span>★</span><small>LIST</small></a>
+      <a href="#"><span>⇄</span><small>CMP</small></a>
+      <a href="#"><span>↥</span><small>IMP</small></a>
+    </nav>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="switcher"><span class="dot"></span><b>Empire FC</b><span>· Serie B 29/30</span> ▾</div>
+        <div class="search"><span>Search players, clubs…</span><kbd>⌘K</kbd></div>
+        <div class="spacer"></div>
+        <div class="btn ghost">Upload</div>
+        <div class="btn primary">Shortlist</div>
+      </div>
+
+      <div class="content">
+        <div class="crumbs">Scout · <b>Defensive Midfielders</b> · Matteo Ricci</div>
+
+        <div class="hero">
+          <div class="who">
+            <h1>Matteo Ricci</h1>
+            <div class="meta">
+              <span class="chip"><b>21</b> years</span>
+              <span class="chip">DM · M (C)</span>
+              <span class="chip">Left foot</span>
+              <span class="chip">🇮🇹 Italy</span>
+              <span class="chip">Cesena</span>
+            </div>
+            <div class="conf">Scouting confidence <span class="track"><i></i></span> 0.82</div>
+          </div>
+          <div class="commercials">
+            <div class="c"><div class="l">Value</div><div class="v num">€8.2M</div></div>
+            <div class="c"><div class="l">Wage</div><div class="v num">€14K</div></div>
+            <div class="c"><div class="l">Expires</div><div class="v num">Jun 27</div></div>
+          </div>
+        </div>
+
+        <div class="h2">Player identity</div>
+        <div class="identity">
+          <div class="acard lead">
+            <span class="tier elite">Elite</span>
+            <div class="rk">Primary</div>
+            <div class="top"><span class="nm">Deep Progressor</span><span class="sc num">87</span></div>
+            <div class="bd">Moves the ball from deep through the lines. The profile you build a midfield around.</div>
+          </div>
+          <div class="acard mid">
+            <span class="tier strong">Strong</span>
+            <div class="rk">Secondary</div>
+            <div class="top"><span class="nm">Tempo Dictator</span><span class="sc num">74</span></div>
+            <div class="bd">Controls rhythm, always available, calm when the press arrives.</div>
+          </div>
+          <div class="acard mid">
+            <span class="tier strong">Strong</span>
+            <div class="rk">Also</div>
+            <div class="top"><span class="nm">Press Resister</span><span class="sc num">71</span></div>
+            <div class="bd">Receives under pressure and comes out the far side of it.</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <p class="ttl">Percentile radar · vs midfielders</p>
+            <svg viewBox="0 0 300 300" width="100%" role="img" aria-label="Radar percentiles: work 88, creativity 84, defensive positioning 80, press resistance 78, mobility 66, speed 62, defensive activity 72, aerial 30">
+              <defs>
+                <linearGradient id="rf" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="rgba(34,229,140,.28)"/>
+                  <stop offset="1" stop-color="rgba(34,229,140,.05)"/>
+                </linearGradient>
+              </defs>
+              <g fill="none" stroke="#212a37" stroke-width="1">
+                <polygon points="150,90 192.4,107.6 210,150 192.4,192.4 150,210 107.6,192.4 90,150 107.6,107.6"/>
+                <polygon points="150,66 209.4,90.6 234,150 209.4,209.4 150,234 90.6,209.4 66,150 90.6,90.6"/>
+                <polygon points="150,30 234.85,65.15 270,150 234.85,234.85 150,270 65.15,234.85 30,150 65.15,65.15"/>
+              </g>
+              <g stroke="#1a222d" stroke-width="1">
+                <line x1="150" y1="150" x2="150" y2="30"/><line x1="150" y1="150" x2="234.85" y2="65.15"/>
+                <line x1="150" y1="150" x2="270" y2="150"/><line x1="150" y1="150" x2="234.85" y2="234.85"/>
+                <line x1="150" y1="150" x2="150" y2="270"/><line x1="150" y1="150" x2="65.15" y2="234.85"/>
+                <line x1="150" y1="150" x2="30" y2="150"/><line x1="150" y1="150" x2="65.15" y2="65.15"/>
+              </g>
+              <polygon points="150,75.6 224.7,75.3 186,150 216.2,216.2 150,250.8 88.9,211.1 54,150 94,94"
+                       fill="url(#rf)" stroke="#22e58c" stroke-width="2"/>
+              <g fill="#0b0e13" stroke="#22e58c" stroke-width="2">
+                <circle cx="150" cy="75.6" r="3"/><circle cx="224.7" cy="75.3" r="3"/><circle cx="186" cy="150" r="3"/>
+                <circle cx="216.2" cy="216.2" r="3"/><circle cx="150" cy="250.8" r="3"/><circle cx="88.9" cy="211.1" r="3"/>
+                <circle cx="54" cy="150" r="3"/><circle cx="94" cy="94" r="3"/>
+              </g>
+              <text class="radar-axis" x="150" y="22" text-anchor="middle">Speed</text>
+              <text class="radar-axis" x="246" y="58" text-anchor="middle">Work</text>
+              <text class="radar-axis" x="288" y="153" text-anchor="end">Aerial</text>
+              <text class="radar-axis" x="246" y="250" text-anchor="middle">Press-R</text>
+              <text class="radar-axis" x="150" y="288" text-anchor="middle">Create</text>
+              <text class="radar-axis" x="54" y="250" text-anchor="middle">Def-act</text>
+              <text class="radar-axis" x="12" y="153" text-anchor="start">Def-pos</text>
+              <text class="radar-axis" x="54" y="58" text-anchor="middle">Mobil</text>
+            </svg>
+            <p class="ttl" style="margin-top:18px;">Suggested roles · as Deep Progressor</p>
+            <table class="heat" style="width:100%">
+              <tr><td class="rl">Deep-Lying Playmaker</td><td class="c g80">80</td></tr>
+              <tr><td class="rl">Half-Back</td><td class="c g80">82</td></tr>
+              <tr><td class="rl">Inverted Full-Back</td><td class="c g70">73</td></tr>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="rowttl"><p class="ttl">Attributes</p>
+              <span class="toggle"><span class="on">Percentile</span><span>Raw 1–20</span></span>
+            </div>
+            <div class="attrwrap">
+              <div class="grp">
+                <h4>Technical</h4>
+                <div class="attr"><span class="n">Passing</span><span class="val num">16</span><span class="track q4"><i style="width:92%"></i></span></div>
+                <div class="attr"><span class="n">First Touch</span><span class="val num">15</span><span class="track q4"><i style="width:80%"></i></span></div>
+                <div class="attr"><span class="n">Technique</span><span class="val num">15</span><span class="track q3"><i style="width:74%"></i></span></div>
+                <div class="attr"><span class="n">Tackling</span><span class="val rng num">11–13</span><span class="track q2"><i style="width:60%"></i></span></div>
+                <div class="attr"><span class="n">Dribbling</span><span class="val num">12</span><span class="track q2"><i style="width:55%"></i></span></div>
+                <div class="attr"><span class="n">Finishing</span><span class="val msk">?</span><span class="track"><i style="width:0"></i></span></div>
+              </div>
+              <div class="grp">
+                <h4>Mental</h4>
+                <div class="attr"><span class="n">Composure</span><span class="val num">16</span><span class="track q4"><i style="width:88%"></i></span></div>
+                <div class="attr"><span class="n">Work Rate</span><span class="val num">16</span><span class="track q4"><i style="width:88%"></i></span></div>
+                <div class="attr"><span class="n">Vision</span><span class="val num">15</span><span class="track q4"><i style="width:84%"></i></span></div>
+                <div class="attr"><span class="n">Positioning</span><span class="val num">14</span><span class="track q3"><i style="width:80%"></i></span></div>
+                <div class="attr"><span class="n">Decisions</span><span class="val num">14</span><span class="track q3"><i style="width:70%"></i></span></div>
+                <div class="attr"><span class="n">Anticipation</span><span class="val num">13</span><span class="track q2"><i style="width:60%"></i></span></div>
+              </div>
+              <div class="grp">
+                <h4>Physical</h4>
+                <div class="attr"><span class="n">Stamina</span><span class="val num">17</span><span class="track q4"><i style="width:88%"></i></span></div>
+                <div class="attr"><span class="n">Balance</span><span class="val num">14</span><span class="track q3"><i style="width:70%"></i></span></div>
+                <div class="attr"><span class="n">Agility</span><span class="val num">14</span><span class="track q3"><i style="width:66%"></i></span></div>
+                <div class="attr"><span class="n">Acceleration</span><span class="val num">13</span><span class="track q2"><i style="width:55%"></i></span></div>
+                <div class="attr"><span class="n">Pace</span><span class="val num">12</span><span class="track q1"><i style="width:50%"></i></span></div>
+                <div class="attr"><span class="n">Strength</span><span class="val num">12</span><span class="track q1"><i style="width:45%"></i></span></div>
+              </div>
+            </div>
+
+            <p class="ttl" style="margin-top:22px;">Role-pair fit · IP × OOP</p>
+            <table class="heat">
+              <tr><th></th><th>Screening DM</th><th>Pressing DM</th><th>Holding FB</th><th>Tracking AM</th></tr>
+              <tr><td class="rl">Half-Back</td><td class="c g80">82</td><td class="c g70">74</td><td class="c g60">66</td><td class="c g60">63</td></tr>
+              <tr><td class="rl">Deep-Lying PM</td><td class="c g80">80</td><td class="c g70">72</td><td class="c g60">64</td><td class="c g70">70</td></tr>
+              <tr><td class="rl">Inverted FB</td><td class="c g70">71</td><td class="c g60">67</td><td class="c g70">73</td><td class="c g50">58</td></tr>
+              <tr><td class="rl">Midfield PM</td><td class="c g60">69</td><td class="c g60">61</td><td class="c g50">55</td><td class="c g70">71</td></tr>
+            </table>
+
+            <div class="actions">
+              <div class="btn primary">Add to shortlist</div>
+              <div class="btn ghost">Compare</div>
+              <div class="btn ghost">Find similar</div>
+              <div class="btn ghost">Find upgrades over him</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="foot">Colour encodes percentile within this dataset, never raw 1–20. Ranged and unknown values are shown honestly · analysed with TFP FM · engine v1.3.0</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
