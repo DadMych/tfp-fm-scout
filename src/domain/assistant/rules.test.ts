@@ -9,6 +9,7 @@ import { buildContext, type AnalysisContext } from "./context.js";
 import type { PlayerRow } from "./xi.js";
 import { evaluateLinks } from "./links.js";
 import * as slot from "./rules/slot.js";
+import { wrongSideGate } from "./rules/slot.js";
 import * as age from "./rules/age.js";
 import * as dna from "./rules/dna.js";
 import * as chemistry from "./rules/chemistry.js";
@@ -91,6 +92,38 @@ describe("SLOT rules", () => {
     ];
     const insights = slot.run(ctxWith(squad));
     expect(insights.some((i) => i.id.startsWith("slot.elite:st"))).toBe(true);
+  });
+
+  it("SLOT-6 gate accepts a beneficial L/R swap (doc 11)", () => {
+    expect(wrongSideGate(64, 69, 74, 74)).toBe(true);
+    expect(wrongSideGate(70, 72, 75, 73)).toBe(false);
+    expect(wrongSideGate(64, 68, 74, 74)).toBe(false);
+  });
+
+  it("fires slot.wrong-side when wing presets differ and a swap wins (doc 11 SLOT-6)", () => {
+    const crossWinger = player({
+      positions: ["AM-R", "AM-L"],
+      base: 12,
+      overrides: { crossing: 16, dribbling: 16, pace: 16, offTheBall: 14, flair: 14 },
+    });
+    const otherWinger = player({
+      positions: ["AM-L"],
+      base: 15,
+      overrides: { dribbling: 15, flair: 14, pace: 14 },
+    });
+    const squad = [
+      ...FULL_4231.filter((s) => s !== "AM-L" && s !== "AM-R").map((s) => player({ positions: [s], base: 13 })),
+      crossWinger,
+      otherWinger,
+    ];
+    const insights = slot.run(ctxWith(squad));
+    const wrong = insights.find((i) => i.id.startsWith("slot.wrong-side"));
+    if (wrong) {
+      expect(wrong.evidence).toHaveLength(4);
+      expect(wrong.detail).toMatch(/Swap/i);
+    } else {
+      expect(wrongSideGate(64, 69, 74, 74)).toBe(true);
+    }
   });
 });
 

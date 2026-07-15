@@ -14,10 +14,9 @@
 import { midOf } from "../attr-value.js";
 import type { AttributeId } from "../attributes.js";
 import { getArchetype } from "../archetypes/registry.js";
-import { getRole } from "../roles/registry.js";
 import type { SlotNeed } from "./slots.js";
 import { deriveSlots } from "./slots.js";
-import { solveXI, slotFit, type PlayerRow } from "./xi.js";
+import { solveXI, slotFit, bestPresetFit, type PlayerRow } from "./xi.js";
 import type { AnalysisContext } from "./context.js";
 import { T } from "./thresholds.js";
 import { surname, listNames, money, pct } from "./phrases.js";
@@ -349,13 +348,12 @@ function assemble(pool: readonly Candidate[], cap: number, strat: Strategy): Ass
   return { picks, spent: cap - remaining };
 }
 
-function profileOf(row: PlayerRow): string {
+function profileOf(row: PlayerRow, ctx: AnalysisContext): string {
   const age = row.player.age != null ? `${row.player.age}` : "—";
   const family = row.scores.topArchetype ? getArchetype(row.scores.topArchetype.id).family : null;
-  const role = row.scores.bestRole
-    ? `${getRole(row.scores.bestRole.id).name} (${Math.round(row.scores.bestRole.score)})`
-    : null;
-  return [age, family, role ? `best role: ${role}` : null].filter(Boolean).join(" · ");
+  const fit = bestPresetFit(row, ctx.formation.id);
+  const role = fit > 0 ? `preset fit ${fit}` : null;
+  return [age, family, role].filter(Boolean).join(" · ");
 }
 
 function headlineFor(c: Candidate): string {
@@ -413,7 +411,7 @@ function toMove(
     cost: c.cost,
     headline: headlineFor(c),
     age: c.age,
-    profile: profileOf(c.row),
+    profile: profileOf(c.row, ctx),
     why: whyFor(c, ctx, newStarterBySlot),
   };
 }
