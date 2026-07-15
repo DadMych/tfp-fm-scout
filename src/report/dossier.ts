@@ -353,7 +353,7 @@ export function renderDossier(p: Player, s: PlayerScores, meta: ReportMeta): str
   .atable{width:100%;border-collapse:collapse;}
   .atable td{padding:4px 0;border-bottom:1px solid var(--rule);font-size:14px;}
   .alabel{color:var(--ink-2);}
-  .aval{width:44px;text-align:right;font-weight:600;padding-right:10px;}
+  .aval{width:44px;text-align:right;font-weight:600;padding-right:32px;}
   .aval.ranged{color:var(--ink-2);font-weight:500;}
   .aval.masked{color:var(--ink-3);}
   .abar{width:80px;}

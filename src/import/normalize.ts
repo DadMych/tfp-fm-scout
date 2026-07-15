@@ -31,6 +31,7 @@ const HEADER_SYNONYMS: Map<string, HeaderTarget> = (() => {
     const bare = a.name.replace(/\(.*?\)/g, "").trim();
     if (bare) m.set(norm(bare), { kind: "attr", id: a.id });
   }
+  m.set(norm("Penalty Taking"), { kind: "attr", id: "penalties" });
   const fields: Record<FieldTarget, string[]> = {
     name: ["name", "playername", "player"],
     age: ["age"],

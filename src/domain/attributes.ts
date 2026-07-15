@@ -38,7 +38,7 @@ export const ATTRIBUTES = [
   { id: "longThrows", name: "Long Throws", code: "L Th", category: "technical", setPiece: true },
   { id: "marking", name: "Marking", code: "Mar", category: "technical" },
   { id: "passing", name: "Passing", code: "Pas", category: "technical" },
-  { id: "penalties", name: "Penalty Taking", code: "Pen", category: "technical", setPiece: true },
+  { id: "penalties", name: "Penalty", code: "Pen", category: "technical", setPiece: true },
   { id: "tackling", name: "Tackling", code: "Tck", category: "technical" },
   { id: "technique", name: "Technique", code: "Tec", category: "technical" },
 
