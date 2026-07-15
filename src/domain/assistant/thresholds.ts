@@ -51,4 +51,10 @@ export const T = {
   MIN_FUNDING_SALE: 3e6,
   /** Release only when list value is this weak (or null) relative to squad p40. */
   RELEASE_VALUE_FRAC: 0.4,
+  /** Self-funding rebuild: never sell more than this many assets (doc 20). */
+  CHURN_MAX_SALES: 3,
+  /** Spender stretch: max sale proceeds beyond registration need (doc 20). */
+  PREINCOME_MAX_EXTRAS: 2,
+  /** Max post-peak signings per package when fit is genuinely elite (doc 20). */
+  VETERAN_SLOTS_PER_PACKAGE: 1,
 } as const;

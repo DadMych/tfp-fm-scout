@@ -60,6 +60,25 @@ The **Self-funding rebuild** (churn) is not clipped by the cash budget at all: e
 its sales raise is reinvestable, since net spend ≤ 0 is enforced. Selling a €59M starter
 means the plan may sign a €59M replacement — selling good players buys good players.
 
+Churn only draws from **sell-high / sell-now** board exits (max `CHURN_MAX_SALES`, default 3)
+and caps assembly at `min(sale income, 2× budget)`. No fringe releases, no seven-player
+fire sales for a +1 window.
+
+## Smart swaps
+
+When the Sporting Director flags arbitrage (`sell-high` + shortlist twin with negative
+`netCost`), `buildSwapPackages` emits a **Smart swaps** plan: sell Scott, sign Iwobi, etc.
+Forced sales run in exits pass 0 so the window always executes the insight, not a permutation.
+
+Packages rank by **lift × efficiency − sales penalty**, not raw `afterFit` alone — so a
+profitable swap or a tight Moneyball window can headline ahead of a noisy +2 that sells half
+the bench.
+
+Spender strategies (`spine`, `win-now`, `flanks`, `half-budget`) prefer players still in
+their peak (`age ≤ AGE_PEAK_END`). **One** post-peak signing per package is allowed when
+preset fit is elite (`≥ GOOD_FIT`, e.g. Pope 34 at GK 73). Depth cover stays in-prime only
+— no pensioner bench behind a new starter.
+
 ## Prospects
 
 A **prospect** move is a shortlist player aged ≤ `PROSPECT_AGE` (21) signed to develop.
