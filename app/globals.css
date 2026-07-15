@@ -47,9 +47,6 @@ button{font-family:inherit;cursor:pointer;}
 .drop .row-actions{display:flex;gap:16px;margin-top:6px;font-family:var(--sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;}
 .drop .row-actions button{background:none;border:none;color:var(--ink-3);padding:0;text-decoration:underline;}
 .err{color:var(--red);font-family:var(--sans);font-size:13px;}
-.ok{color:var(--ink-2);font-family:var(--sans);font-size:13px;}
-.auth-meta{font-family:var(--sans);font-size:13px;margin:0;}
-.auth-meta a{color:var(--red);}
 .import-progress{font-style:italic;max-width:42ch;margin:0 auto;line-height:1.55;}
 
 .cta-row{display:flex;gap:16px;align-items:center;padding-top:8px;flex-wrap:wrap;}

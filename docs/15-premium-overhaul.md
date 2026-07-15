@@ -191,9 +191,8 @@ Infrastructure is pinned in **doc 16**: Neon Postgres, Auth.js (password + Googl
 and a deliberately smaller v1 than doc 02's full topology (client-side worker parsing
 stays; S3/pg-boss defer until share links demand canonical raw files).
 
-**Status (July 2026):** code complete — store seam, persistence E2E, password reset, and
-Vercel project `tfp-fm` are landed. Production deploy is ops: env vars on Vercel (doc 16
-§6–8), `pnpm db:migrate` on Neon main, smoke test.
+**Status (July 2026):** code complete — store seam, persistence E2E, and Vercel project
+`tfp-fm` are landed. No outbound email auth in v1.
 
 ---
 

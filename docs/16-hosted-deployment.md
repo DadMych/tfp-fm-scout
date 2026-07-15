@@ -5,8 +5,8 @@ decisions that doc 02 left open ("any managed Postgres") now that the database e
 a **Neon** Postgres project in `eu-central-1`. Where this doc conflicts with doc 02, this
 doc wins — doc 02 has been amended to match.
 
-> **Status:** P4 complete — hosted accounts, persistence E2E, password reset, and production
-> deploy at **https://tfp-fm.vercel.app** (`vercel.json` + `.github/workflows/migrate.yml`).
+> **Status:** P4 complete — hosted accounts, persistence E2E, and production deploy at
+> **https://tfp-fm.vercel.app**. No outbound email (password reset deferred).
 
 ---
 
@@ -58,8 +58,8 @@ password login is the lowest-friction option for the FM audience, and Google cov
   from `.env`.
 - **Account linking:** match by verified email — a user who registered with a password
   and later clicks "Sign in with Google" on the same address lands in the same account.
-- **Password reset:** email link flow; needs a mail sender (Resend free tier) — the only
-  new external service auth introduces.
+- **Password reset:** deferred — no outbound email in v1 (no Resend, no sender domain).
+  Users who forget a password create a new account or use Google when configured.
 - Env vars: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (placeholders
   already in `.env`).
 
@@ -106,16 +106,13 @@ later without moving the seam again.
 | `DATABASE_URL` | Neon pooled string (in `.env`) | Project env var |
 | `DATABASE_URL_UNPOOLED` | Neon direct string (add at P4 start) | Project env var (migrations run from CI) |
 | `AUTH_SECRET` | `openssl rand -base64 32` | Separate value per environment |
-| `AUTH_URL` | `http://127.0.0.1:3000` (Playwright/E2E) | Production origin, e.g. `https://tfpdev.com` |
 | `GOOGLE_CLIENT_ID/SECRET` | OAuth client "TFP FM dev" (localhost callback) | OAuth client "TFP FM" (prod callback) |
-| `RESEND_API_KEY` | Optional — reset link logged to console in dev | Required in production for password reset |
-| `EMAIL_FROM` | `onboarding@resend.dev` for testing | Verified sender domain on Resend |
+| `AUTH_URL` | Optional in dev (`trustHost` covers Vercel previews) | Production origin if needed |
 
 ## 7. Order of work when P4 opens
 
 1. Drizzle + schema from §4, migrations against a Neon branch, then `main`.
-2. Auth.js: Credentials + Google, JWT sessions, register/login/reset screens in
-   Broadsheet voice.
+2. Auth.js: Credentials + Google, JWT sessions, register/login screens in Broadsheet voice.
 3. Store seam swap: `lib/store.tsx` reads/writes repositories via API routes when a
    session exists; `localStorage` remains the logged-out mode.
 4. One-time local → account migration prompt.
@@ -131,9 +128,8 @@ works entirely offline exactly as today.
 1. **Neon `main` branch** has migrations applied: `DATABASE_URL_UNPOOLED=… pnpm db:migrate`.
 2. **Vercel project** `tfp-fm` (linked via `vercel link`); `vercel.json` sets `pnpm install` + `pnpm build`.
 3. **Set production env vars** from §6 (pooled `DATABASE_URL` for runtime; unpooled only for migrate CI / `.github/workflows/migrate.yml`).
-4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google`.
-5. **Resend** verified domain + `EMAIL_FROM` for password reset in production.
-6. **Deploy:** `vercel --prod` (or connect the GitHub repo for automatic deploys).
-7. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk; forgot-password email arrives.
+4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google` (optional until configured).
+5. **Deploy:** `vercel --prod` (or connect the GitHub repo for automatic deploys).
+6. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk.
 
 Logged-out visitors still get the full local-first app (IndexedDB) when no session is present.

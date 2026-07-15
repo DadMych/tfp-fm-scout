@@ -27,13 +27,6 @@ export async function findUserById(db: Db, id: string) {
   return rows[0] ?? null;
 }
 
-export async function updateUserPassword(db: Db, userId: string, passwordHash: string) {
-  await db
-    .update(schema.users)
-    .set({ passwordHash })
-    .where(eq(schema.users.id, userId));
-}
-
 export async function createUser(
   db: Db,
   input: { email: string; passwordHash?: string | null; name?: string | null },

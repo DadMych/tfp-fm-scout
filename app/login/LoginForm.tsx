@@ -101,11 +101,6 @@ export default function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
-        {mode === "signin" ? (
-          <p className="auth-meta">
-            <Link href="/forgot-password">Forgot your password?</Link>
-          </p>
-        ) : null}
         {error ? <div className="err">{error}</div> : null}
         <div className="cta-row">
           <button type="submit" className="btn" disabled={busy}>

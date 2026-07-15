@@ -30,5 +30,3 @@ tools/fm26_export/plugin/obj/
 tools/fm26_export/plugin_displayfix/bin/
 tools/fm26_export/plugin_displayfix/obj/
 tools/fm26_export/BETA/FM26DisplayFix/
-.vercel
-.env*

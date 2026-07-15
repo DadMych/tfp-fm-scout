@@ -17,7 +17,7 @@ the bar the docs set.
 Since the audit snapshot in §1–5 below: **git + `pnpm check`** (190 unit + 4 E2E),
 Broadsheet finish (doc 15 P1), engine truth and scouting tools (P2), import contract /
 Web Worker / IndexedDB / calibration / branded types (P3), and **hosted v1** (Neon,
-Auth.js, store seam, persistence E2E, password reset) are landed. Production deploy:
+Auth.js, store seam, persistence E2E) are landed. Production deploy:
 **https://tfp-fm.vercel.app**. The sections below describe the codebase at the original audit time unless noted here.
 
 ---
