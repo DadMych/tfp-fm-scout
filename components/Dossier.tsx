@@ -35,6 +35,7 @@ import { FactsRail } from "@/components/kit/FactsRail";
 import { InkBar } from "@/components/kit/InkBar";
 import { PullQuote } from "@/components/kit/PullQuote";
 import { useBundle, useDatasets, type DatasetKind } from "@/lib/store";
+import { similarHref, upgradesHref } from "@/lib/scout-anchor-url";
 
 const VERDICT_LABEL: Record<string, string> = {
   untouchable: "Untouchable",
@@ -276,6 +277,14 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
           </button>
           {" · "}
           <Link href={`/compare?a=${kind}:${p.id}`}>Compare</Link>
+          {" · "}
+          <Link href={similarHref(kind, p.id)}>Find similar</Link>
+          {kind === "squad" && shortlist ? (
+            <>
+              {" · "}
+              <Link href={upgradesHref(kind, p.id)}>Find upgrades</Link>
+            </>
+          ) : null}
           {" · "}
           <Link href="/scout">← Back to desk</Link>
         </span>
