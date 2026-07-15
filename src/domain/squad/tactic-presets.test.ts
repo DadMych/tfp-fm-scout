@@ -17,6 +17,14 @@ describe("tactic presets", () => {
     expect(() => assertPresetCoverage()).not.toThrow();
   });
 
+  it("4-2-3-1 wings use asymmetric preset pairs (doc 11 SLOT-6)", () => {
+    const lw = getSlotPair("4-2-3-1", "aml");
+    const rw = getSlotPair("4-2-3-1", "amr");
+    expect(lw).toBeTruthy();
+    expect(rw).toBeTruthy();
+    expect(lw!.ip).not.toBe(rw!.ip);
+  });
+
   it("wires doc 05 §6 playmaker pair through a 4-4-2 RCM slot", () => {
     const pair = getSlotPair("4-4-2", "mcr");
     expect(pair).toBeTruthy();

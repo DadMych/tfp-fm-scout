@@ -11,7 +11,8 @@ import { readFileSync } from "node:fs";
 import { parseExport } from "../src/import/parse.js";
 import { buildScores } from "../src/domain/scoring/dataset.js";
 import { getArchetype } from "../src/domain/archetypes/registry.js";
-import { getRole } from "../src/domain/roles/registry.js";
+import { bestPresetFit } from "../src/domain/assistant/xi.js";
+import { DEFAULT_FORMATION_ID } from "../src/domain/assistant/defaults.js";
 
 const [, , file, filter] = process.argv;
 if (!file) {
@@ -57,11 +58,11 @@ for (const s of rows) {
   const archLabel = arch
     ? `${arch.name} ${Math.round(s.topArchetype!.score)}${s.topArchetype!.badge ? ` [${s.topArchetype!.badge}]` : ""}`
     : "—";
-  const roleLabel = s.bestRole ? `${getRole(s.bestRole.id).name} ${Math.round(s.bestRole.score)}` : "—";
+  const presetFit = bestPresetFit({ player: p, scores: s }, DEFAULT_FORMATION_ID);
   const pos = p.positions.join("/");
   const conf = `${Math.round(s.confidence * 100)}% known`;
 
   console.log(`${p.name}  (${p.age ?? "?"}, ${pos}${p.club ? `, ${p.club}` : ""})`);
-  console.log(`  ${s.general.family} · top archetype: ${archLabel} · best role: ${roleLabel} · ${conf}`);
+  console.log(`  ${s.general.family} · top archetype: ${archLabel} · 4-2-3-1 fit: ${presetFit || "—"} · ${conf}`);
   console.log(`  ${s.summary}\n`);
 }

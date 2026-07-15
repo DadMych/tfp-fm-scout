@@ -11,7 +11,8 @@ import type { Player } from "../domain/player.js";
 import { playerGroups, type PositionGroup } from "../domain/positions.js";
 import type { PlayerScores } from "../domain/scoring/dataset.js";
 import { getArchetype } from "../domain/archetypes/registry.js";
-import { getRole } from "../domain/roles/registry.js";
+import { bestPresetFit } from "../domain/assistant/xi.js";
+import { DEFAULT_FORMATION_ID } from "../domain/assistant/defaults.js";
 import { pickBargain, pickLead, posLabel, standouts } from "../domain/front-page.js";
 import { formatPullQuote } from "../domain/evidence.js";
 import { esc, formatMoney } from "./format.js";
@@ -79,8 +80,7 @@ function entry(p: Player, s: PlayerScores, href: string | null): string {
   const archScore = s.topArchetype ? Math.round(s.topArchetype.score) : null;
   const badge = s.topArchetype?.badge ?? null;
   const lead = badge === "Elite" ? " lead" : "";
-  const role = s.bestRole ? getRole(s.bestRole.id) : null;
-  const roleScore = s.bestRole ? Math.round(s.bestRole.score) : null;
+  const presetFit = bestPresetFit({ player: p, scores: s }, DEFAULT_FORMATION_ID);
   const conf = Math.round(s.confidence * 100);
 
   const so = standouts(s)
@@ -108,7 +108,7 @@ function entry(p: Player, s: PlayerScores, href: string | null): string {
         </div>
         ${stamp(badge)}
       </div>
-      <div class="role-line">Best role · <b>${role ? esc(role.name) : "—"}</b> <span class="num">${roleScore ?? ""}</span> · <span class="num">${conf}%</span> known</div>
+      <div class="role-line">4-2-3-1 fit · <span class="num">${presetFit || "—"}</span> · <span class="num">${conf}%</span> known</div>
     </div>
   </article>`;
 }
