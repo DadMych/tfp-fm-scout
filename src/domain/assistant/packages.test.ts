@@ -116,4 +116,23 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
       expect(p.fundingNote).toMatch(/covers \d+% of this plan/);
     }
   });
+
+  it("never admits a downgrade when the slot already has a starter (doc 17 §10.3)", () => {
+    const pkgs = buildPackages(ctx);
+    for (const p of pkgs) {
+      for (const m of p.moves) {
+        if (m.currentFit > 0) expect(m.delta).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
+  it("press-conversion package filters on derived workEngine (doc 17 §10.5)", () => {
+    const pkgs = buildPackages(ctx);
+    const press = pkgs.find((p) => p.id === "press-conversion");
+    if (!press) return;
+    for (const m of press.moves) {
+      const row = shortlist.find((r) => r.player.id === m.playerId)!;
+      expect(row.scores.derived.workEngine).toBeGreaterThanOrEqual(13);
+    }
+  });
 });

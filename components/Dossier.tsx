@@ -207,7 +207,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
             { label: "Value", value: <span className="num">{formatMoney(p.value)}</span> },
             {
               label: "Top archetype",
-              value: <b>{arch ? arch.name : "Utility"}</b>,
+              value: <b>{arch ? arch.name : "No defined archetype"}</b>,
             },
             { label: "FM grade", value: <b>{p.scoutGrade || "—"}</b> },
             { label: "Known", value: <span className="num">{conf}%</span> },
@@ -220,7 +220,10 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
       <div className="d-body">
         <figure className="radar-figure">
           <p className="panel-h">Profile radar</p>
-          <Radar scores={s} />
+          <Radar
+            scores={s}
+            cohortLabel={GROUP_COHORT_LABEL[canonicalPrimaryGroup(p.positions)]}
+          />
           <figcaption className="radar-cap">
             Percentile vs {GROUP_COHORT_LABEL[canonicalPrimaryGroup(p.positions)]} in this database
           </figcaption>

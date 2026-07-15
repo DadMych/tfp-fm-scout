@@ -46,7 +46,13 @@ function pt(cx: number, cy: number, r: number, i: number, n: number): [number, n
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
 }
 
-export function Radar({ scores }: { scores: PlayerScores }) {
+export function Radar({
+  scores,
+  cohortLabel,
+}: {
+  scores: PlayerScores;
+  cohortLabel?: string;
+}) {
   const axes = (scores.pop === "gk" ? RADAR_GK : RADAR_OUTFIELD).map((id) => ({
     id,
     pct: scores.percentiles[id] ?? null,
@@ -62,7 +68,9 @@ export function Radar({ scores }: { scores: PlayerScores }) {
     .slice(0, 3)
     .map((a) => `${SHORT[a.id] ?? metricLabel(a.id)} ${Math.round(a.pct!)}`)
     .join(", ");
-  const ariaLabel = `Percentile radar. Strongest: ${top}.`;
+  const ariaLabel = cohortLabel
+    ? `Percentile vs ${cohortLabel} in this database. Strongest: ${top}.`
+    : `Percentile radar. Strongest: ${top}.`;
 
   const W = 420;
   const cx = W / 2;

@@ -4,41 +4,221 @@
   "anchorImage": "tempoDictator.png",
   "generatedAt": "2026-07-15",
   "archetypes": [
-    { "id": "deepProgressor", "scene": "Hero deep in his own half striking a long raking pass; the ball sails high over two faint distant opponents" },
-    { "id": "tempoDictator", "scene": "Hero standing with one foot on the ball, head up, pointing to direct play (anchor image)" },
-    { "id": "pressResister", "scene": "Hero turning out of a pressing trap with the ball, two faint opponents lunging at him from both sides" },
-    { "id": "chanceArchitect", "scene": "Hero clipping a through-pass; the ball rolls through the gap between two faint defenders into open space" },
-    { "id": "wideCreator", "scene": "Hero at the touchline whipping a deep cross; a faint teammate attacks the far post in the background" },
-    { "id": "deadBallSpecialist", "scene": "Hero behind a placed free-kick ball; a faint three-man defensive wall jumps in the background" },
-    { "id": "linkForward", "scene": "Hero with his back to goal cushioning a lay-off; a faint teammate arrives onto the pass at speed" },
-    { "id": "maverick", "scene": "Hero nutmegging a faint wrong-footed defender, flamboyant body shape" },
-    { "id": "lineBreaker", "scene": "Hero bursting between two faint beaten opponents with the ball glued to his feet" },
-    { "id": "touchlineIsolator", "scene": "Hero squaring up a faint crouched full-back one-on-one, ball rolled under his studs" },
-    { "id": "roadrunner", "scene": "Hero in a flat-out sprint chasing the ball knocked ahead; a faint trailing opponent is left far behind" },
-    { "id": "transitionWeapon", "scene": "Hero breaking away with the ball; faint scattered opponents behind him still turning around" },
-    { "id": "runnerInBehind", "scene": "Hero darting past the shoulder of a faint last defender as the ball arcs over the top toward him" },
-    { "id": "overlappingOutlet", "scene": "Hero sprinting around the outside of a faint teammate on the ball, calling for the release" },
-    { "id": "penaltyBoxPredator", "scene": "Hero stabbing the ball home at the near post; faint wrong-footed goalkeeper and goal frame behind" },
-    { "id": "completeFinisher", "scene": "Hero striking a mid-air scissor volley; faint goal frame in the background" },
-    { "id": "secondPhaseThreat", "scene": "Hero arriving at the edge of the box to smash a loose bouncing ball first time; faint cluster of players behind" },
-    { "id": "longRangeMarksman", "scene": "Hero in full follow-through from long range; faint goal with a stretching keeper far in the distance" },
-    { "id": "cuttingInsideFinisher", "scene": "Hero bending a curling shot with his instep, a faint beaten defender left behind on the outside" },
-    { "id": "aerialMonster", "scene": "Hero out-jumping a faint opponent to power a header, both airborne, hero clearly higher" },
-    { "id": "targetFulcrum", "scene": "Hero chesting the ball down with a broad planted stance while a faint defender leans on his back" },
-    { "id": "duelWinner", "scene": "Hero winning a shoulder-to-shoulder duel against a faint opponent, ball between their feet" },
-    { "id": "readerOfTheGame", "scene": "Hero calmly stepping across a faint attacker to intercept a rolling pass" },
-    { "id": "recoverySprinter", "scene": "Hero sprinting back goal-side of a faint attacker in possession, closing the gap" },
-    { "id": "destroyer", "scene": "Hero in a full sliding tackle cleanly taking the ball off a faint opponent" },
-    { "id": "manMarker", "scene": "Hero pressed tight against the back of a faint attacker trying to receive, denying the turn" },
-    { "id": "anchor", "scene": "Hero standing tall and poking the ball away from a faint dribbler with a calm standing tackle" },
-    { "id": "pressMachine", "scene": "Hero mid-lunge closing down a faint panicked opponent on the ball" },
-    { "id": "perpetualMotion", "scene": "Hero striding on strongly while faint opponents stand bent over exhausted behind him" },
-    { "id": "athleticSpecimen", "scene": "Hero leaping high chest-first for a dropping ball, explosive full-body athletic extension" },
-    { "id": "leaderOrganizer", "scene": "Hero with a captain's armband barking orders and pointing; faint teammates align into a defensive line behind" },
-    { "id": "warrior", "scene": "Hero roaring with clenched fists over a won ball; a faint beaten opponent sits on the ground behind" },
-    { "id": "shotStoppingWall", "scene": "Hero goalkeeper at full horizontal stretch fingertipping the ball away; goal frame behind him" },
-    { "id": "modernDistributor", "scene": "Hero goalkeeper at the edge of his area side-volleying a precise pass out, composed like an outfielder" },
-    { "id": "boxCommander", "scene": "Hero goalkeeper rising above two faint attackers to claim a high cross with both hands; goal frame behind" },
-    { "id": "sweeperKeeper", "scene": "Hero goalkeeper far outside his area sliding to clear the ball ahead of a faint onrushing attacker" }
+    {
+      "id": "deepProgressor",
+      "scene": "Hero deep in his own half striking a long raking pass; the ball sails high over two faint distant opponents",
+      "subject": "breaks lines from the base of midfield",
+      "accent": "the football"
+    },
+    {
+      "id": "tempoDictator",
+      "scene": "Hero standing with one foot on the ball, head up, pointing to direct play (anchor image)",
+      "subject": "sets the rhythm and is always an option",
+      "accent": "the football"
+    },
+    {
+      "id": "pressResister",
+      "scene": "Hero turning out of a pressing trap with the ball, two faint opponents lunging at him from both sides",
+      "subject": "receives under pressure and comes out the far side",
+      "accent": "the football"
+    },
+    {
+      "id": "chanceArchitect",
+      "scene": "Hero clipping a through-pass; the ball rolls through the gap between two faint defenders into open space",
+      "subject": "unlocks defences with the final ball",
+      "accent": "the football"
+    },
+    {
+      "id": "wideCreator",
+      "scene": "Hero at the touchline whipping a deep cross; a faint teammate attacks the far post in the background",
+      "subject": "creates from the flanks",
+      "accent": "the football"
+    },
+    {
+      "id": "deadBallSpecialist",
+      "scene": "Hero behind a placed free-kick ball; a faint three-man defensive wall jumps in the background",
+      "subject": "is a weapon from set-pieces",
+      "accent": "the football"
+    },
+    {
+      "id": "linkForward",
+      "scene": "Hero with his back to goal cushioning a lay-off; a faint teammate arrives onto the pass at speed",
+      "subject": "plays as the team's connector up front",
+      "accent": "the football"
+    },
+    {
+      "id": "maverick",
+      "scene": "Hero nutmegging a faint wrong-footed defender, flamboyant body shape",
+      "subject": "makes something from nothing",
+      "accent": "the football"
+    },
+    {
+      "id": "lineBreaker",
+      "scene": "Hero bursting between two faint beaten opponents with the ball glued to his feet",
+      "subject": "carries the ball past opponents",
+      "accent": "the football"
+    },
+    {
+      "id": "touchlineIsolator",
+      "scene": "Hero squaring up a faint crouched full-back one-on-one, ball rolled under his studs",
+      "subject": "beats his man one-on-one out wide",
+      "accent": "the football"
+    },
+    {
+      "id": "roadrunner",
+      "scene": "Hero in a flat-out sprint chasing the ball knocked ahead; a faint trailing opponent is left far behind",
+      "subject": "threatens with raw pace",
+      "accent": "the football"
+    },
+    {
+      "id": "transitionWeapon",
+      "scene": "Hero breaking away with the ball; faint scattered opponents behind him still turning around",
+      "subject": "is devastating in the seconds after a turnover",
+      "accent": "the football"
+    },
+    {
+      "id": "runnerInBehind",
+      "scene": "Hero darting past the shoulder of a faint last defender as the ball arcs over the top toward him",
+      "subject": "times his runs off the last shoulder",
+      "accent": "the football"
+    },
+    {
+      "id": "overlappingOutlet",
+      "scene": "Hero sprinting around the outside of a faint teammate on the ball, calling for the release",
+      "subject": "is an athletic wide runner from deep",
+      "accent": "the football"
+    },
+    {
+      "id": "penaltyBoxPredator",
+      "scene": "Hero stabbing the ball home at the near post; faint wrong-footed goalkeeper and goal frame behind",
+      "subject": "lives on the last touch in the box",
+      "accent": "the football"
+    },
+    {
+      "id": "completeFinisher",
+      "scene": "Hero striking a mid-air scissor volley; faint goal frame in the background",
+      "subject": "scores every type of goal",
+      "accent": "the football"
+    },
+    {
+      "id": "secondPhaseThreat",
+      "scene": "Hero arriving at the edge of the box to smash a loose bouncing ball first time; faint cluster of players behind",
+      "subject": "arrives late for chaos in the box",
+      "accent": "the football"
+    },
+    {
+      "id": "longRangeMarksman",
+      "scene": "Hero in full follow-through from long range; faint goal with a stretching keeper far in the distance",
+      "subject": "is a threat from distance",
+      "accent": "the football"
+    },
+    {
+      "id": "cuttingInsideFinisher",
+      "scene": "Hero bending a curling shot with his instep, a faint beaten defender left behind on the outside",
+      "subject": "scores by cutting in from wide",
+      "accent": "the football"
+    },
+    {
+      "id": "aerialMonster",
+      "scene": "Hero out-jumping a faint opponent to power a header, both airborne, hero clearly higher",
+      "subject": "dominates both boxes in the air",
+      "accent": "the football"
+    },
+    {
+      "id": "targetFulcrum",
+      "scene": "Hero chesting the ball down with a broad planted stance while a faint defender leans on his back",
+      "subject": "holds the ball up and brings others into play",
+      "accent": "the football"
+    },
+    {
+      "id": "duelWinner",
+      "scene": "Hero winning a shoulder-to-shoulder duel against a faint opponent, ball between their feet",
+      "subject": "wins his individual battles on the ground and in the air",
+      "accent": "the football"
+    },
+    {
+      "id": "readerOfTheGame",
+      "scene": "Hero calmly stepping across a faint attacker to intercept a rolling pass",
+      "subject": "intercepts and positions rather than diving in",
+      "accent": "the football"
+    },
+    {
+      "id": "recoverySprinter",
+      "scene": "Hero sprinting back goal-side of a faint attacker in possession, closing the gap",
+      "subject": "defends the space behind with pace",
+      "accent": "the football"
+    },
+    {
+      "id": "destroyer",
+      "scene": "Hero in a full sliding tackle cleanly taking the ball off a faint opponent",
+      "subject": "breaks up play by force",
+      "accent": "the football"
+    },
+    {
+      "id": "manMarker",
+      "scene": "Hero pressed tight against the back of a faint attacker trying to receive, denying the turn",
+      "subject": "locks onto and smothers a danger man",
+      "accent": "the football"
+    },
+    {
+      "id": "anchor",
+      "scene": "Hero standing tall and poking the ball away from a faint dribbler with a calm standing tackle",
+      "subject": "is a positional shield that never leaves its post",
+      "accent": "the football"
+    },
+    {
+      "id": "pressMachine",
+      "scene": "Hero mid-lunge closing down a faint panicked opponent on the ball",
+      "subject": "hunts the ball down for the full ninety",
+      "accent": "the football"
+    },
+    {
+      "id": "perpetualMotion",
+      "scene": "Hero striding on strongly while faint opponents stand bent over exhausted behind him",
+      "subject": "is a physical outlier who never stops",
+      "accent": "the football"
+    },
+    {
+      "id": "athleticSpecimen",
+      "scene": "Hero leaping high chest-first for a dropping ball, explosive full-body athletic extension",
+      "subject": "is a physical outlier in every direction",
+      "accent": "the football"
+    },
+    {
+      "id": "leaderOrganizer",
+      "scene": "Hero with a captain's armband barking orders and pointing; faint teammates align into a defensive line behind",
+      "subject": "leads and organises those around him",
+      "accent": "the football"
+    },
+    {
+      "id": "warrior",
+      "scene": "Hero roaring with clenched fists over a won ball; a faint beaten opponent sits on the ground behind",
+      "subject": "sets the tone with bravery and aggression",
+      "accent": "the football"
+    },
+    {
+      "id": "shotStoppingWall",
+      "scene": "Hero goalkeeper at full horizontal stretch fingertipping the ball away; goal frame behind him",
+      "subject": "keeps out what he should and plenty he shouldn't",
+      "accent": "the football"
+    },
+    {
+      "id": "modernDistributor",
+      "scene": "Hero goalkeeper at the edge of his area side-volleying a precise pass out, composed like an outfielder",
+      "subject": "plays as an eleventh outfielder",
+      "accent": "the football"
+    },
+    {
+      "id": "boxCommander",
+      "scene": "Hero goalkeeper rising above two faint attackers to claim a high cross with both hands; goal frame behind",
+      "subject": "owns his penalty area",
+      "accent": "the football"
+    },
+    {
+      "id": "sweeperKeeper",
+      "scene": "Hero goalkeeper far outside his area sliding to clear the ball ahead of a faint onrushing attacker",
+      "subject": "defends the space behind the line",
+      "accent": "the football"
+    }
   ]
 }

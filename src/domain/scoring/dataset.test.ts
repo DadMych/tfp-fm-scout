@@ -94,6 +94,20 @@ describe("buildScores — dataset integration", () => {
     expect(a.percentiles.crossing).toBe(b.percentiles.crossing);
   });
 
+  it("ignores insufficient roles when picking bestRole (doc 17 §7.7)", () => {
+    const sparse: Player = {
+      id: "ghost",
+      name: "Ghost",
+      age: 22,
+      positions: ["M-C"],
+      attrs: exact({ composure: 18 }),
+    };
+    const full = filler("full", 12, ["M-C"]);
+    const scored = buildScores([full, sparse])[1]!;
+    expect(scored.roles["ip.midfieldPlaymaker"]!.insufficient).toBe(true);
+    expect(scored.bestRole?.id).not.toBe("ip.midfieldPlaymaker");
+  });
+
   it("scores a goalkeeper against the GK population", () => {
     const gk: Player = {
       id: "gk1",

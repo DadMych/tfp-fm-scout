@@ -176,4 +176,12 @@ describe("recommend", () => {
     expect(rec.verdict).toBe("Squad upgrade");
     expect(rec.reasons.some((r) => r.includes("no natural cover"))).toBe(true);
   });
+
+  it("demotes low-confidence squad upgrade (doc 17 §8.3)", () => {
+    const squad = [player("sq", { v: 9, positions: ["D-C"] })];
+    const ctx = buildSquadContext(squad, buildScores(squad));
+    const target = player("t", { v: 18, positions: ["D-C"] });
+    const rec = recommend(target, stubScores({ score: 80, roleFit: 85, confidence: 0.3 }), ctx);
+    expect(rec.verdict).not.toBe("Squad upgrade");
+  });
 });

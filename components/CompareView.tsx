@@ -228,7 +228,12 @@ export function CompareView() {
               <tr>
                 <th>Metric</th>
                 {players.map((x) => (
-                  <th key={`${x.ref.kind}:${x.ref.id}`}>{x.p.name}</th>
+                  <th key={`${x.ref.kind}:${x.ref.id}`}>
+                    <span className="cmp-th">
+                      {x.s.topArchetype ? <ArchetypeIcon id={x.s.topArchetype.id} size={16} /> : null}
+                      {x.p.name}
+                    </span>
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -314,7 +319,12 @@ export function CompareView() {
                     <tr>
                       <th>Attribute</th>
                       {players.map((x) => (
-                        <th key={`${x.ref.kind}:${x.ref.id}`}>{x.p.name}</th>
+                        <th key={`${x.ref.kind}:${x.ref.id}`}>
+                          <span className="cmp-th">
+                            {x.s.topArchetype ? <ArchetypeIcon id={x.s.topArchetype.id} size={16} /> : null}
+                            {x.p.name}
+                          </span>
+                        </th>
                       ))}
                     </tr>
                   </thead>

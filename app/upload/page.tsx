@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Masthead } from "@/components/kit/Masthead";
+import { BroadsheetIllustration } from "@/components/kit/BroadsheetIllustration";
 import { Uploader } from "@/components/Uploader";
 import { useDatasets } from "@/lib/store";
 
@@ -27,13 +28,16 @@ export default function UploadPage() {
     <div className="wrap">
       <Masthead current="upload" />
 
-      <section className="hero-lead">
-        <p className="eyebrow">Import</p>
-        <h1>Upload your players.</h1>
-        <p>
-          Drop in an FM26 export of your squad and your shortlist. We rank every player against the
-          database, work out his best roles and archetypes, and tell you plainly who to chase.
-        </p>
+      <section className="hero-lead upload-hero">
+        <BroadsheetIllustration id="empty-desk" width={200} className="upload-hero-art" />
+        <div>
+          <p className="eyebrow">Import</p>
+          <h1>Upload your players.</h1>
+          <p>
+            Drop in an FM26 export of your squad and your shortlist. We rank every player against the
+            database, work out his best roles and archetypes, and tell you plainly who to chase.
+          </p>
+        </div>
       </section>
 
       <div className="uploads">

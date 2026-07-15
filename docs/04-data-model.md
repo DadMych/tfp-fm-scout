@@ -144,7 +144,9 @@ These feed roles, archetypes, and the UI. All in `src/domain/derived.ts`, all un
 | `mobility` | `(agility + balance + acceleration) / 3` | Tight-space movement |
 | `physicality` | `(strength + jumpingReach + stamina + balance) / 4` | Physical presence |
 
-**Percentiles:** for each derived metric and each raw attribute, compute the player's percentile **within the dataset**, and additionally within `positionGroup` cohorts (`GK`, `CB`, `FB/WB`, `DM/CM`, `AM/W`, `ST` — mapping from `positions` in `src/domain/position-groups.ts`; a player belongs to every group his positions cover). Percentile = fraction of cohort strictly below + half of ties (standard mid-rank), stored as 0–100.
+**Percentiles:** for each derived metric and each raw attribute, compute the player's percentile **within the dataset**, and additionally within `positionGroup` cohorts (`GK`, `CB`, `FB/WB`, `DM/CM`, `AM/W`, `ST` — mapping from `positions` in `src/domain/positions.ts`; a player belongs to every group his positions cover). Percentile = fraction of cohort strictly below + half of ties (standard mid-rank), stored as 0–100.
+
+**Primary group (doc 17 §7.1):** when a player spans multiple cohorts, `primaryGroup` picks one canonical group for radar captions and summary copy using fixed priority: `GK > CB > FB/WB > DM/CM > AM/W > ST`. FM export column order must not change the cohort.
 
 **Confidence:** `confidence = Σ weight of exact attrs / Σ weight of all attrs used by a given score`. Scores with confidence < 0.5 render with an "insufficient scouting" treatment (doc 09).
 

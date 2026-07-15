@@ -173,9 +173,14 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     let bestAny = -1;
     let bestAnyId: RoleId | "" = "";
     for (const role of ROLES) {
-      const s = roles[role.id]!.score;
-      if (s > bestAny) { bestAny = s; bestAnyId = role.id; }
-      if (role.slots.some((slot) => posSet.has(slot)) && s > bestEligible) {
+      const rs = roles[role.id]!;
+      const s = rs.score;
+      if (!rs.insufficient && s > bestAny) { bestAny = s; bestAnyId = role.id; }
+      if (
+        !rs.insufficient &&
+        role.slots.some((slot) => posSet.has(slot)) &&
+        s > bestEligible
+      ) {
         bestEligible = s;
         bestRole = { id: role.id, score: s };
       }

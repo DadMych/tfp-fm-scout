@@ -39,7 +39,7 @@ export function ArchetypeColumns({
             );
           })}
         </div>
-        {artId ? <ArchetypeArt id={artId} /> : null}
+        {artId ? <ArchetypeArt id={artId} priority /> : null}
       </div>
     </section>
   );
