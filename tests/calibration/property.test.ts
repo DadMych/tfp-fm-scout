@@ -14,8 +14,8 @@ const LARGE_FIXTURE = join(ROOT, "samples/list407.csv");
 
 const MIN_COHORT = 30;
 const SPREAD_MIN = 25;
-/** Doc 06 §7 #2 target is 15%; list407 calibration currently ~18%. */
-const ELITE_SHARE_CEILING = 0.18;
+/** Doc 06 §7 #2 target: < 15% of outfield players have any archetype ≥ 85. */
+const ELITE_SHARE_CEILING = 0.15;
 
 function percentileAt(values: readonly number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
@@ -42,7 +42,7 @@ describe("archetype engine properties (doc 06 §7)", () => {
     }
   });
 
-  it("elite archetype fits stay rare (< 18% of outfield players ≥ 85; doc 06 target 15%)", () => {
+  it("elite archetype fits stay rare (< 15% of outfield players ≥ 85; doc 06 §7 #2)", () => {
     const outfield = scores.filter((ps) => ps.pop === "outfield");
     const elite = outfield.filter((ps) =>
       ps.archetypes.some((a) => a.gatesPassed && a.score >= 85),

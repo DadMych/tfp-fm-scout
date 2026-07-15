@@ -11,6 +11,15 @@ import type { MetricId } from "../metric-id.js";
 
 const GATE_CAP = 40;
 
+/** Compress scores above the knee so Elite (≥85) stays rare on large lists (doc 06 §7 #2). */
+const ELITE_TAIL_KNEE = 82;
+const ELITE_TAIL_SLOPE = 0.58;
+
+function compressEliteTail(score: number): number {
+  if (score <= ELITE_TAIL_KNEE) return score;
+  return Math.round(ELITE_TAIL_KNEE + (score - ELITE_TAIL_KNEE) * ELITE_TAIL_SLOPE);
+}
+
 /** Lookups the caller provides from the dataset: percentile and raw midpoint per metric. */
 export interface ScoringContext {
   pct(metric: MetricId): number | null;
@@ -59,7 +68,7 @@ export function scoreArchetype(ctx: ScoringContext, def: ArchetypeDef): Archetyp
     return v != null && v >= g.min;
   });
 
-  const score = gatesPassed ? base : Math.min(base, GATE_CAP);
+  const score = gatesPassed ? compressEliteTail(base) : Math.min(base, GATE_CAP);
   const confidence = totalWeight === 0 ? 0 : usedWeight / totalWeight;
   return { id: def.id, score, gatesPassed, confidence };
 }

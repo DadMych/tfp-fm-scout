@@ -34,6 +34,24 @@ describe("scoreArchetype — docs/06 §8 worked example (Deep Progressor)", () =
     expect(s.confidence).toBe(1);
   });
 
+  it("compresses the elite tail above 82 without moving sub-82 scores (doc 06 §7 #2)", () => {
+    const ctx = ctxFrom({
+      passing: 99,
+      vision: 99,
+      pressResist: 99,
+      firstTouch: 99,
+      technique: 99,
+      decisions: 99,
+      dribbling: 99,
+      anticipation: 99,
+      composure: 99,
+    });
+    const s = scoreArchetype(ctx, getArchetype("deepProgressor"));
+    expect(s.gatesPassed).toBe(true);
+    expect(s.score).toBeLessThan(95);
+    expect(s.score).toBeGreaterThanOrEqual(85);
+  });
+
   it("tags the score as a Strong badge", () => {
     const s = scoreArchetype(ctx, getArchetype("deepProgressor"));
     expect(badgeFor(s.score, s.gatesPassed)).toBe("Strong");
