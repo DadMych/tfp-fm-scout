@@ -9,7 +9,11 @@
 
 It is deployed as a multi-user web app: uploads are parsed server-side, datasets are stored per user, and analysis screens are served from our infrastructure.
 
-> **Current stage (July 2026):** the shipped build is a **local-first web app** — files are parsed in the browser and datasets live in local storage. The hosted multi-user architecture above is the destination (doc 15, phase P4), not the present. See [doc 14](docs/14-state-of-the-product.md) for the honest audit and [doc 15](docs/15-premium-overhaul.md) for the plan.
+> **Current stage (July 2026):** the shipped build is **local-first by default** (browser
+> parse + IndexedDB). **Hosted accounts** work when `DATABASE_URL` and `AUTH_SECRET` are
+> set — datasets and watch lists persist per user on Neon. Vercel deploy is the remaining
+> P4 step. See [doc 14](docs/14-state-of-the-product.md), [doc 15](docs/15-premium-overhaul.md),
+> and [doc 16](docs/16-hosted-deployment.md).
 
 **Support:** [buymeacoffee.com/tfpdev](https://buymeacoffee.com/tfpdev) · **Site:** [tfpdev.com](https://tfpdev.com)
 
@@ -33,6 +37,8 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 | 14 | [State of the Product](docs/14-state-of-the-product.md) | July 2026 audit: maturity scorecard, defect catalog, doc-drift resolutions |
 | 15 | [Premium Overhaul](docs/15-premium-overhaul.md) | The plan from prototype to flagship: phases P0–P4 with acceptance criteria |
 | 16 | [Hosted Deployment](docs/16-hosted-deployment.md) | P4 infrastructure pinned: Neon Postgres, Auth.js (password + Google), per-user schema, Vercel. **Amends 02's auth/deploy lines** |
+| — | [Broadsheet Finish](docs/15-broadsheet-finish.md) | Supplementary UI depth plan (overlaps doc 15 P1) |
+| — | [Engine Truth & Platform](docs/16-engine-truth-and-platform.md) | Supplementary engine/infra depth (overlaps doc 15 P2–P3) |
 
 The visual language is **Broadsheet** — a football-almanac look, not a SaaS dashboard. The reference artifact is `design/direction-a-broadsheet.html` (open it in a browser); doc 09 is its written law.
 

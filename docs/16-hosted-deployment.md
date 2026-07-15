@@ -5,8 +5,8 @@ decisions that doc 02 left open ("any managed Postgres") now that the database e
 a **Neon** Postgres project in `eu-central-1`. Where this doc conflicts with doc 02, this
 doc wins — doc 02 has been amended to match.
 
-> **Status:** P4 in progress — Drizzle schema, Auth.js (password + Google), hosted store
-> seam, and persistence E2E are landed. Password reset and Vercel deploy remain.
+> **Status:** P4 nearly complete — Drizzle schema, Auth.js (password + Google), hosted store
+> seam, persistence E2E, and password reset are landed. Vercel deploy remains.
 
 ---
 

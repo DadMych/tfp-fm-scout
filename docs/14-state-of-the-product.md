@@ -1,141 +1,170 @@
-# 14 — State of the Product (July 2026 audit)
+# 14 — State of the Product (the honest audit)
 
-An honest, file-level audit of what exists versus what docs 01–13 promise. This document
-is the *diagnosis*; doc 15 is the *treatment plan*. When prioritizing work, trust this
-document over the README's marketing description.
+Written from a full read of the codebase on 2026-07-15. This is the reference "what we
+actually have" document: docs 15 and 16 are the plans that fix it. Where this doc and
+older docs disagree about *what exists*, this doc wins; where they disagree about *what
+should exist*, the spec docs win.
 
-Audit method: full read of `app/`, `components/`, `lib/`, `src/`, `scripts/`, `design/`,
-plus `pnpm test` (145/145 green), `pnpm typecheck` (clean), `pnpm build` (clean).
+Baseline health at audit time: `pnpm typecheck` clean, `pnpm build` clean,
+**145/145 unit tests green**. The problem is not that the code is broken — it is that
+large parts of the promised product don't exist, and the parts that do stop short of
+the bar the docs set.
 
 ---
 
-## 0. Verdict in three sentences
+## 0. Progress update (2026-07-15, after P0–P4 partial)
 
-The **brain is premium, the body is a prototype**. The pure domain engine (attributes,
-roles, archetypes, assistant, sporting director) is substantially complete, well-tested
-against the docs' worked examples, and is the real asset. The product around it is a
-four-route client-only SPA with localStorage persistence, a half-applied Broadsheet
-design, missing scouting tools, and zero infrastructure (no git repo, no CI, no backend).
+Since the audit snapshot in §1–5 below: **git + `pnpm check`** (190 unit + 4 E2E),
+Broadsheet finish (doc 15 P1), engine truth and scouting tools (P2), import contract /
+Web Worker / IndexedDB / calibration / branded types (P3), and **hosted v1** (Neon,
+Auth.js, store seam, persistence E2E, password reset) are landed. Logged-out mode remains
+IndexedDB-first. Vercel deploy is the main remaining P4 item. The sections below describe
+the codebase at the original audit time unless noted here.
 
-## 1. What actually exists
+---
 
-### 1.1 Surfaces (React app)
+## 1. The one-paragraph verdict
 
-| Route | File | Reality |
+TFP FM today is a **strong single-user, client-only scouting prototype** with a genuinely
+premium *brain* (archetypes, role engine, assistant, sporting director — pure, tested,
+deterministic) wearing a **half-finished Broadsheet suit** and standing on **no
+infrastructure at all** (no git repo, no lint, no CI, no backend, localStorage
+persistence). The distance to "premium" is not one big rewrite; it is three focused
+overhauls: finish the design system (doc 15), finish the product surfaces + engine truth
+(doc 16 §1–3), and stand up the platform (doc 16 §4–5).
+
+## 2. Maturity map
+
+```
+Domain engine (roles/archetypes)   █████████░  85–90% of spec, tested
+Assistant + Sporting Director      █████████░  ~90% of docs 11–13
+Import parser                      ████░░░░░░  MVP; not the doc 03 contract
+Scout Ledger (/scout)              ██████░░░░  usable; no URL state, no density
+Dossier (player page)              █████░░░░░  data complete, composition wrong vs mock
+Assistant UI                       ████████░░  richest screen; rationale not rendered
+Front Page (dashboard)             ░░░░░░░░░░  absent (home = upload form)
+Watch List / Compare / Similar     ░░░░░░░░░░  absent
+Design system (doc 09)             ███░░░░░░░  tokens yes; fonts/ramp/components no
+Hosted architecture (doc 02)       ░░░░░░░░░░  absent; client-only
+Quality infra (git/lint/CI/E2E)    █░░░░░░░░░  vitest only; no git repo
+```
+
+## 3. What is genuinely good (protect it)
+
+1. **The pure domain layer.** `src/domain/` has no I/O, no framework imports, and covers
+   attributes → derived → percentiles → roles → archetypes → dataset scoring →
+   assistant → transfers. The worked examples from docs 04–06 exist as passing tests.
+2. **The assistant catalog.** Nearly the full doc 11 rule set plus the doc 13 sporting
+   director layer (sales board, ageing model, succession chains, packages v4) with the
+   doc 12 dedup/priority fixes in place and tested.
+3. **The honest-data culture.** Masked/ranged attribute handling flows through the whole
+   engine; the "never silently drop a row" invariant is enforced in a test.
+4. **The CLI twin.** `pnpm score` / `pnpm report` run the same engine offline —
+   a real asset for debugging and content.
+5. **The export tool.** `tools/fm26_export` (macOS BepInEx plugin fork + views) is more
+   mature than the web backend and gives us the data pipe the whole product needs.
+
+## 4. What is half-done (the premium gap, by area)
+
+### 4.1 Design system vs doc 09 — the suit doesn't fit yet
+
+| Doc 09 requirement | Reality | Where |
 |---|---|---|
-| `/` | `app/page.tsx` (71 L) | Upload landing + sample data CTA. **Not** the doc 09 Front Page. |
-| `/scout` | `components/ScoutDesk.tsx` (277 L) | Ledger: shortlist/squad toggle, filters, sortable table. Usable. |
-| `/scout/[kind]/[id]` | `components/Dossier.tsx` (413 L) | Dossier: verdict, radar, attributes, roles. Composition diverges from the reference mock. |
-| `/assistant` | `components/Assistant.tsx` (718 L) | The most mature surface: XI, gaps, transfer plans, sporting director, findings. Implements most of doc 12. |
+| Shipped licensed serif + sans (`next/font`) | System fallback only (Iowan/Palatino → Georgia; Helvetica → Arial) | `app/globals.css:5–6`, `app/layout.tsx` |
+| 5-step percentile ink ramp (`#BDB6A6…#B23B2E`) | Binary 2-step `.pctbar`/`.hi` | `app/globals.css:67–72`, `components/Dossier.tsx:49–57` |
+| Masked values render as `?` at 50% | Render as `–` (en-dash) | `components/Dossier.tsx:43–46` |
+| Focus-visible 2px ink outline | No `:focus` rules at all | `app/globals.css` |
+| PullQuote component (serif italic, red border) | Plain callout text | `components/Dossier.tsx:157–162, 211` |
+| RadarFigure with figcaption | Radar without `<figure>`/caption | `components/Dossier.tsx:266–270` |
+| ArchetypeColumns identity band | Replaced by a top-4 table | `components/Dossier.tsx:266–299` vs `design/direction-a-broadsheet.html:134–159` |
+| Footline actions (shortlist/compare/similar/upgrades) | Source line + back link only | `components/Dossier.tsx:350–353` |
+| Component inventory (Headline, FactsRail, InkBar…) | Inlined per-screen, no `components/ui/` kit | all of `components/` |
+| Red is scarce | Zone/health bars spray red/green via inline styles | `components/Assistant.tsx:241–250, 548–558` |
 
-No `app/api/` routes. Data flow: file → client-side `parseExport` → `buildScores` →
-React context → `localStorage` (`tfp.datasets.v1`). Scores recomputed on load.
+### 4.2 Screens vs doc 09 — two of five exist properly
 
-### 1.2 Engine (`src/domain/`, `src/import/`, `src/report/`)
+- **The Front Page** — absent. `app/page.tsx` is an upload form. The lead-story picking
+  logic already exists in `src/report/broadsheet.ts` but is only used by the static CLI
+  report, not the React UI.
+- **The Ledger** (`/scout`) — works, but: no URL-synced filter state (roadmap M3 AC),
+  no percentile ink bars in columns, no `j/k`+`s` keyboard, no empty state after
+  filtering to zero rows (`components/ScoutDesk.tsx:243–274`), a Sort-by-age key exists
+  with no Age column (`ScoutDesk.tsx:14, 83–84`).
+- **The Dossier** — all the data, wrong composition vs the reference mock; wage/contract
+  absent (parser doesn't extract them); "Where he fits your side" is a single hardcoded
+  callout (4-2-3-1, infinite budget — `components/Dossier.tsx:124–130`), not the doc 08 §9 section.
+- **The Assistant** — the best screen (doc 12 order, praise strip, spend meters all in),
+  but: package `rationale` (3 sentences, spec'd in doc 12 §4.7) is computed and **never
+  rendered** (`components/Assistant.tsx:454–526`); "Try formation" mutates the dropdown
+  without re-running the report (`Assistant.tsx:429–434`); the Sporting Director block
+  sits between plans and findings, which doc 12 §5.1 did not order; 718-line monolith.
+- **The Watch List** — absent entirely. The word "shortlist" today means "the second
+  uploaded dataset", not the doc 08 §6 curation tool (notes, status, deltas, named lists).
 
-~8,000 lines of pure TypeScript, 18 test files, 145 tests, all worked examples from
-docs 04/05/06 pass. CLI twins exist (`pnpm score`, `pnpm report`).
+### 4.3 Engine vs specs — the two semantic holes
 
-### 1.3 Export tooling
+1. **Tactic truth.** Docs 05/07/08 build everything on `pairScore(IP, OOP)` per tactic
+   slot. The shipped analytics (XI solver, depth, upgrade hints) run on `slotFit` =
+   best-role ceiling at a position (`src/domain/assistant/xi.ts:43–50`). `pairScore`
+   exists (`src/domain/roles/score.ts:64–78`) and is only exercised by a unit test.
+   There are no tactic presets with IP/OOP pairs (`src/domain/squad/formations.ts` has
+   4 bare shapes; doc 07 §1 specifies presets + target DNA).
+2. **Scouting tools.** Doc 08 is ~15% real: no upgrade finder, no similar-player cosine
+   search, no compare API, no shortlist persistence model, no `fit.ts` (fit to reference
+   squad), no role-pair matrix. `recommend()` is a soft cousin, not the spec.
 
-`tools/fm26_export/` — the macOS BepInEx export plugin. Separate product; only a data
-pipe into the parser. More mature than the web backend (which does not exist).
+Secondary engine debt: percentiles are outfield/GK only, not position-group cohorts
+(doc 04); archetype registry lacks position families and the Recovery Sprinter cohort
+gate (doc 06); no golden-player fixtures or property tests (M2 AC); legacy
+`src/domain/squad/analysis.ts` duplicates `slotFit`, thresholds and packages logic and
+is not on the product path — drift risk.
 
-## 2. Maturity scorecard (spec → code)
+### 4.4 Import vs doc 03 — practical, not production
 
-| Doc | Area | Completeness | Notes |
-|---|---|---|---|
-| 02 | Hosted architecture | **0%** | No Postgres/Drizzle/Auth.js/S3/pg-boss/API/Docker. Client-only SPA. |
-| 03 | Import | **~40%** | Real FM26 CSVs parse fine. No streaming, no encoding fallback, no typed rejects (`UNRECOGNIZED_FORMAT`/`INSUFFICIENT_COLUMNS`), no `cellIssues`, no `/tests/fixtures/` corpus, no wage/expires/division columns. HTML path untested. |
-| 04 | Data model | **~55%** | Registry, derived, percentiles complete. `Player` slimmed (no wage/contract/division/flags). Percentile cohorts are outfield/GK only — no position-group cohorts. No DB. |
-| 05 | Role engine | **~70% math / ~30% product** | 86 IP/OOP roles, scoring formula + masking correct. **`pairScore` exists but is only called from its own test** — all product paths use `slotFit` (best single role). No tactic presets with IP+OOP pairs. No golden fixtures, no `engineVersion`. |
-| 06 | Archetypes | **~85%** | 36 archetypes, gates, cap-40, general/hybrid, summary line — all tested. Missing: position-family gating, Recovery Sprinter cohort, archetype→role crosswalk, §7 property battery, contribution-breakdown API. |
-| 07 | Squad analytics | **~50%** | Semantics shifted into the assistant layer (fine). Missing as specced: tactic presets, `pairScore` depth charts, age curve, `findGaps`, `reference.ts`, `fit.ts`, season deltas. Legacy `squad/analysis.ts` (greedy XI + own packages) is dead code kept alive by its test. |
-| 08 | Scouting tools | **~15%** | No upgrade finder, no similar-player search, no compare, no persistent shortlists/watch list, no URL filter state, no fit-to-squad. `recommendation.ts` is the only scout-guide layer. |
-| 09 | Broadsheet design | **~40%** | Tokens/palette/masthead yes. Missing: shipped fonts, 5-step percentile ramp (binary now), masked-`?` honesty, focus-visible, component kit, Front Page, Watch List, Compare, dossier composition per mock. The closest Broadsheet fidelity is the **CLI HTML** (`src/report/broadsheet.ts`), not the app. |
-| 10 | Roadmap | **out of order** | M0 not started (no git!), M1/M2 partial, M3 partial, docs 11–13 built on top anyway. |
-| 11 | Assistant engine | **~90%** | Nearly full rule catalog, Hungarian XI, packages, team report. Gaps: SHAPE-3, SLOT-6, phrase-engine-as-data, per-rule test matrix. |
-| 12 | Assistant UX | **~80%** | Order/dedup/praise strip/collapse done. **`pk.rationale` is computed but never rendered.** Plans grid breakpoint wrong (900 vs 1100). |
-| 13 | Sporting director | **~90% engine / ~60% UI** | Ageing/sales/chains/succession/health/board all present with tests. UI thin: no health verdict word, no price-band detail, no `netSpend`/sales under package moves, transfer insights in their own tab instead of Market. |
+Works on the real samples in `samples/`. Missing from the contract: encoding detection
+(Win-1252), typed reject errors (`UNRECOGNIZED_FORMAT`, `INSUFFICIENT_COLUMNS`,
+`MALFORMED_ROW`, `BAD_ATTRIBUTE_VALUE` in the report), wage/expires/division/personality
+columns, currency tracking, `6'0"` heights, streaming for 50 MB files, the doc 03 §9
+fixture corpus, SaveSeries identity matching. The file admits this itself
+(`src/import/parse.ts:1–7`).
 
-## 3. Defect catalog (the concrete raw spots)
+### 4.5 Platform vs doc 02 — nothing exists
 
-### 3.1 Bugs and broken interactions
+No auth, no API routes, no Postgres/Drizzle, no object storage, no worker/pg-boss, no
+Docker, no share links, no rate limits. Everything runs in the browser;
+persistence is one localStorage key (`tfp.datasets.v1`, `lib/store.tsx:51`) — which
+also caps datasets at ~5 MB, a hard blocker for full-database exports. The store
+comments call itself the seam a real backend will replace; that is accurate and the
+right seam to keep.
 
-1. **"Try {formation}" doesn't re-run the search** — sets the dropdown only
-   (`Assistant.tsx` ~429–434 vs `committed` state ~114–118). Silent no-op for the user.
-2. **`pk.rationale` never rendered** — the engine writes three sentences per package;
-   `PackageCard` (`Assistant.tsx` ~454–526) drops them. Same for `netSpend`/`sales`.
-3. **Dossier `DirectorRead` hardcodes 4-2-3-1 and an infinite budget**
-   (`Dossier.tsx` ~124–130) — ignores whatever the user actually ran on Assistant.
-4. **Empty filter result is a blank `<tbody>`** — no "0 players match" state
-   (`ScoutDesk.tsx` ~243–274).
-5. **`SortKey` includes `"age"` but there is no Age column**; `toggleSort` has a dead
-   branch (both arms set `"asc"`) (`ScoutDesk.tsx` ~14, ~83–84).
-6. **Rapid sequential uploads can race** — `loadText` closes over stale `raw`
-   (`lib/store.tsx`); last write wins with a stale merge.
-7. **Home CTA is a `Link` with `aria-disabled`** — visually disabled, still focusable
-   and navigable (`app/page.tsx` ~58–64).
+### 4.6 Quality infrastructure — the embarrassing list
 
-### 3.2 Broadsheet violations (doc 09 hard rules broken)
+- **No git repository.** The project has never been committed.
+- No ESLint, no Prettier, no `lint` script, no CI, no Playwright/E2E, no perf jobs.
+- No `app/error.tsx`, `not-found.tsx`, or `loading.tsx` routes.
+- Accessibility: no focus styles anywhere, radar `aria-label` is generic
+  (`components/Radar.tsx:68–69`), `role="tablist"` without `role="tab"`/keyboard
+  (`components/ScoutDesk.tsx:132–138`), colour used alone on zone bars.
 
-- Percentile color is **binary** (`.hi` ≥ 80), not the mandated five-step ramp
-  (`app/globals.css` ~67–72).
-- Masked attributes render as `–`, not `?` at 50% opacity (`Dossier.tsx` ~43–46).
-- No `:focus-visible` styles anywhere; no `j/k`/`s` ledger keys.
-- No shipped serif/sans — system stacks only; on non-Apple machines the product is
-  Georgia + Arial (`app/layout.tsx`, `globals.css` ~5–6).
-- Bullet lists inside product surfaces (Dossier/Scout callouts) — explicitly forbidden.
-- `--green` used as a broad accent (verdicts, praise, zone bars) — not in the palette;
-  red is no longer scarce (attr headers, links).
-- Radar `aria-label` is generic, not "top three values as a sentence".
+## 5. Roadmap reconciliation (doc 10)
 
-### 3.3 Engine debt
+The roadmap's "strictly sequential" rule was not followed. Actual status: **M0 not
+started** (no auth/DB/CI/docker), M1 partial (parser MVP, no fixtures/streaming),
+M2 substantially done on the domain side (minus golden fixtures/perf), M3 partial
+(no URL state, share links, ⌘K, compare), M4 partial (via Assistant, not the doc 07
+UI), M5/M6 not started. Meanwhile docs 11–13 (assistant, SD) were built as a parallel
+track and are the most finished thing in the product.
 
-- **`slotFit` + `ROLES_BY_SLOT` duplicated** in `squad/analysis.ts` and `assistant/xi.ts`.
-- **Thresholds duplicated**: `analysis.ts` hardcodes `WEAK_FIT`/`THIN_*`/`AGE_RISK`
-  instead of importing `assistant/thresholds.ts`.
-- **Legacy `squad/analysis.ts`** (`buildSquadPlan`, greedy XI, own package builder) is
-  unused by the product — only its test keeps it alive.
-- Metric/role/formation ids are bare `string`s — no branded types, no runtime registry
-  validation in `buildScores`.
-- `coerceAttr` silently nulls bad cells (the comment even names `BAD_ATTRIBUTE_VALUE`)
-  but never reports them; corrupt localStorage and quota overflows are swallowed.
-- `formatMoney` hardcodes `€`; currency is not tracked through import.
+That inversion was arguably the right call — the brain is the moat — but the premium
+plan must now be explicit about sequencing instead of pretending doc 10 still describes
+reality. The revised sequencing lives in doc 16 §6.
 
-### 3.4 Infrastructure
+## 6. How the fix is organized
 
-| Item | Status |
-|---|---|
-| Git repository | **Not initialized** (`.gitignore` exists, `.git` does not) |
-| CI | None |
-| ESLint / Prettier | None (no `lint` script) |
-| E2E (Playwright) | None |
-| Import fixtures (`/tests/fixtures/`) | None — doc 03 §9 corpus absent |
-| Vitest + typecheck | Present and green |
-
-## 4. Documentation drift registry
-
-Resolutions here are **binding**; doc 15 schedules the edits.
-
-| # | Drift | Resolution |
+| Doc | Covers | Outcome |
 |---|---|---|
-| D1 | README + docs 01/02 claim a hosted multi-user product; code is a local-first SPA | README gets an honest "current stage" section. Hosted remains the destination (doc 15 phase P4), not the description. |
-| D2 | Doc 06 §9 says "22 fine archetypes"; §3 and the registry say 36 | **36 is canonical.** Fix §9. |
-| D3 | Doc 02 says "dark-first + Tailwind + shadcn"; doc 09 chose light-first Broadsheet with hand-rolled CSS; doc 10 lists "light theme" as post-v1 | **Doc 09 wins.** Fix 02 and 10. The hand-rolled CSS approach is ratified — no Tailwind/shadcn retrofit. |
-| D4 | Docs 03/04/07/08 parse and filter wage/contract; docs 11 §0 and 13 §0 say the assistant must not reference them | **11/13 win until the export view ships those columns.** Annotate 03/04 fields as "reserved — not in current export". |
-| D5 | Formation presets disagree (07: 3-4-3, 5-3-2 vs 11/code: 3-5-2) | **Code + doc 11 set is canonical** (4-2-3-1, 4-3-3, 4-4-2, 3-5-2). Fix 07. |
-| D6 | Two DNA models: fine-archetype counts (06/07) vs general-family counts with family-best fix (11/12) | **Doc 12 model is canonical.** Mark 07 §3 as superseded. |
-| D7 | README doc index stops at 10; docs 11–13 amend each other silently | Index all docs; state the supersession chain 11 → 12 → 13 explicitly. |
-| D8 | Import size story: 01 says ~50 MB, 02/03 say 80 MB | 80 MB is the limit; 50 MB is the perf target. Clarify 01. |
+| **15 — Broadsheet Finish** | Fonts, ramp, honesty marks, component kit, Dossier recomposition, Front Page, Ledger density, Assistant UI debt, Watch List & Compare shells, a11y | The product *looks and reads* premium on the data we already have |
+| **16 — Engine Truth & Platform** | pairScore + tactic presets, scouting engines (upgrade/similar/compare/fit), import contract, quality infra (git/lint/CI/E2E), persistence (IndexedDB now, hosted M0 after) | The product *is* premium underneath, and can grow into the hosted vision |
 
-## 5. What is genuinely good (do not churn)
-
-- The **domain purity discipline** held: `src/domain` has no Next/DB imports and every
-  formula has a worked-example test. This is the seam that makes everything in doc 15
-  possible.
-- The assistant + sporting director stack (docs 11–13) is close to spec and is the
-  product's real differentiator in code today.
-- `lib/store.tsx` is a clean, well-commented seam for a future backend.
-- The CLI (`pnpm score` / `pnpm report`) doubles as an offline harness for the engine.
-- The export tooling and view presets are aligned with the parser's header synonyms.
+Rule of thumb for every task in both docs: **it ships with an acceptance check**, in the
+tradition of docs 10 and 12. Nothing "polished" without a way to verify it.
