@@ -1,4 +1,5 @@
 import type { PositionGroup } from "../positions.js";
+import { GROUP_COHORT_LABEL } from "../positions.js";
 import type { GeneralFamily } from "./registry.js";
 
 /**
@@ -23,9 +24,9 @@ export interface SummaryInput {
   /** Runner-up archetype blurb, present only for a cross-family hybrid. */
   readonly secondaryBlurb: string | null;
   readonly confidence: number;
-  /** Every known metric with its dataset percentile. */
+  /** Every known metric with its position-group percentile. */
   readonly metrics: readonly SummaryMetric[];
-  /** Count of players at or above this player's value, per metric (for counted claims). */
+  /** Count of players at or above this player's value within the same cohort (for counted claims). */
   readonly atOrAbove: Readonly<Record<string, number>>;
 }
 
@@ -116,12 +117,13 @@ function standoutClause(input: SummaryInput): string | null {
   if (!top) return null;
 
   const noun = STANDOUT_NOUN[top.metric] as string;
+  const cohort = GROUP_COHORT_LABEL[input.positionGroup];
   const count = input.atOrAbove[top.metric];
-  if (count === 1) return `The best ${noun} in this division`;
+  if (count === 1) return `The best ${noun} among ${cohort} in this division`;
   if (count != null && count >= 2 && count <= 5) {
-    return `One of the ${NUMBER_WORD[count]} best ${noun} in this division`;
+    return `One of the ${NUMBER_WORD[count]} best ${noun} among ${cohort} in this division`;
   }
-  return `One of the best ${noun} in this division`;
+  return `One of the best ${noun} among ${cohort} in this division`;
 }
 
 function caveatClause(input: SummaryInput): string | null {

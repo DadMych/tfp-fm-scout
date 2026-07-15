@@ -35,3 +35,24 @@ export function playerGroups(slots: readonly PositionSlot[]): PositionGroup[] {
   for (const s of slots) for (const g of slotToGroups(s)) set.add(g);
   return [...set];
 }
+
+/** Canonical primary group — export column order must not change cohort (doc 17 §7.1). */
+const GROUP_PRIORITY: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
+
+export function canonicalPrimaryGroup(slots: readonly PositionSlot[]): PositionGroup {
+  const groups = new Set(playerGroups(slots));
+  for (const g of GROUP_PRIORITY) {
+    if (groups.has(g)) return g;
+  }
+  return "DM/CM";
+}
+
+/** Human label for a position-group cohort (radar captions, summary superlatives). */
+export const GROUP_COHORT_LABEL: Record<PositionGroup, string> = {
+  GK: "goalkeepers",
+  CB: "centre-backs",
+  "FB/WB": "full-backs and wing-backs",
+  "DM/CM": "midfielders",
+  "AM/W": "wide players and attacking midfielders",
+  ST: "strikers",
+};

@@ -20,6 +20,7 @@ import { solveXI, slotFit, type PlayerRow } from "./xi.js";
 import type { AnalysisContext } from "./context.js";
 import { T } from "./thresholds.js";
 import { surname, listNames, money, pct } from "./phrases.js";
+import { raw } from "./rules/helpers.js";
 import { unusedValueCandidates } from "./rules/market.js";
 import { buildSales } from "./transfers/sales.js";
 import type { SaleRecommendation, SaleVerdict } from "./transfers/types.js";
@@ -108,13 +109,14 @@ interface Candidate {
 function buildCandidates(ctx: AnalysisContext): Candidate[] {
   const out: Candidate[] = [];
   for (const slot of ctx.slots) {
-    const currentFit = slot.starter?.fit ?? 0;
-    for (const row of ctx.shortlist) {
-      if (!row.player.positions.includes(slot.slot.slot)) continue;
-      const newFit = slotFit(row, ctx.formation.id, slot.slot);
-      const delta = newFit - currentFit;
-      const helpsNeed = slot.need !== "solid" && newFit >= 62;
-      if (!(delta >= 3 || helpsNeed)) continue;
+      const currentFit = slot.starter?.fit ?? 0;
+      const hasStarter = slot.starter != null;
+      for (const row of ctx.shortlist) {
+        if (!row.player.positions.includes(slot.slot.slot)) continue;
+        const newFit = slotFit(row, ctx.formation.id, slot.slot);
+        const delta = newFit - currentFit;
+        const helpsNeed = !hasStarter && slot.need !== "solid" && newFit >= 62;
+        if (!(delta >= 3 || helpsNeed)) continue;
       out.push({
         row,
         slotKey: slot.slotKey,
@@ -255,7 +257,7 @@ const STRATEGIES: readonly Strategy[] = [
     max: 4,
     capFraction: 1,
     spender: false,
-    filter: (c) => rawAttr(c.row, "workRate") >= 13 && rawAttr(c.row, "aggression") >= 12,
+    filter: (c) => (raw(c.row, "workEngine") ?? 0) >= 13 && rawAttr(c.row, "aggression") >= 12,
     cmp: (a, b) => b.newFit - a.newFit,
   },
   {

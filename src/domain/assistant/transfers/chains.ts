@@ -54,6 +54,7 @@ export function buildChain(ctx: AnalysisContext, playerId: string): ReplacementC
   let internal: { id: string; name: string; fit: number } | null = null;
   for (const r of ctx.squad) {
     if (r.player.id === playerId) continue;
+    if (ctx.starters.has(r.player.id)) continue;
     if (!r.player.positions.includes(slot)) continue;
     const fit = slotFit(r, ctx.formation.id, fs);
     if (!internal || fit > internal.fit) internal = { id: r.player.id, name: r.player.name, fit };

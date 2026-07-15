@@ -31,7 +31,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
           evidence: [{ label: "Eligible squad players", value: backupName ? "1 (makeshift)" : "0" }],
           subjects,
           slotKey: s.slotKey,
-          action: scoutAction(s.slot.slot, { minFit: T.WEAK_FIT }),
+          action: scoutAction(s.slot.slot, { minFit: T.WEAK_FIT, maxValue: ctx.budgetCap }),
         });
         break;
       case "weak":
@@ -44,7 +44,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
           evidence: [{ label: `${surname(starterName ?? "Starter")} fit`, value: `${s.starter!.fit}` }],
           subjects,
           slotKey: s.slotKey,
-          action: scoutAction(s.slot.slot, { minFit: s.starter!.fit + 4 }),
+          action: scoutAction(s.slot.slot, { minFit: s.starter!.fit + 4, maxValue: ctx.budgetCap }),
         });
         break;
       case "thin":
@@ -62,7 +62,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
           ],
           subjects,
           slotKey: s.slotKey,
-          action: scoutAction(s.slot.slot, { minFit: T.THIN_BACKUP }),
+          action: scoutAction(s.slot.slot, { minFit: T.THIN_BACKUP, maxValue: ctx.budgetCap }),
         });
         break;
       case "ageing":
@@ -78,7 +78,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
           ],
           subjects,
           slotKey: s.slotKey,
-          action: scoutAction(s.slot.slot, { minFit: s.starter!.fit - 6, maxAge: 27 }),
+          action: scoutAction(s.slot.slot, { minFit: s.starter!.fit - 6, maxAge: 27, maxValue: ctx.budgetCap }),
         });
         break;
       case "solid":

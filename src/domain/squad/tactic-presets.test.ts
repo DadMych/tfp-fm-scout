@@ -32,6 +32,12 @@ describe("tactic presets", () => {
       dribbling: 12,
       teamwork: 14,
       agility: 14,
+      stamina: 14,
+      workRate: 14,
+      positioning: 14,
+      marking: 14,
+      concentration: 14,
+      tackling: 12,
     });
     const fit = Math.round(pairScore(player, pair!.ip, pair!.oop));
     expect(fit).toBeGreaterThan(60);

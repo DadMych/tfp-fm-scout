@@ -59,7 +59,7 @@ describe("buildScores — dataset integration", () => {
 
   it("writes a human summary naming the profile and the standout", () => {
     expect(s.summary).toContain("ball-progressing midfielder");
-    expect(s.summary).toContain("passers in this division");
+    expect(s.summary).toContain("passers among midfielders in this division");
   });
 
   it("gives the star a top passing percentile and a best role", () => {
@@ -84,6 +84,14 @@ describe("buildScores — dataset integration", () => {
     const withStar = buildScores([...highPassDm, ...stFillers, stStar]);
     const scored = withStar.find((x) => x.playerId === "ststar")!;
     expect(scored.percentiles.passing).toBeGreaterThan(scored.datasetPercentiles.passing ?? 0);
+  });
+
+  it("position export order does not change cohort percentiles (doc 17 §7.1)", () => {
+    const attrs = exact({ ...rawObj(filler("x", 10, ["ST-C"]).attrs), passing: 14, crossing: 12 });
+    const a = buildScores([filler("bg", 8, ["ST-C"]), { ...filler("p", 10, ["ST-C", "AM-R"]), id: "p", attrs }])[1]!;
+    const b = buildScores([filler("bg", 8, ["ST-C"]), { ...filler("p", 10, ["AM-R", "ST-C"]), id: "p", attrs }])[1]!;
+    expect(a.percentiles.passing).toBe(b.percentiles.passing);
+    expect(a.percentiles.crossing).toBe(b.percentiles.crossing);
   });
 
   it("scores a goalkeeper against the GK population", () => {

@@ -233,8 +233,8 @@ describe("SHORTLIST rules", () => {
 
   it("does not fire sl.uncovered-need when a shortlist player can plug the hole", () => {
     const squad = FULL_4231.filter((s) => s !== "ST-C").map((s) => player({ positions: [s], base: 14 }));
-    const shortlistPlayers = [player({ positions: ["ST-C"], base: 16 })];
-    const insights = shortlist.run(ctxWith(squad, shortlistPlayers));
+    const shortlistPlayers = [player({ positions: ["ST-C"], base: 16, value: 5e6 })];
+    const insights = shortlist.run(ctxWith(squad, shortlistPlayers, 50e6, true));
     expect(insights.some((i) => i.id.startsWith("sl.uncovered-need:st"))).toBe(false);
   });
 });

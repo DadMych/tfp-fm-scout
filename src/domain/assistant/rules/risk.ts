@@ -68,7 +68,7 @@ export function run(ctx: AnalysisContext, packages: readonly TransferPackage[]):
     });
   }
 
-  if (packages.length > 0 && packages.every((p) => ctx.budgetCap > 0 && p.totalCost >= 0.9 * ctx.budgetCap)) {
+  if (packages.length > 0 && packages.every((p) => ctx.budgetCap > 0 && p.netSpend >= 0.9 * ctx.budgetCap)) {
     out.push({
       id: insightId("risk.all-in-window", "budget"),
       cls: "risk",

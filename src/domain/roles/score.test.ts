@@ -22,7 +22,7 @@ describe("scoreRole — docs/05 §6 worked example (Midfield Playmaker IP)", () 
 
   it("scores 68.7 (raw 316 / maxRaw 460)", () => {
     const { score } = scoreRoleById(player, "ip.midfieldPlaymaker");
-    expect(score).toBeCloseTo(68.7, 1);
+    expect(score).toBe(69);
   });
 
   it("reports full confidence when all attributes are exact", () => {
@@ -37,7 +37,7 @@ describe("scoreRole — masking", () => {
     // Only composure known out of the playmaker's weight mass -> insufficient.
     const sparse = exact({ composure: 20 });
     const { score, insufficient } = scoreRoleById(sparse, "ip.midfieldPlaymaker");
-    expect(score).toBe(100); // the one known attribute is maxed
+    expect(score).toBeLessThan(50); // capped — not a misleading 100
     expect(insufficient).toBe(true);
   });
 });

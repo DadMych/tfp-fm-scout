@@ -74,7 +74,7 @@ export function computeSquadFit(
     const fit = slotFit(candidate, formationId, slot.slot);
     const incumbentFit = slot.starter?.fit ?? null;
     const delta = incumbentFit != null ? fit - incumbentFit : fit;
-    if (!best || fit > best.fit) {
+    if (!best || delta > best.delta || (delta === best.delta && fit > best.fit)) {
       best = {
         slot,
         fit,

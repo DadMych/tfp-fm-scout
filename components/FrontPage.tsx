@@ -6,10 +6,12 @@ import { useDatasets } from "@/lib/store";
 import { buildAssistantReport } from "@/src/domain/assistant/report.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { pickBargain, pickLead, posLabel, standouts, type ScoredRow } from "@/src/domain/front-page.js";
+import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
+import { formatPullQuote } from "@/src/domain/evidence.js";
 import { ENGINE_VERSION } from "@/src/domain/engine-version.js";
 import { recommend } from "@/src/domain/recommendation.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
-import { formatMoney, ordinal } from "@/src/report/format.js";
+import { formatMoney } from "@/src/report/format.js";
 import { Dateline } from "@/components/kit/Dateline";
 import { FactsRail } from "@/components/kit/FactsRail";
 import { InkBar } from "@/components/kit/InkBar";
@@ -61,7 +63,7 @@ export function FrontPage() {
       squad: squadRows,
       shortlist: shortlistRows,
       formation,
-      budget: lastAssistantRun?.budget ?? 50e6,
+      budget: lastAssistantRun?.budget ?? DEFAULT_BUDGET,
       useFullBudget: lastAssistantRun?.useFull ?? false,
     }).teamReport;
   }, [squad, shortlist, lastAssistantRun]);
@@ -124,15 +126,9 @@ export function FrontPage() {
               <Link href={`/scout/${kind}/${lead.p.id}`}>{lead.p.name}</Link>
             </h1>
             <p className="standfirst">{lead.s.summary}</p>
-            {(() => {
-              const top = standouts(lead.s, 1)[0];
-              return top ? (
-                <PullQuote>
-                  In this database he sits in the {ordinal(Math.round(top.pct))} percentile for{" "}
-                  {top.label.toLowerCase()}.
-                </PullQuote>
-              ) : null;
-            })()}
+            {formatPullQuote(lead.s) ? (
+                <PullQuote>{formatPullQuote(lead.s)}</PullQuote>
+              ) : null}
           </div>
           <FactsRail
             rows={[

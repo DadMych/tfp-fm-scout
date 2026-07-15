@@ -21,7 +21,7 @@ const BASE: SummaryInput = {
 describe("generateSummary — docs/06 §10 canonical string", () => {
   it("produces the exact documented sentence", () => {
     expect(generateSummary(BASE)).toBe(
-      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers in this division, though he offers little in the air.",
+      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers among midfielders in this division, though he offers little in the air.",
     );
   });
 });
@@ -34,7 +34,7 @@ describe("generateSummary — variations", () => {
       atOrAbove: { passing: 1 },
     });
     expect(s).toContain("An experienced ball-progressing midfielder");
-    expect(s).toContain("The best passers in this division");
+    expect(s).toContain("The best passers among midfielders in this division");
   });
 
   it("drops the age word for a peak-age player", () => {
@@ -63,7 +63,7 @@ describe("generateSummary — variations", () => {
       metrics: [{ metric: "passing", pct: 92 }, { metric: "vision", pct: 84 }],
     });
     expect(s).toBe(
-      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers in this division.",
+      "A young ball-progressing midfielder who breaks lines from the base of midfield. One of the four best passers among midfielders in this division.",
     );
   });
 });

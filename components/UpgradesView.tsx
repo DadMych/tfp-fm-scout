@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { Dateline } from "@/components/kit/Dateline";
 import { parseAnchorRef, upgradesHref } from "@/lib/scout-anchor-url";
 import { useDatasets } from "@/lib/store";
+import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
 import { buildContext } from "@/src/domain/assistant/context.js";
 import { slotFit, type PlayerRow } from "@/src/domain/assistant/xi.js";
 import type { SlotAssignment } from "@/src/domain/assistant/slots.js";
@@ -67,7 +68,7 @@ export function UpgradesView() {
       squad: squadRows,
       shortlist: shortlistRows,
       formation,
-      budget: lastAssistantRun?.budget ?? 1e12,
+      budget: lastAssistantRun?.budget ?? DEFAULT_BUDGET,
       useFullBudget: lastAssistantRun?.useFull ?? true,
     });
     const slot = anchorSlot(incumbent, formation.id, ctx.slots);

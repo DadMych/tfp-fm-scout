@@ -1,4 +1,5 @@
 import type { DatasetBundle } from "@/lib/store";
+import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
 import { buildContext } from "@/src/domain/assistant/context.js";
 import type { PlayerRow } from "@/src/domain/assistant/xi.js";
 import type { SlotNeed } from "@/src/domain/assistant/slots.js";
@@ -36,7 +37,7 @@ export function buildFitDeskContext(
     squad: squadRows,
     shortlist: shortlistRows,
     formation,
-    budget: prefs?.budget ?? 1e12,
+    budget: prefs?.budget ?? DEFAULT_BUDGET,
     useFullBudget: prefs?.useFull ?? true,
   });
   const nameById = new Map<string, string>();
@@ -58,5 +59,8 @@ export function squadFitForRow(row: PlayerRow, fitCtx: FitDeskContext): SquadFit
 export function fitsGap(fit: SquadFitResult, needBySlotKey: ReadonlyMap<string, SlotNeed>): boolean {
   const need = needBySlotKey.get(fit.slotKey);
   if (!need || need === "solid") return false;
+  if (need === "hole" || need === "weak") {
+    return fit.verdict === "Upgrade" || (fit.delta ?? 0) >= 8;
+  }
   return fit.verdict !== "Not for you";
 }

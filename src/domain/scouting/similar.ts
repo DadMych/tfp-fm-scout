@@ -30,9 +30,19 @@ function weightedMetrics(arch: ArchetypeDef): readonly string[] {
 }
 
 export function similarVector(scores: PlayerScores): readonly { metric: string; value: number }[] {
-  const archId = scores.topArchetype?.id;
+  return vectorForMetrics(scores, metricListFor(scores));
+}
+
+function metricListFor(scores: PlayerScores): readonly string[] {
+  const archId = scores.topArchetype?.id ?? scores.general.primaryId;
   const archMetrics = archId ? weightedMetrics(getArchetype(archId)) : [];
-  const metrics = [...DERIVED_IDS, ...archMetrics.filter((m) => !DERIVED_IDS.includes(m as DerivedId))];
+  return [...DERIVED_IDS, ...archMetrics.filter((m) => !DERIVED_IDS.includes(m as DerivedId))];
+}
+
+function vectorForMetrics(
+  scores: PlayerScores,
+  metrics: readonly string[],
+): readonly { metric: string; value: number }[] {
   return metrics.map((metric) => ({
     metric,
     value: percentileFor(scores.percentiles, metric) ?? 0,
@@ -65,34 +75,50 @@ export interface SimilarHit {
   readonly value: number | null;
 }
 
+function vectorDistance(
+  a: readonly { value: number }[],
+  b: readonly { value: number }[],
+): number {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += (a[i]!.value - b[i]!.value) ** 2;
+  return Math.sqrt(sum);
+}
+
 export function findSimilar(params: {
   readonly anchor: PlayerRow;
   readonly pool: readonly PlayerRow[];
   readonly sameGroup?: boolean;
   readonly limit?: number;
 }): SimilarHit[] {
-  const anchorVec = similarVector(params.anchor.scores);
+  const anchorMetrics = metricListFor(params.anchor.scores);
+  const anchorVec = vectorForMetrics(params.anchor.scores, anchorMetrics);
   const anchorGroups = new Set(playerGroups(params.anchor.player.positions));
   const limit = params.limit ?? 20;
 
-  const hits: SimilarHit[] = [];
+  const hits: { hit: SimilarHit; distance: number }[] = [];
   for (const row of params.pool) {
     if (row.player.id === params.anchor.player.id) continue;
     if (params.sameGroup !== false) {
       const groups = playerGroups(row.player.positions);
       if (!groups.some((g) => anchorGroups.has(g))) continue;
     }
-    const vec = similarVector(row.scores);
+    const vec = vectorForMetrics(row.scores, anchorMetrics);
     if (vec.length !== anchorVec.length) continue;
     const similarity = cosine(anchorVec, vec);
     hits.push({
-      playerId: row.player.id,
-      name: row.player.name,
-      similarity: Math.round(similarity * 100),
-      age: row.player.age ?? null,
-      value: row.player.value ?? null,
+      hit: {
+        playerId: row.player.id,
+        name: row.player.name,
+        similarity: Math.round(similarity * 100),
+        age: row.player.age ?? null,
+        value: row.player.value ?? null,
+      },
+      distance: vectorDistance(anchorVec, vec),
     });
   }
 
-  return hits.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
+  return hits
+    .sort((a, b) => b.hit.similarity - a.hit.similarity || a.distance - b.distance)
+    .map((x) => x.hit)
+    .slice(0, limit);
 }

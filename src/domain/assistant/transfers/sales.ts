@@ -21,8 +21,19 @@ function percentile(values: readonly number[], p: number): number {
   return sorted[idx]!;
 }
 
-function bestFit(row: PlayerRow): number {
-  return row.scores.bestRole?.score ?? 0;
+function bestFit(row: PlayerRow, ctx: AnalysisContext): number {
+  let best = 0;
+  for (const fs of ctx.formation.slots) {
+    if (!row.player.positions.includes(fs.slot)) continue;
+    const fit = slotFit(row, ctx.formation.id, fs);
+    if (fit > best) best = fit;
+  }
+  return best || (row.scores.bestRole?.score ?? 0);
+}
+
+function materialDelta(ask: number, projected: number): boolean {
+  const delta = ask - projected;
+  return delta >= Math.max(500_000, ask * 0.08);
 }
 
 function money(v: number | null): string {
@@ -74,6 +85,7 @@ function reasonsFor(
   priceBand: PriceBand | null,
   fit: number,
   fitIn2: number,
+  arbitrage: ArbitrageHit | null,
 ): string[] {
   const age = row.player.age;
   const value = row.player.value ?? null;
@@ -82,8 +94,15 @@ function reasonsFor(
       return ["Build around him. Hang up on anyone who calls."];
     case "sell-high": {
       const lines = ["His value will never be higher — the market pays for the player he was last season."];
-      if (priceBand != null && age != null && value != null) {
-        lines.push(`${money(priceBand.ask)} now vs ${money(projectValue(value, age + 1))} in 12 months.`);
+      if (arbitrage) {
+        lines.push(
+          `${arbitrage.row.player.name} does the same job for ${money(arbitrage.cost)} — bank the difference.`,
+        );
+      } else if (priceBand != null && age != null && value != null) {
+        const projected = projectValue(value, age + 1);
+        if (materialDelta(priceBand.ask, projected)) {
+          lines.push(`${money(priceBand.ask)} now vs ${money(projected)} in 12 months.`);
+        }
       }
       return lines;
     }
@@ -92,8 +111,11 @@ function reasonsFor(
         `Every window he stays costs value: projected fit in 2 seasons is ${fitIn2}, down from ${Math.round(fit)} now.`,
       ];
       if (priceBand != null && age != null && value != null) {
-        const loss = priceBand.ask - projectValue(value, age + 1);
-        if (loss > 0) lines.push(`Roughly ${money(loss)} evaporates if you wait a year.`);
+        const projected = projectValue(value, age + 1);
+        const loss = priceBand.ask - projected;
+        if (loss > 0 && materialDelta(priceBand.ask, projected)) {
+          lines.push(`Roughly ${money(loss)} evaporates if you wait a year.`);
+        }
       }
       return lines;
     }
@@ -124,7 +146,7 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   const id = row.player.id;
   const age = row.player.age;
   const value = row.player.value ?? null;
-  const fit = bestFit(row);
+  const fit = bestFit(row, ctx);
   const reliance = physicalReliance(row.player);
   const fitIn2 = projectFit(fit, age, reliance, 2);
 
@@ -203,7 +225,7 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   return {
     playerId: id,
     verdict,
-    reasons: reasonsFor(verdict, row, priceBand, fit, fitIn2),
+    reasons: reasonsFor(verdict, row, priceBand, fit, fitIn2, arbitrage),
     evidence,
     priceBand,
     xiImpact,

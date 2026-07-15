@@ -156,7 +156,20 @@ describe("sale verdicts", () => {
     expect(veteran?.replacement?.ready).toBe(true);
   });
 
-  it("sell-high: valuable starter in the sell-age window with a capable backup", () => {
+  it("sell-high via arbitrage: omits a null now-vs-12-months line and names the twin (doc 17 §3)", () => {
+    const squad = [
+      ...FULL_4231.filter((s) => s !== "ST-C").map((s) => player({ positions: [s], base: 13, value: 1e6, age: 25 })),
+      player({ positions: ["ST-C"], base: 15, age: 26, value: 60e6 }),
+    ];
+    const shortlist = [player({ positions: ["ST-C"], base: 16, age: 24, value: 5e6 })];
+    const sales = buildSales(ctxWith(squad, shortlist));
+    const star = sales.find((s) => s.playerId === squad[squad.length - 1]!.id);
+    expect(star?.verdict).toBe("sell-high");
+    expect(star?.reasons.join(" ")).not.toMatch(/now vs .* in 12 months/i);
+    expect(star?.reasons.some((r) => r.includes("does the same job"))).toBe(true);
+  });
+
+  it("sell-high in the sell-age window prints a material now-vs-12-months delta (doc 17 §3)", () => {
     // base 15 -> fit 75, comfortably under the untouchable elite-fit threshold (80).
     const squad = [
       ...FULL_4231.filter((s) => s !== "ST-C").map((s) => player({ positions: [s], base: 13, value: 1e6 })),
@@ -166,6 +179,10 @@ describe("sale verdicts", () => {
     const sales = buildSales(ctxWith(squad));
     const target = sales.find((s) => s.playerId === squad[squad.length - 2]!.id);
     expect(target?.verdict).toBe("sell-high");
+    const line = target?.reasons.find((r) => r.includes("now vs"));
+    expect(line).toBeTruthy();
+    expect(line).toContain("€45M now vs");
+    expect(line).toContain("€37.5M");
   });
 
   it("sell-high via arbitrage: a cheap shortlist replacement matches the starter", () => {
@@ -224,6 +241,19 @@ describe("replacement chains", () => {
     const ctx = ctxWith(squad, shortlist, 1e6, true);
     const chain = buildChain(ctx, squad[squad.length - 1]!.id);
     expect(chain?.source).not.toBe("shortlist");
+  });
+
+  it("never names another XI starter as the internal heir (doc 17 §10.1)", () => {
+    const squad = [
+      ...FULL_4231.filter((s) => s !== "ST-C" && s !== "AM-L").map((s) => player({ positions: [s], base: 13 })),
+      player({ positions: ["ST-C"], base: 16, age: 27, value: 20e6 }),
+      player({ positions: ["AM-L", "ST-C"], base: 16, age: 24, value: 5e6 }),
+    ];
+    const ctx = ctxWith(squad);
+    const stStarter = squad.find((p) => p.positions[0] === "ST-C" && p.age === 27)!;
+    const lwStarter = squad.find((p) => p.positions.includes("AM-L"))!;
+    const chain = buildChain(ctx, stStarter.id);
+    expect(chain?.playerId).not.toBe(lwStarter.id);
   });
 
   it("returns source 'none' when nobody can replace the player", () => {

@@ -13,6 +13,9 @@ import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { getRole, isRoleId } from "@/src/domain/roles/registry.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { recommend } from "@/src/domain/recommendation.js";
+import { formatPullQuote } from "@/src/domain/evidence.js";
+import { GROUP_COHORT_LABEL, canonicalPrimaryGroup } from "@/src/domain/positions.js";
+import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
 import { buildContext, type AnalysisContext } from "@/src/domain/assistant/context.js";
 import { buildBoard } from "@/src/domain/assistant/transfers/board.js";
 import type { TransferBoard } from "@/src/domain/assistant/transfers/types.js";
@@ -23,8 +26,6 @@ import {
   footLabel,
   formatHeight,
   formatMoney,
-  metricLabel,
-  ordinal,
 } from "@/src/report/format.js";
 import { Radar } from "@/components/Radar";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -110,7 +111,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
       squad: squadRows,
       shortlist: shortlistRows,
       formation,
-      budget: lastAssistantRun?.budget ?? 1e12,
+      budget: lastAssistantRun?.budget ?? DEFAULT_BUDGET,
       useFullBudget: lastAssistantRun?.useFull ?? true,
     });
     return { ctx, board: buildBoard(ctx) };
@@ -139,12 +140,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
     .join("  ·  ");
   const conf = Math.round(s.confidence * 100);
 
-  const topPct = Object.entries(s.percentiles)
-    .filter((e): e is [string, number] => e[1] != null)
-    .sort((a, b) => b[1] - a[1])[0];
-  const pull = topPct
-    ? `In this database he sits in the ${ordinal(Math.round(topPct[1]))} percentile for ${metricLabel(topPct[0]).toLowerCase()}.`
-    : "";
+  const pull = formatPullQuote(s);
 
   const identity = s.archetypes;
 
@@ -226,7 +222,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
           <p className="panel-h">Profile radar</p>
           <Radar scores={s} />
           <figcaption className="radar-cap">
-            Percentile vs {s.pop === "gk" ? "goalkeepers" : "outfielders"} in this database
+            Percentile vs {GROUP_COHORT_LABEL[canonicalPrimaryGroup(p.positions)]} in this database
           </figcaption>
         </figure>
 
@@ -264,7 +260,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
                 </td>
                 <td className="rphase">{def.phase}</td>
                 <td className="rbar">
-                  <InkBar value={r.insufficient ? null : r.score} />
+                  <InkBar value={r.insufficient ? null : r.score} absolute />
                 </td>
                 <td className="rscore num">{r.insufficient ? "—" : Math.round(r.score)}</td>
               </tr>

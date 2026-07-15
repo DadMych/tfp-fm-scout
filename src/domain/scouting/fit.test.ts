@@ -60,4 +60,33 @@ describe("computeSquadFit", () => {
     expect(fit?.slotLabel).toBe("ST");
     expect((fit?.delta ?? 0) >= 8).toBe(true);
   });
+
+  it("prefers the empty slot with the largest delta over a high-fit rotation role (doc 17 §8.1)", () => {
+    const squad = [
+      row({ id: "gk", name: "GK", positions: ["GK"], v: 14 }),
+      row({ id: "dr", name: "RB", positions: ["D-R"], v: 14 }),
+      row({ id: "dcr", name: "RCB", positions: ["D-C"], v: 14 }),
+      row({ id: "dcl", name: "LCB", positions: ["D-C"], v: 14 }),
+      row({ id: "dl", name: "LB", positions: ["D-L"], v: 14 }),
+      row({ id: "dm1", name: "DM1", positions: ["DM-C"], v: 14 }),
+      row({ id: "dm2", name: "DM2", positions: ["DM-C"], v: 14 }),
+      row({ id: "amr", name: "RW", positions: ["AM-R"], v: 17 }),
+      row({ id: "amc", name: "AMC", positions: ["AM-C"], v: 14 }),
+      row({ id: "st", name: "ST", positions: ["ST-C"], v: 14 }),
+    ];
+    const candidate = row({ id: "wide", name: "Wide", positions: ["AM-L", "AM-R"], v: 16 });
+
+    const ctx = buildContext({
+      squad,
+      shortlist: [candidate],
+      formation: getFormation("4-2-3-1"),
+      budget: 50e6,
+      useFullBudget: true,
+    });
+
+    const names = new Map(squad.map((r) => [r.player.id, r.player.name]));
+    const fit = computeSquadFit(candidate, ctx.formation.id, ctx.slots, names);
+    expect(fit?.slotLabel).toBe("LW");
+    expect(fit?.verdict).toBe("Upgrade");
+  });
 });

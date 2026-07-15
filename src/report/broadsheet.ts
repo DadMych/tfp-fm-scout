@@ -13,7 +13,8 @@ import type { PlayerScores } from "../domain/scoring/dataset.js";
 import { getArchetype } from "../domain/archetypes/registry.js";
 import { getRole } from "../domain/roles/registry.js";
 import { pickBargain, pickLead, posLabel, standouts } from "../domain/front-page.js";
-import { esc, formatMoney, ordinal } from "./format.js";
+import { formatPullQuote } from "../domain/evidence.js";
+import { esc, formatMoney } from "./format.js";
 
 export interface ReportMeta {
   readonly datasetLabel: string;
@@ -131,10 +132,7 @@ function leadStory(lead: { p: Player; s: PlayerScores }, href: string | null): s
   const eyebrow = [s.general.family, p.age != null ? `Age ${p.age}` : null, posLabel(p)]
     .filter((b): b is string => !!b)
     .join("  ·  ");
-  const topSo = standouts(s, 1)[0];
-  const pull = topSo
-    ? `In this database he sits in the ${ordinal(Math.round(topSo.pct))} percentile for ${topSo.label.toLowerCase()}.`
-    : "";
+  const pull = formatPullQuote(s);
   return `
   <section class="hero">
     <div>

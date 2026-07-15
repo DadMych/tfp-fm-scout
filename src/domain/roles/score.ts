@@ -46,9 +46,12 @@ export function scoreRole(attrs: AttrVector, role: RoleDef): RoleScore {
     }
   }
 
-  const score = maxRaw === 0 ? 0 : (100 * raw) / maxRaw;
+  const rawScore = maxRaw === 0 ? 0 : (100 * raw) / maxRaw;
   const confidence = totalWeight === 0 ? 0 : exactWeight / totalWeight;
   const insufficient = totalWeight > 0 && maskedWeight / totalWeight > 0.5;
+  const score = insufficient
+    ? Math.round(rawScore * (1 - maskedWeight / totalWeight))
+    : Math.round(rawScore);
   return { score, confidence, insufficient };
 }
 
@@ -71,8 +74,17 @@ export function pairScore(attrs: AttrVector, ipRoleId: RoleId, oopRoleId: RoleId
 
   let tax = 0;
   if (runningHeavy(ip) && runningHeavy(oop)) {
-    const workEngine = computeDerived(attrs).workEngine;
-    if (workEngine != null && workEngine < 12) tax = (12 - workEngine) * 2;
+    const derived = computeDerived(attrs);
+    const stamina = midOf(attrs, "stamina");
+    const workRate = midOf(attrs, "workRate");
+    const workEngine = derived.workEngine;
+    const running =
+      stamina != null && workRate != null
+        ? workEngine
+        : stamina != null
+          ? stamina
+          : workRate;
+    if (running != null && running < 12) tax = (12 - running) * 2;
   }
   return base - tax;
 }

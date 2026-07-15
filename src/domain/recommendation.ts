@@ -90,23 +90,64 @@ function valueMillions(p: Player): number | null {
   return p.value != null && p.value > 0 ? p.value / 1e6 : null;
 }
 
+interface MarginInfo {
+  readonly group: PositionGroup;
+  readonly margin: number;
+  readonly best: number;
+  readonly empty: boolean;
+}
+
+/** Best margin across the player's position groups (negative margins included). */
+function bestMargin(
+  p: Player,
+  roleFit: number,
+  ctx: SquadContext | undefined,
+): MarginInfo | null {
+  if (!ctx) return null;
+  let best: MarginInfo | null = null;
+  for (const g of playerGroups(p.positions)) {
+    const cur = ctx.bestByGroup[g];
+    const empty = cur == null;
+    const incumbent = cur ?? 0;
+    const margin = roleFit - incumbent;
+    if (!best || margin > best.margin) {
+      best = { group: g, margin, best: incumbent, empty };
+    }
+  }
+  return best;
+}
+
 /** Best squad group the player could slot into, with the margin he'd add (or null). */
 function upgradeOver(
   p: Player,
   roleFit: number,
   ctx: SquadContext | undefined,
-): { group: PositionGroup; margin: number; best: number } | null {
-  if (!ctx) return null;
-  let best: { group: PositionGroup; margin: number; best: number } | null = null;
-  for (const g of playerGroups(p.positions)) {
-    const cur = ctx.bestByGroup[g];
-    if (cur == null) continue;
-    const margin = roleFit - cur;
-    if (margin >= 5 && (!best || margin > best.margin)) {
-      best = { group: g, margin, best: cur };
-    }
-  }
-  return best;
+): { group: PositionGroup; margin: number; best: number; empty: boolean } | null {
+  const m = bestMargin(p, roleFit, ctx);
+  if (!m || m.margin < 5) return null;
+  return m;
+}
+
+function cascadeVerdict(x: {
+  score: number;
+  age: number | null;
+  perM: number | null;
+}): Verdict {
+  const { score, age, perM } = x;
+  if (perM != null && perM >= 6 && score >= 65) return "Bargain";
+  if (age != null && age <= 20 && score >= 68) return "One for the future";
+  if (score >= 75) return "Proven performer";
+  if (score >= 58) return "Squad depth";
+  if (age != null && age <= 22) return "Project";
+  return "Squad depth";
+}
+
+function wouldBePriorityTarget(x: {
+  score: number;
+  badge: Badge;
+  conf: number;
+}): boolean {
+  return (x.badge === "Elite" || x.score >= 85) && x.conf >= 45;
 }
 
 export function recommend(
@@ -123,14 +164,18 @@ export function recommend(
   const perM = vm != null && vm > 0 ? score / vm : null;
   const conf = Math.round(s.confidence * 100);
   const roleFit = s.bestRole?.score ?? 0;
+  const margin = bestMargin(p, roleFit, ctx);
   const upgrade = upgradeOver(p, roleFit, ctx);
+  const hasSquad = ctx != null;
 
   const reasons: string[] = [];
   if (badge) reasons.push(`${badge} ${archName} — score ${score} in this database`);
   else reasons.push(`${archName}, score ${score}`);
   if (upgrade) {
     reasons.push(
-      `Would be your best ${upgrade.group} (beats your current ${Math.round(upgrade.best)} by ${Math.round(upgrade.margin)})`,
+      upgrade.empty
+        ? `Would fill your ${upgrade.group} slot — you have no natural cover`
+        : `Would be your best ${upgrade.group} (beats your current ${Math.round(upgrade.best)} by ${Math.round(upgrade.margin)})`,
     );
   }
   if (age != null && age <= 20) reasons.push(`Only ${age} — room to develop`);
@@ -141,11 +186,28 @@ export function recommend(
   }
   if (conf < 45) reasons.push(`Only ${conf}% scouted — treat with caution`);
 
-  const verdict = decideVerdict({ score, badge, age, perM, conf, upgrade });
+  const verdict = decideVerdict({ score, badge, age, perM, conf, upgrade, margin, hasSquad });
+  const demotedElite =
+    hasSquad &&
+    margin != null &&
+    margin.margin <= 0 &&
+    wouldBePriorityTarget({ score, badge, conf });
+  const rentalHeadline = age != null && age >= 33 && (badge === "Elite" || score >= 85);
+
   return {
     verdict,
     tone: TONE[verdict],
-    headline: headlineFor(verdict, { archName, score, age, upgrade, vm, perM }),
+    headline: headlineFor(verdict, {
+      archName,
+      score,
+      age,
+      upgrade,
+      vm,
+      perM,
+      demotedElite,
+      rentalHeadline,
+      margin,
+    }),
     reasons,
     rank: RANK[verdict],
   };
@@ -157,14 +219,46 @@ function decideVerdict(x: {
   age: number | null;
   perM: number | null;
   conf: number;
-  upgrade: { group: PositionGroup; margin: number; best: number } | null;
+  upgrade: { group: PositionGroup; margin: number; best: number; empty: boolean } | null;
+  margin: MarginInfo | null;
+  hasSquad: boolean;
 }): Verdict {
-  const { score, badge, age, perM, upgrade } = x;
+  const { score, badge, age, perM, upgrade, margin, hasSquad, conf } = x;
 
   if (score < 50) return "Not for us";
-  // A concrete, quantified squad improvement is the most actionable call we can make.
-  if (upgrade && score >= 65) return "Squad upgrade";
-  if ((badge === "Elite" || score >= 85) && x.conf >= 45) return "Priority target";
+
+  // §2: veterans — no squad-upgrade or priority-target calls.
+  if (age != null && age >= 33) {
+    return cascadeVerdict({ score, age, perM });
+  }
+
+  // §1: covered squad — he does not beat any incumbent.
+  if (hasSquad && margin != null && margin.margin <= 0) {
+    return cascadeVerdict({ score, age, perM });
+  }
+
+  // §1: marginal improvement — at most proven performer.
+  if (hasSquad && margin != null && margin.margin > 0 && margin.margin < 5) {
+    return cascadeVerdict({ score, age, perM });
+  }
+
+  // §8.3: low-confidence players cannot carry a squad-upgrade call.
+  if (upgrade && score >= 65) {
+    if (conf >= 45) return "Squad upgrade";
+    return cascadeVerdict({ score, age, perM });
+  }
+
+  // §2: 31–32 — priority only when the fee earns it.
+  if (age != null && age >= 31 && age <= 32) {
+    if (wouldBePriorityTarget({ score, badge, conf }) && perM != null && perM >= 6) {
+      return "Priority target";
+    }
+    if (wouldBePriorityTarget({ score, badge, conf })) {
+      return cascadeVerdict({ score, age, perM });
+    }
+  }
+
+  if (wouldBePriorityTarget({ score, badge, conf })) return "Priority target";
   if (perM != null && perM >= 6 && score >= 65) return "Bargain";
   if (age != null && age <= 20 && score >= 68) return "One for the future";
   if (age != null && age >= 24 && age <= 30 && score >= 75) return "Proven performer";
@@ -179,11 +273,21 @@ function headlineFor(
     archName: string;
     score: number;
     age: number | null;
-    upgrade: { group: PositionGroup; margin: number; best: number } | null;
+    upgrade: { group: PositionGroup; margin: number; best: number; empty: boolean } | null;
     vm: number | null;
     perM: number | null;
+    demotedElite: boolean;
+    rentalHeadline: boolean;
+    margin: MarginInfo | null;
   },
 ): string {
+  if (x.rentalHeadline && verdict === "Proven performer") {
+    return `Elite today at ${x.age} — a one-season rental, price accordingly.`;
+  }
+  if (x.demotedElite && x.margin) {
+    return `Elite ${x.archName.toLowerCase()} — but ${x.margin.group} is already covered; a luxury, not a need.`;
+  }
+
   const money = x.vm != null ? (x.vm >= 1 ? `€${round1(x.vm)}M` : `€${Math.round(x.vm * 1000)}K`) : null;
   switch (verdict) {
     case "Priority target":

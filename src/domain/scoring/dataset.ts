@@ -3,7 +3,7 @@ import { midOf, uncertainty } from "../attr-value.js";
 import { computeDerived, type DerivedMetrics, type DerivedId } from "../derived.js";
 import { METRIC_IDS, isDerivedId, type MetricId } from "../metric-id.js";
 import { makeRanker, type Ranker } from "../percentile.js";
-import { playerGroups, type PositionGroup } from "../positions.js";
+import { canonicalPrimaryGroup, playerGroups, type PositionGroup } from "../positions.js";
 import { isGoalkeeper, type Player } from "../player.js";
 import { ROLES, type RoleId } from "../roles/registry.js";
 import { scoreRole, type RoleScore } from "../roles/score.js";
@@ -77,7 +77,7 @@ function confidenceFor(attrs: Player["attrs"], expected: readonly AttributeId[])
 }
 
 function primaryGroup(p: Player): PositionGroup {
-  return playerGroups(p.positions)[0] ?? "DM/CM";
+  return canonicalPrimaryGroup(p.positions);
 }
 
 function inGroup(p: Player, group: PositionGroup): boolean {
@@ -141,7 +141,7 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
       const gr = groupRank.get(metric) as Ranker;
       datasetPercentiles[metric] = v == null ? null : dr.pct(v);
       percentiles[metric] = v == null ? null : gr.pct(v);
-      if (v != null) atOrAbove[metric] = dr.atOrAbove(v);
+      if (v != null) atOrAbove[metric] = gr.atOrAbove(v);
     }
 
     const ctx = {
@@ -170,10 +170,9 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
     const archetypes = scoreAllArchetypes(ctx, pop);
     const general = generalArchetype(archetypes);
 
-    // Top archetype: highest gate-passing score, else highest overall.
-    const passing = archetypes.filter((a) => a.gatesPassed).sort((a, b) => b.score - a.score);
-    const any = [...archetypes].sort((a, b) => b.score - a.score);
-    const top = passing[0] ?? any[0];
+    // Top archetype: highest gate-passing score ≥ 60, else null (doc 06 §4).
+    const passing = archetypes.filter((a) => a.gatesPassed && a.score >= 60).sort((a, b) => b.score - a.score);
+    const top = passing[0];
     const topArchetype: PlayerScores["topArchetype"] = top
       ? { id: top.id, score: top.score, badge: badgeFor(top.score, top.gatesPassed) }
       : null;

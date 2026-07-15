@@ -27,7 +27,6 @@ import {
   formatHeight,
   formatMoney,
   metricLabel,
-  ordinal,
 } from "./format.js";
 
 /** Filesystem-safe file name for a player's dossier (unique via the stable row id). */
@@ -274,13 +273,7 @@ function posLabel(p: Player): string {
   return p.positions.length ? p.positions.join("/") : "—";
 }
 
-function pullQuote(s: PlayerScores): string {
-  const top = Object.entries(s.percentiles)
-    .filter((e): e is [string, number] => e[1] != null)
-    .sort((a, b) => b[1] - a[1])[0];
-  if (!top) return "";
-  return `In this database he sits in the ${ordinal(Math.round(top[1]))} percentile for ${metricLabel(top[0]).toLowerCase()}.`;
-}
+import { formatPullQuote } from "../domain/evidence.js";
 
 export function renderDossier(p: Player, s: PlayerScores, meta: ReportMeta): string {
   const arch = s.topArchetype ? getArchetype(s.topArchetype.id) : null;
@@ -290,7 +283,7 @@ export function renderDossier(p: Player, s: PlayerScores, meta: ReportMeta): str
   const eyebrow = [family, p.age != null ? `Age ${p.age}` : null, posLabel(p)]
     .filter((b): b is string => !!b)
     .join("  ·  ");
-  const pull = pullQuote(s);
+  const pull = formatPullQuote(s);
   const conf = Math.round(s.confidence * 100);
   const stamp = meta.generatedAt.toISOString().slice(0, 16).replace("T", " ");
 

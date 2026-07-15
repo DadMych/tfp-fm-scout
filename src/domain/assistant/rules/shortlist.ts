@@ -18,9 +18,18 @@ export function run(ctx: AnalysisContext): RawInsight[] {
 
   for (const s of nonSolid) {
     const eligibleShortlist = ctx.shortlist.filter((r) => r.player.positions.includes(s.slot.slot));
-    const fits = eligibleShortlist.map((r) => slotFit(r, ctx.formation.id, s.slot));
-    const coveringWeak = fits.filter((f) => f >= T.WEAK_FIT).length;
-    const coveringGood = fits.filter((f) => f >= T.GOOD_FIT).length;
+    const coveringWeak = eligibleShortlist.filter(
+      (r) =>
+        slotFit(r, ctx.formation.id, s.slot) >= T.WEAK_FIT &&
+        r.player.value != null &&
+        r.player.value <= ctx.budgetCap,
+    ).length;
+    const coveringGood = eligibleShortlist.filter(
+      (r) =>
+        slotFit(r, ctx.formation.id, s.slot) >= T.GOOD_FIT &&
+        r.player.value != null &&
+        r.player.value <= ctx.budgetCap,
+    ).length;
 
     if (coveringWeak === 0) {
       allCovered = false;
@@ -33,7 +42,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
         evidence: [{ label: "Eligible shortlist players", value: `${eligibleShortlist.length}` }],
         subjects: [],
         slotKey: s.slotKey,
-        action: scoutAction(s.slot.slot, { minFit: T.WEAK_FIT }),
+        action: scoutAction(s.slot.slot, { minFit: T.WEAK_FIT, maxValue: ctx.budgetCap }),
       });
     }
 
