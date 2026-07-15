@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Player } from "@/src/domain/player.js";
 import type { Insight } from "@/src/domain/assistant/types.js";
 import { FORMATIONS } from "@/src/domain/squad/formations.js";
+import { serializeAssistantScoutFilters } from "@/lib/scout-filters";
 import { SEVERITY_TONE, surname } from "./shared";
 
 export function InsightRow({
@@ -62,7 +63,7 @@ function InsightAction({
   }
   if (action.kind === "scout") {
     return (
-      <Link className="iaction" href="/scout">
+      <Link className="iaction" href={serializeAssistantScoutFilters(action.filters)}>
         Scout
       </Link>
     );

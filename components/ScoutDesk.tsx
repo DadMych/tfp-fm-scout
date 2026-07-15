@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
-import { parseScoutFilters, serializeScoutFilters, type ScoutSortKey } from "@/lib/scout-filters";
+import { parseScoutFilters, serializeScoutFilters, type ScoutStyleFilter, type ScoutSortKey } from "@/lib/scout-filters";
+import { PLAYING_STYLES, playerMatchesStyle } from "@/src/domain/squad/styles.js";
 import { buildFitDeskContext, fitsGap, squadFitForRow } from "@/lib/squad-fit-desk";
 import type { SquadFitResult } from "@/src/domain/scouting/fit.js";
 import { getArchetype, type ArchetypeId } from "@/src/domain/archetypes/registry.js";
@@ -38,6 +39,7 @@ interface Row {
   rec: Recommendation;
   standout: { label: string; pct: number } | null;
   fit: SquadFitResult | null;
+  scores: import("@/src/domain/scoring/dataset.js").PlayerScores;
 }
 
 export function ScoutDesk() {
@@ -55,6 +57,7 @@ export function ScoutDesk() {
   const [maxValue, setMaxValue] = useState(initial.maxValue);
   const [verdict, setVerdict] = useState<Verdict | "all">(initial.verdict);
   const [fitFilter, setFitFilter] = useState(initial.fit);
+  const [styleFilter, setStyleFilter] = useState<ScoutStyleFilter>(initial.style);
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [dir, setDir] = useState<"asc" | "desc">(initial.dir);
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -68,11 +71,12 @@ export function ScoutDesk() {
       maxValue,
       verdict,
       fit: fitFilter,
+      style: styleFilter,
       sort,
       dir,
     });
     router.replace(href, { scroll: false });
-  }, [kind, q, group, maxAge, maxValue, verdict, fitFilter, sort, dir, router]);
+  }, [kind, q, group, maxAge, maxValue, verdict, fitFilter, styleFilter, sort, dir, router]);
 
   const fitCtx = useMemo(() => {
     if (!squad || !shortlist) return null;
@@ -105,6 +109,7 @@ export function ScoutDesk() {
         rec: recommend(p, s, ctx),
         standout: standouts(s, 1)[0] ?? null,
         fit,
+        scores: s,
       };
     });
   }, [bundle, kind, squadContext, showFit, fitCtx]);
@@ -119,6 +124,7 @@ export function ScoutDesk() {
       if (ageCap != null && (r.age == null || r.age > ageCap)) return false;
       if (valCap != null && (r.value == null || r.value > valCap)) return false;
       if (verdict !== "all" && r.rec.verdict !== verdict) return false;
+      if (styleFilter !== "all" && !playerMatchesStyle(r.scores, styleFilter)) return false;
       if (showFit && fitFilter !== "all") {
         if (!r.fit) return false;
         if (fitFilter === "upgrade" && r.fit.verdict !== "Upgrade") return false;
@@ -138,7 +144,7 @@ export function ScoutDesk() {
     out.sort(cmp[sort]);
     if (dir === "desc") out.reverse();
     return out;
-  }, [rows, q, group, maxAge, maxValue, verdict, fitFilter, showFit, fitCtx, sort, dir]);
+  }, [rows, q, group, maxAge, maxValue, verdict, fitFilter, styleFilter, showFit, fitCtx, sort, dir]);
 
   const activeId = useMemo(() => {
     if (filtered.length === 0) return null;
@@ -315,6 +321,21 @@ export function ScoutDesk() {
             </select>
           </div>
         ) : null}
+        <div className="field">
+          <label>Style</label>
+          <select
+            className="control"
+            value={styleFilter}
+            onChange={(e) => setStyleFilter(e.target.value as ScoutStyleFilter)}
+          >
+            <option value="all">All</option>
+            {PLAYING_STYLES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <span className="count">
           {filtered.length} shown · <span className="kbd-hint">j/k move · s watch · c compare</span>
         </span>

@@ -40,6 +40,7 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 | 18 | [Visual Identity](docs/18-visual-identity.md) | One form language for all controls; generated archetype art, icons, site furniture |
 | 19 | [Desk Clarity](docs/19-desk-clarity.md) | Front Page overhaul, tactic advice at the verdict, honest funding (−10% haircut), package legibility, art-first dossier |
 | 20 | [Squad Discipline](docs/20-squad-discipline.md) | Registration cap (25), mandatory exits (sell/loan), sale income funds buys, prospects on loan. **Amends 19 §4** |
+| 21 | [Tactic Briefing](docs/21-tactic-briefing.md) | Playing styles, per-formation briefing, asymmetric flank advice, style scout presets. **Amends 19 §3** |
 | — | [Broadsheet Finish](docs/15-broadsheet-finish.md) | Supplementary UI depth plan (overlaps doc 15 P1) |
 | — | [Engine Truth & Platform](docs/16-engine-truth-and-platform.md) | Supplementary engine/infra depth (overlaps doc 15 P2–P3) |
 

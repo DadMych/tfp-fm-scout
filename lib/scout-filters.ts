@@ -1,10 +1,18 @@
 import type { DatasetKind } from "@/lib/store";
 import type { PositionGroup } from "@/src/domain/positions.js";
 import type { Verdict } from "@/src/domain/recommendation.js";
+import {
+  isStyleId,
+  PLAYING_STYLES,
+  type StyleId,
+} from "../src/domain/squad/styles.js";
+import type { ScoutFilters as AssistantScoutFilters } from "../src/domain/assistant/types.js";
 
 export type ScoutSortKey = "reco" | "score" | "grade" | "age" | "value" | "name" | "fit";
 
 export type ScoutFitFilter = "all" | "upgrade" | "gap";
+
+export type ScoutStyleFilter = StyleId | "all";
 
 export interface ScoutFilters {
   readonly kind: DatasetKind;
@@ -14,6 +22,7 @@ export interface ScoutFilters {
   readonly maxValue: string;
   readonly verdict: Verdict | "all";
   readonly fit: ScoutFitFilter;
+  readonly style: ScoutStyleFilter;
   readonly sort: ScoutSortKey;
   readonly dir: "asc" | "desc";
 }
@@ -69,6 +78,9 @@ export function parseScoutFilters(params: URLSearchParams): ScoutFilters {
   const verdict = verdictRaw !== "all" && isVerdict(verdictRaw) ? verdictRaw : "all";
   const fitRaw = params.get("fit") ?? "all";
   const fit = isFitFilter(fitRaw) ? fitRaw : "all";
+  const styleRaw = params.get("style") ?? "all";
+  const style: ScoutStyleFilter =
+    styleRaw !== "all" && isStyleId(styleRaw) ? styleRaw : "all";
 
   return {
     kind,
@@ -78,6 +90,7 @@ export function parseScoutFilters(params: URLSearchParams): ScoutFilters {
     maxValue: params.get("maxValue") ?? "",
     verdict,
     fit,
+    style,
     sort,
     dir,
   };
@@ -92,8 +105,43 @@ export function serializeScoutFilters(f: ScoutFilters): string {
   if (f.maxValue) params.set("maxValue", f.maxValue);
   if (f.verdict !== "all") params.set("verdict", f.verdict);
   if (f.fit !== "all") params.set("fit", f.fit);
+  if (f.style !== "all") params.set("style", f.style);
   if (f.sort !== "reco") params.set("sort", f.sort);
   if (f.dir !== defaultDirForSort(f.sort)) params.set("dir", f.dir);
   const qs = params.toString();
   return qs ? `/scout?${qs}` : "/scout";
+}
+
+/** Bridge assistant insight scout actions → desk URL (doc 21). */
+export function serializeAssistantScoutFilters(filters: AssistantScoutFilters): string {
+  const group = filters.group ?? "all";
+  const style = filters.style ?? "all";
+  return serializeScoutFilters({
+    kind: "shortlist",
+    q: "",
+    group,
+    maxAge: filters.maxAge != null ? String(filters.maxAge) : "",
+    maxValue: filters.maxValue != null ? String(Math.round(filters.maxValue / 1e6)) : "",
+    verdict: "all",
+    fit: "all",
+    style,
+    sort: "reco",
+    dir: "asc",
+  });
+}
+
+export function scoutHrefForStyle(styleId: StyleId, group?: PositionGroup): string {
+  const style = PLAYING_STYLES.find((s) => s.id === styleId)!;
+  return serializeScoutFilters({
+    kind: "shortlist",
+    q: "",
+    group: group ?? style.scout.groups[0] ?? "all",
+    maxAge: "",
+    maxValue: "",
+    verdict: "all",
+    fit: "all",
+    style: styleId,
+    sort: "fit",
+    dir: "desc",
+  });
 }

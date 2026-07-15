@@ -33,31 +33,35 @@ loadDotEnv();
 const hosted = Boolean(process.env.DATABASE_URL);
 
 describe.skipIf(!hosted)("oauth account linking", () => {
-  it("links a Google account to an existing password user by email", async () => {
-    const db = getDb();
-    if (!db) throw new Error("DATABASE_URL is not configured.");
+  it(
+    "links a Google account to an existing password user by email",
+    async () => {
+      const db = getDb();
+      if (!db) throw new Error("DATABASE_URL is not configured.");
 
-    const stamp = Date.now();
-    const email = `oauth-link-${stamp}@tfp-fm.test`;
-    const providerAccountId = `google-${stamp}`;
+      const stamp = Date.now();
+      const email = `oauth-link-${stamp}@tfp-fm.test`;
+      const providerAccountId = `google-${stamp}`;
 
-    const passwordUser = await createUser(db, {
-      email,
-      passwordHash: await hashPassword("testpass123"),
-      name: "Password User",
-    });
+      const passwordUser = await createUser(db, {
+        email,
+        passwordHash: await hashPassword("testpass123"),
+        name: "Password User",
+      });
 
-    const linkedId = await linkOAuthUser(db, {
-      email,
-      provider: "google",
-      providerAccountId,
-      type: "oidc",
-      name: "Google Name",
-    });
+      const linkedId = await linkOAuthUser(db, {
+        email,
+        provider: "google",
+        providerAccountId,
+        type: "oidc",
+        name: "Google Name",
+      });
 
-    expect(linkedId).toBe(passwordUser.id);
+      expect(linkedId).toBe(passwordUser.id);
 
-    const account = await findOAuthAccount(db, "google", providerAccountId);
-    expect(account?.userId).toBe(passwordUser.id);
-  });
+      const account = await findOAuthAccount(db, "google", providerAccountId);
+      expect(account?.userId).toBe(passwordUser.id);
+    },
+    15_000,
+  );
 });

@@ -10,7 +10,8 @@ import type { XiSolution } from "./xi.js";
 import type { LinkBoard } from "./links.js";
 import type { TransferPackage } from "./packages.js";
 import type { TransferBoard } from "./transfers/types.js";
-import type { StyleRead } from "./style.js";
+import type { TacticBrief, StyleRead } from "./tactic-brief.js";
+import type { StyleId } from "../squad/styles.js";
 
 export type InsightClass =
   | "shape"
@@ -38,6 +39,7 @@ export interface ScoutFilters {
   readonly maxAge?: number;
   readonly maxValue?: number;
   readonly minFitAtSlot?: { slot: PositionSlot; fit: number };
+  readonly style?: StyleId;
 }
 
 export type InsightAction =
@@ -83,4 +85,5 @@ export interface AssistantReport {
   readonly budgetCap: number;
   readonly board: TransferBoard;
   readonly styleReads: readonly StyleRead[];
+  readonly tacticBrief: TacticBrief;
 }
