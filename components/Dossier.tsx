@@ -322,7 +322,7 @@ function DirectorRead({
   let best: { slotLabel: string; fit: number; starterFit: number | null; starterName: string | null } | null = null;
   for (const slot of ctx.slots) {
     if (!p.positions.includes(slot.slot.slot)) continue;
-    const fit = slotFit(s, slot.slot.slot);
+    const fit = slotFit({ player: p, scores: s }, ctx.formation.id, slot.slot);
     if (!best || fit > best.fit) {
       const starterName = slot.starter ? (ctx.byId.get(slot.starter.id)?.player.name ?? null) : null;
       best = { slotLabel: slot.label, fit, starterFit: slot.starter?.fit ?? null, starterName };

@@ -1,24 +1,26 @@
 /**
  * Optimal XI solver (docs/11-assistant-analytics.md §3).
  *
- * A naive greedy XI assignment is order-sensitive and can burn a scarce
- * player on the wrong slot (e.g. the squad's only left-back gets greedily grabbed for a
- * centre-back slot because his CB fit happens to be marginally higher). This solves the
- * assignment optimally with the Hungarian algorithm (Kuhn–Munkres, O(n^2 * m)), n = number
- * of formation slots (11), m = number of candidate players. Ineligible pairs and empty
- * slots ("holes") are modelled as extra-costly options so a real eligible player is always
- * preferred over a hole, and a hole is always preferred over an ineligible player.
+ * Fit at each slot uses the tactic preset's IP+OOP pair and pairScore (doc 05 §4),
+ * not the old best-single-role ceiling.
  */
 
 import type { Player } from "../player.js";
 import type { PositionSlot } from "../positions.js";
 import type { PlayerScores } from "../scoring/dataset.js";
 import { ROLES } from "../roles/registry.js";
+import { pairScore } from "../roles/score.js";
+import { getSlotPair } from "../squad/tactic-presets.js";
 import type { Formation } from "../squad/formations.js";
 
 export interface PlayerRow {
   readonly player: Player;
   readonly scores: PlayerScores;
+}
+
+export interface SlotRef {
+  readonly key: string;
+  readonly slot: PositionSlot;
 }
 
 export interface XiSolution {
@@ -40,8 +42,8 @@ const ROLES_BY_SLOT: Map<PositionSlot, string[]> = (() => {
   return m;
 })();
 
-/** Player's ceiling at a slot: best role score among roles playable there. Absolute 0–100. */
-export function slotFit(scores: PlayerScores, slot: PositionSlot): number {
+/** Legacy ceiling: best single role at a slot (tests / fallback only). */
+export function legacySlotFit(scores: PlayerScores, slot: PositionSlot): number {
   let best = 0;
   for (const id of ROLES_BY_SLOT.get(slot) ?? []) {
     const s = scores.roles[id]?.score ?? 0;
@@ -50,21 +52,23 @@ export function slotFit(scores: PlayerScores, slot: PositionSlot): number {
   return Math.round(best);
 }
 
+/** Product fit currency: pairScore for the preset IP+OOP at this formation slot. */
+export function slotFit(row: PlayerRow, formationId: string, ref: SlotRef): number {
+  const pair = getSlotPair(formationId, ref.key);
+  if (!pair) return legacySlotFit(row.scores, ref.slot);
+  return Math.round(pairScore(row.player.attrs, pair.ip, pair.oop));
+}
+
 const HOLE_COST = 1_000;
 const INELIGIBLE_COST = 100_000;
 const INF = Number.POSITIVE_INFINITY;
 
-/**
- * Hungarian algorithm (Jonker-esque potentials form) for the rectangular assignment
- * problem: n rows (≤ m columns), minimize total cost of a perfect matching over rows.
- * 1-indexed internally per the classic e-maxx formulation; returns 0-indexed `col of row`.
- */
 function hungarian(cost: readonly (readonly number[])[]): number[] {
-  const n = cost.length; // rows
-  const m = cost[0]?.length ?? 0; // columns, m >= n required
+  const n = cost.length;
+  const m = cost[0]?.length ?? 0;
   const u = new Array(n + 1).fill(0);
   const v = new Array(m + 1).fill(0);
-  const p = new Array(m + 1).fill(0); // p[j] = row (1-indexed) assigned to column j
+  const p = new Array(m + 1).fill(0);
   const way = new Array(m + 1).fill(0);
 
   for (let i = 1; i <= n; i++) {
@@ -117,11 +121,11 @@ export function solveXI(rows: readonly PlayerRow[], formation: Formation): XiSol
   const slots = formation.slots;
   const n = slots.length;
   const realM = rows.length;
-  const dummyCount = n; // enough holes to leave every slot empty if needed
+  const dummyCount = n;
   const m = realM + dummyCount;
 
   const fitCache: number[][] = slots.map((fs) =>
-    rows.map((r) => slotFit(r.scores, fs.slot)),
+    rows.map((r) => slotFit(r, formation.id, fs)),
   );
   const eligible: boolean[][] = slots.map((fs) =>
     rows.map((r) => r.player.positions.includes(fs.slot)),

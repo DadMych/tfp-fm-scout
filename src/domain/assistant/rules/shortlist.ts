@@ -18,7 +18,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
 
   for (const s of nonSolid) {
     const eligibleShortlist = ctx.shortlist.filter((r) => r.player.positions.includes(s.slot.slot));
-    const fits = eligibleShortlist.map((r) => slotFit(r.scores, s.slot.slot));
+    const fits = eligibleShortlist.map((r) => slotFit(r, ctx.formation.id, s.slot));
     const coveringWeak = fits.filter((f) => f >= T.WEAK_FIT).length;
     const coveringGood = fits.filter((f) => f >= T.GOOD_FIT).length;
 

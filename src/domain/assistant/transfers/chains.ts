@@ -2,30 +2,33 @@
  * Replacement chains — who steps in when a player leaves (docs/13-sporting-director.md §5).
  */
 
-import type { PositionSlot } from "../../positions.js";
+import type { FormationSlot } from "../../squad/formations.js";
 import type { AnalysisContext } from "../context.js";
 import { T } from "../thresholds.js";
 import { slotFit } from "../xi.js";
 import { computePriceBand } from "./pricing.js";
 import type { ReplacementChain } from "./types.js";
 
-/** The formation slot a player's chain is built around: his starting slot, or (for
- * non-starters) the eligible formation slot where his ceiling is highest. */
-function primarySlot(ctx: AnalysisContext, playerId: string): PositionSlot | null {
+/** The formation slot a player's chain is built around. */
+function primaryFormationSlot(ctx: AnalysisContext, playerId: string): FormationSlot | null {
   const asStarter = ctx.slots.find((s) => s.starter?.id === playerId);
-  if (asStarter) return asStarter.slot.slot;
+  if (asStarter) return asStarter.slot;
   const row = ctx.byId.get(playerId);
   if (!row) return null;
-  let best: { slot: PositionSlot; fit: number } | null = null;
+  let best: FormationSlot | null = null;
+  let bestFit = -1;
   for (const fs of ctx.formation.slots) {
     if (!row.player.positions.includes(fs.slot)) continue;
-    const fit = slotFit(row.scores, fs.slot);
-    if (!best || fit > best.fit) best = { slot: fs.slot, fit };
+    const fit = slotFit(row, ctx.formation.id, fs);
+    if (fit > bestFit) {
+      bestFit = fit;
+      best = fs;
+    }
   }
-  return best?.slot ?? null;
+  return best;
 }
 
-const EMPTY_CHAIN = (slot: PositionSlot, fitBefore: number): ReplacementChain => ({
+const EMPTY_CHAIN = (slot: FormationSlot["slot"], fitBefore: number): ReplacementChain => ({
   source: "none",
   playerId: null,
   playerName: null,
@@ -42,23 +45,24 @@ const EMPTY_CHAIN = (slot: PositionSlot, fitBefore: number): ReplacementChain =>
 export function buildChain(ctx: AnalysisContext, playerId: string): ReplacementChain | null {
   const row = ctx.byId.get(playerId);
   if (!row) return null;
-  const slot = primarySlot(ctx, playerId);
-  if (!slot) return null;
-  const fitBefore = slotFit(row.scores, slot);
+  const fs = primaryFormationSlot(ctx, playerId);
+  if (!fs) return null;
+  const slot = fs.slot;
+  const fitBefore = slotFit(row, ctx.formation.id, fs);
   const fee = computePriceBand(row.player.value ?? null, row.player.age ?? null, false)?.ask ?? 0;
 
   let internal: { id: string; name: string; fit: number } | null = null;
   for (const r of ctx.squad) {
     if (r.player.id === playerId) continue;
     if (!r.player.positions.includes(slot)) continue;
-    const fit = slotFit(r.scores, slot);
+    const fit = slotFit(r, ctx.formation.id, fs);
     if (!internal || fit > internal.fit) internal = { id: r.player.id, name: r.player.name, fit };
   }
 
   let external: { id: string; name: string; fit: number; cost: number } | null = null;
   for (const r of ctx.shortlist) {
     if (!r.player.positions.includes(slot)) continue;
-    const fit = slotFit(r.scores, slot);
+    const fit = slotFit(r, ctx.formation.id, fs);
     if (fit < fitBefore - T.SUCC_READY_GAP) continue;
     const cost = r.player.value;
     if (cost == null || cost > ctx.budgetCap + fee) continue;

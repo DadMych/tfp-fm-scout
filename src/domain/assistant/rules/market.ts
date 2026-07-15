@@ -89,7 +89,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
       if (!row.player.positions.includes(s.slot.slot)) continue;
       const value = row.player.value;
       if (value == null) continue;
-      const fit = slotFit(row.scores, s.slot.slot);
+      const fit = slotFit(row, ctx.formation.id, s.slot);
       if (fit < s.starter.fit || value > starterValue * 0.5) continue;
       let g = groups.get(row.player.id);
       if (!g) {

@@ -111,7 +111,7 @@ function buildCandidates(ctx: AnalysisContext): Candidate[] {
     const currentFit = slot.starter?.fit ?? 0;
     for (const row of ctx.shortlist) {
       if (!row.player.positions.includes(slot.slot.slot)) continue;
-      const newFit = slotFit(row.scores, slot.slot.slot);
+      const newFit = slotFit(row, ctx.formation.id, slot.slot);
       const delta = newFit - currentFit;
       const helpsNeed = slot.need !== "solid" && newFit >= 62;
       if (!(delta >= 3 || helpsNeed)) continue;

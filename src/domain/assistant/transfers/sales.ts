@@ -47,7 +47,7 @@ function findArbitrage(ctx: AnalysisContext, slot: SlotAssignment, value: number
     if (!r.player.positions.includes(slot.slot.slot)) continue;
     const cost = r.player.value;
     if (cost == null || cost > T.ARBITRAGE_FRAC * value) continue;
-    const fit = slotFit(r.scores, slot.slot.slot);
+    const fit = slotFit(r, ctx.formation.id, slot.slot);
     if (fit < starterFit - 2) continue;
     if (!best || fit > best.fit) best = { row: r, fit, cost };
   }

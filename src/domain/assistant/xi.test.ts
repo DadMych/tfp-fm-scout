@@ -6,7 +6,7 @@ import type { PositionSlot } from "../positions.js";
 import { buildScores } from "../scoring/dataset.js";
 import { getFormation } from "../squad/formations.js";
 import type { Formation } from "../squad/formations.js";
-import { slotFit, solveXI, type PlayerRow } from "./xi.js";
+import { slotFit, solveXI, legacySlotFit, type PlayerRow } from "./xi.js";
 
 function attrs(v: number): AttrVector {
   const out: AttrVector = {};
@@ -45,11 +45,21 @@ function fullSquad(v: number): Player[] {
 
 describe("slotFit", () => {
   it("rates a strong player above a weak one at the same slot", () => {
-    const [good, bad] = buildScores([
+    const squad = rows([
       player({ v: 16, positions: ["D-C"] }),
       player({ v: 5, positions: ["D-C"] }),
     ]);
-    expect(slotFit(good!, "D-C")).toBeGreaterThan(slotFit(bad!, "D-C"));
+    const good = squad[0]!;
+    const bad = squad[1]!;
+    const ref = { key: "dcr", slot: "D-C" as const };
+    expect(slotFit(good, "4-3-3", ref)).toBeGreaterThan(slotFit(bad, "4-3-3", ref));
+  });
+
+  it("uses pairScore from the tactic preset", () => {
+    const squad = rows([player({ v: 16, positions: ["M-C"] })]);
+    const row = squad[0]!;
+    const ref = { key: "mcr", slot: "M-C" as const };
+    expect(slotFit(row, "4-3-3", ref)).toBeGreaterThan(legacySlotFit(row.scores, "M-C") - 5);
   });
 });
 
@@ -127,7 +137,7 @@ describe("solveXI vs brute force", () => {
     // Try every way to assign up to 3 distinct players to the 3 slots (or leave a slot empty).
     function fitAt(row: PlayerRow, slotIdx: number): number {
       const s = f.slots[slotIdx]!;
-      return row.player.positions.includes(s.slot) ? slotFit(row.scores, s.slot) : -1; // ineligible
+      return row.player.positions.includes(s.slot) ? slotFit(row, f.id, s) : -1;
     }
     for (let ai = -1; ai < n; ai++) {
       for (let bi = -1; bi < n; bi++) {

@@ -37,7 +37,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
     let candidate: { id: string; fit: number } | null = null;
     for (const r of ctx.bench) {
       if (r.player.positions.includes(s.slot.slot)) continue; // already natural — not a retrain
-      const fit = slotFit(r.scores, s.slot.slot);
+      const fit = slotFit(r, ctx.formation.id, s.slot);
       if (fit >= T.WEAK_FIT - 4 && (!candidate || fit > candidate.fit)) {
         candidate = { id: r.player.id, fit };
       }

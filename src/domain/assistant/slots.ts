@@ -71,7 +71,7 @@ export function deriveSlots(
     for (const row of squad) {
       if (starterIds.has(row.player.id)) continue;
       if (!eligible(row.player, fs.slot)) continue;
-      const f = slotFit(row.scores, fs.slot);
+      const f = slotFit(row, formation.id, fs);
       if (!backup || f > backup.fit) backup = { id: row.player.id, fit: f };
     }
     const starterAge = st ? (byId.get(st.id)?.player.age ?? null) : null;
