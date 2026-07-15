@@ -32,6 +32,7 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 | 13 | [Sporting Director](docs/13-sporting-director.md) | Sales, succession, health index, packages v4. **Amends 12's packages** |
 | 14 | [State of the Product](docs/14-state-of-the-product.md) | July 2026 audit: maturity scorecard, defect catalog, doc-drift resolutions |
 | 15 | [Premium Overhaul](docs/15-premium-overhaul.md) | The plan from prototype to flagship: phases P0–P4 with acceptance criteria |
+| 16 | [Hosted Deployment](docs/16-hosted-deployment.md) | P4 infrastructure pinned: Neon Postgres, Auth.js (password + Google), per-user schema, Vercel. **Amends 02's auth/deploy lines** |
 
 The visual language is **Broadsheet** — a football-almanac look, not a SaaS dashboard. The reference artifact is `design/direction-a-broadsheet.html` (open it in a browser); doc 09 is its written law.
 

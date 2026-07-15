@@ -2,22 +2,22 @@
 
 Hosted multi-user web app. Users upload FM26 exports; we parse, store, and serve analysis. Built to be operable by a tiny team: one deployable web process + Postgres + object storage, no microservices.
 
-> **Current stage (July 2026):** the shipped build is a **local-first Next.js app** — parsing and scoring run in the browser; datasets persist in `localStorage`. The stack table below is the **destination** architecture (doc 15, phase P4). The UI follows doc 09's **Broadsheet** direction with hand-rolled CSS, not Tailwind/shadcn.
+> **Current stage (July 2026):** the shipped build is a **local-first Next.js app** — parsing and scoring run in the browser; datasets persist in `localStorage`. The stack table below is the **destination** architecture (doc 15, phase P4). The UI follows doc 09's **Broadsheet** direction with hand-rolled CSS, not Tailwind/shadcn. **Hosting decisions are now pinned in [doc 16](16-hosted-deployment.md)** (Neon Postgres + Auth.js credentials/Google); doc 16 wins over this doc where they differ.
 
 ## Stack (decided — do not relitigate)
 
 | Layer | Choice | Why |
 |---|---|---|
 | Framework | **Next.js 15+ (App Router), TypeScript strict** | One codebase for UI + API routes + server components; easy deploy |
-| DB | **PostgreSQL 16+** via **Drizzle ORM** | Relational fits players/datasets/shortlists; Drizzle = typed schema in code, migrations checked in |
+| DB | **PostgreSQL 16+ on Neon** via **Drizzle ORM** (doc 16) | Relational fits players/datasets/shortlists; Drizzle = typed schema in code, migrations checked in; Neon = serverless + pooled endpoint + branch-per-preview |
 | Raw file storage | **S3-compatible object storage** | Keep original uploads for reprocessing when parsers improve |
 | Background work | **Postgres-backed job queue (pg-boss)** | Big imports must not run in the request cycle; no extra infra (no Redis) |
-| Auth | **Auth.js** — email magic link + Google/Discord OAuth | FM community lives on Discord; zero password handling |
+| Auth | **Auth.js** — email + password (Credentials) + Google OAuth (doc 16 §3, amends the original magic-link/Discord plan) | Lowest-friction pair for the FM audience; Google covers the no-new-password crowd |
 | UI | React + **hand-rolled Broadsheet CSS** (doc 09), pitch visuals as custom SVG | Chosen visual direction; no Tailwind/shadcn retrofit |
 | Tables | **TanStack Table + TanStack Virtual** | Must handle 20k+ rows client-side with sort/filter |
 | Validation | **Zod** on every API boundary | Uploads are untrusted |
 | Tests | **Vitest** (unit: parser, engines), **Playwright** (E2E: upload→dashboard) | Docs 03/05/06 examples become fixtures |
-| Deploy | Docker image; any container host + managed Postgres + S3 bucket | No vendor lock-in; Vercel works too if the import job is moved to a worker |
+| Deploy | **Vercel + Neon** for v1 hosted (doc 16 §5); Docker image on any container host + S3 remains the documented fallback | Preview deploys pair with Neon branches; no vendor lock-in — the Docker path stays viable |
 
 ## Topology
 

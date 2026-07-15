@@ -187,11 +187,12 @@ Premium software doesn't just look finished — it doesn't fall over on a 50 MB 
 
 ## P4 — Hosted (the doc 02 promise, deferred deliberately)
 
-Unchanged in scope from doc 10 M0/M3-hosted-parts: Auth.js, Postgres/Drizzle, presigned
-uploads, pg-boss worker (the P3 worker parser ports server-side), tenancy tests, share
-links, Docker compose. **Do not start until P0–P3 ACs are green.** The store seam
-(`lib/store.tsx`) and the pure domain layer are the designed insertion points; the UI
-should not need restructuring again.
+Infrastructure is now pinned in **doc 16**: Neon Postgres (provisioned, `DATABASE_URL`
+in `.env`), Auth.js with email+password + Google, Vercel, and a deliberately smaller v1
+than doc 02's full topology (client-side worker parsing stays; S3/pg-boss defer until
+share links demand canonical raw files). **Do not start until P0–P3 ACs are green.** The
+store seam (`lib/store.tsx`) and the pure domain layer are the designed insertion
+points; the UI should not need restructuring again.
 
 ---
 
