@@ -20,7 +20,7 @@ import {
 } from "react";
 import type { Player } from "@/src/domain/player.js";
 import { buildScores, type PlayerScores } from "@/src/domain/scoring/dataset.js";
-import { parseExport } from "@/src/import/parse.js";
+import { parseExport, ImportError } from "@/src/import/parse.js";
 import { buildSquadContext, type SquadContext } from "@/src/domain/recommendation.js";
 import { playerIdentityKey } from "@/src/domain/player-identity.js";
 import {
@@ -216,6 +216,12 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const loadText = useCallback(
     (kind: DatasetKind, text: string, source: string, label?: string): number => {
       const { players, report } = parseExport(text, kind);
+      if (players.length === 0 && report.rowsSkipped.length > 0) {
+        throw new ImportError(
+          "UNRECOGNIZED_FORMAT",
+          "No players found — is this an FM26 player-list export?",
+        );
+      }
       const dataset: Dataset = {
         label: label ?? source,
         source,

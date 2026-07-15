@@ -6,6 +6,7 @@ import { useDatasets } from "@/lib/store";
 import { buildAssistantReport } from "@/src/domain/assistant/report.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { pickBargain, pickLead, posLabel, standouts, type ScoredRow } from "@/src/domain/front-page.js";
+import { ENGINE_VERSION } from "@/src/domain/engine-version.js";
 import { recommend } from "@/src/domain/recommendation.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
 import { formatMoney, ordinal } from "@/src/report/format.js";
@@ -98,7 +99,7 @@ export function FrontPage() {
       <Dateline
         left={bundle.dataset.label}
         center={`${bundle.dataset.players.length} players · ${masked}% masked`}
-        right={`${watchList.length} on watch`}
+        right={`${watchList.length} on watch · engine ${ENGINE_VERSION}`}
       />
 
       {lead ? (

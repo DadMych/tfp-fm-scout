@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
+import { ImportError, decodeExportText } from "@/src/import/parse.js";
 
 const ACCEPT = ".csv,.html,.htm,.txt,text/csv,text/html";
 
@@ -25,11 +26,13 @@ export function Uploader({
     setError(null);
     setBusy(true);
     try {
-      const text = await file.text();
+      const buf = await file.arrayBuffer();
+      const text = decodeExportText(new Uint8Array(buf));
       const n = loadText(kind, text, file.name);
       if (n === 0) setError("No players found — is this an FM26 player-list export?");
-    } catch {
-      setError("Could not read that file.");
+    } catch (e) {
+      if (e instanceof ImportError) setError(e.message);
+      else setError("Could not read that file.");
     } finally {
       setBusy(false);
     }
