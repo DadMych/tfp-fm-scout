@@ -36,7 +36,7 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 | 14 | [State of the Product](docs/14-state-of-the-product.md) | July 2026 audit: maturity scorecard, defect catalog, doc-drift resolutions |
 | 15 | [Premium Overhaul](docs/15-premium-overhaul.md) | The plan from prototype to flagship: phases P0–P4 with acceptance criteria |
 | 16 | [Hosted Deployment](docs/16-hosted-deployment.md) | P4 infrastructure pinned: Neon Postgres, Auth.js (password + Google), per-user schema, Vercel. **Amends 02's auth/deploy lines** |
-| 17 | [Engine Coherence](docs/17-engine-coherence.md) | Verdict/fit/age reconciliation, sale-line materiality, evidence relevance, one fit currency |
+| 17 | [Engine Coherence](docs/17-engine-coherence.md) | Verdict/fit/age reconciliation, one fit currency, plus Part II: full audit — percentile truth, chains, packages, rules |
 | 18 | [Visual Identity](docs/18-visual-identity.md) | One form language for all controls; generated archetype art, icons, site furniture |
 | — | [Broadsheet Finish](docs/15-broadsheet-finish.md) | Supplementary UI depth plan (overlaps doc 15 P1) |
 | — | [Engine Truth & Platform](docs/16-engine-truth-and-platform.md) | Supplementary engine/infra depth (overlaps doc 15 P2–P3) |
