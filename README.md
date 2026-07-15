@@ -14,7 +14,7 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 > when `DATABASE_URL` and `AUTH_SECRET` are set. See [doc 14](docs/14-state-of-the-product.md),
 > [doc 15](docs/15-premium-overhaul.md), and [doc 16](docs/16-hosted-deployment.md).
 
-**Support:** [buymeacoffee.com/tfpdev](https://buymeacoffee.com/tfpdev) · **Site:** [tfpdev.com](https://tfpdev.com)
+**Support:** [buymeacoffee.com/tfpdev](https://buymeacoffee.com/tfpdev) · **Site:** [tfp-fm.vercel.app](https://tfp-fm.vercel.app) · **Repo:** [github.com/DadMych/tfp-fm-scout](https://github.com/DadMych/tfp-fm-scout)
 
 ## Documentation index (read in order)
 
