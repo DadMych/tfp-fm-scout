@@ -119,8 +119,9 @@ export function CompareView() {
 
       <div className="cmp-toolbar">
         <div className="field">
-          <label>Add player</label>
+          <label htmlFor="cmp-add">Add player</label>
           <select
+            id="cmp-add"
             value=""
             disabled={refs.length >= 4}
             onChange={(e) => {
@@ -140,8 +141,8 @@ export function CompareView() {
         </div>
         {slotOptions.length > 0 ? (
           <div className="field">
-            <label>Role-pair slot</label>
-            <select value={slot} onChange={(e) => setSlotPick(e.target.value as PositionSlot)}>
+            <label htmlFor="cmp-slot">Role-pair slot</label>
+            <select id="cmp-slot" value={slot} onChange={(e) => setSlotPick(e.target.value as PositionSlot)}>
               {slotOptions.map((s) => (
                 <option key={s} value={s}>
                   {s}

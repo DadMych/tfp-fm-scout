@@ -17,6 +17,12 @@ data/*
 # Generated scout reports / previews
 out/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # FM26 export plugin build artifacts
 tools/fm26_export/plugin/bin/
 tools/fm26_export/plugin/obj/
