@@ -84,7 +84,7 @@ function byCat(c: AttributeCategory): AttributeId[] {
 
 export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
   const bundle = useBundle(kind);
-  const { squad, shortlist, squadContext, ready, lastAssistantRun } = useDatasets();
+  const { squad, shortlist, squadContext, ready, lastAssistantRun, isWatched, toggleWatch } = useDatasets();
 
   const found = useMemo(() => {
     if (!bundle) return null;
@@ -271,6 +271,10 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
       <div className="footline">
         <span>Source · {bundle?.dataset.source}</span>
         <span>
+          <button type="button" className="foot-action" onClick={() => toggleWatch(p)}>
+            {isWatched(p) ? "Remove from watch" : "Add to watch"}
+          </button>
+          {" · "}
           <Link href={`/compare?a=${kind}:${p.id}`}>Compare</Link>
           {" · "}
           <Link href="/scout">← Back to desk</Link>

@@ -37,7 +37,7 @@ export function ScoutDesk() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initial = useMemo(() => parseScoutFilters(searchParams), [searchParams]);
-  const { shortlist, squad, squadContext, ready, watchIds, toggleWatch } = useDatasets();
+  const { shortlist, squad, squadContext, ready, isWatched, toggleWatch } = useDatasets();
   const [kind, setKind] = useState<DatasetKind>(initial.kind);
   const bundle = kind === "squad" ? squad : shortlist;
 
@@ -133,7 +133,8 @@ export function ScoutDesk() {
         setFocusedId(filtered[Math.max(cur - 1, 0)]!.id);
       } else if (e.key === "s" && activeId) {
         e.preventDefault();
-        toggleWatch(activeId);
+        const p = bundle?.dataset.players.find((x) => x.id === activeId);
+        if (p) toggleWatch(p);
       } else if (e.key === "Enter" && activeId) {
         e.preventDefault();
         router.push(`/scout/${kind}/${activeId}`);
@@ -144,7 +145,7 @@ export function ScoutDesk() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, activeId, kind, toggleWatch, router]);
+  }, [filtered, activeId, kind, toggleWatch, router, bundle]);
 
   const guidance = useMemo(() => {
     const counts = new Map<Verdict, number>();
@@ -326,9 +327,12 @@ export function ScoutDesk() {
               </td>
             </tr>
           ) : (
-            filtered.map((r) => (
+            filtered.map((r) => {
+            const p = bundle.dataset.players.find((x) => x.id === r.id)!;
+            const watched = isWatched(p);
+            return (
             <tr
-              className={`player${activeId === r.id ? " focused" : ""}${watchIds.has(r.id) ? " watched" : ""}`}
+              className={`player${activeId === r.id ? " focused" : ""}${watched ? " watched" : ""}`}
               key={r.id}
               tabIndex={activeId === r.id ? 0 : -1}
               onFocus={() => setFocusedId(r.id)}
@@ -338,7 +342,7 @@ export function ScoutDesk() {
                 <Link className="pname" href={`/scout/${kind}/${r.id}`}>
                   {r.name}
                 </Link>
-                {watchIds.has(r.id) ? <span className="watch-mark">Watch</span> : null}
+                {watched ? <span className="watch-mark">Watch</span> : null}
                 <div className="sub">
                   {r.positions}
                   {r.club ? ` · ${r.club}` : ""}
@@ -372,7 +376,8 @@ export function ScoutDesk() {
                 <span className={`score${r.rec.tone === "gold" ? " lead" : ""}`}>{r.score}</span>
               </td>
             </tr>
-            ))
+            );
+            })
           )}
         </tbody>
       </table>

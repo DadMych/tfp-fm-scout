@@ -6,55 +6,67 @@ import { Masthead } from "@/components/kit/Masthead";
 import { Dateline } from "@/components/kit/Dateline";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { useDatasets } from "@/lib/store";
+import {
+  resolveWatchEntries,
+  WATCH_STATUSES,
+  WATCH_STATUS_LABEL,
+  type WatchStatus,
+} from "@/lib/watch-list";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { recommend } from "@/src/domain/recommendation.js";
 
 export default function WatchPage() {
-  const { shortlist, squad, squadContext, ready, watchIds, toggleWatch } = useDatasets();
+  const {
+    shortlist,
+    squad,
+    squadContext,
+    ready,
+    watchList,
+    setWatchStatus,
+    setWatchNote,
+    removeWatch,
+  } = useDatasets();
+
+  const resolved = useMemo(
+    () =>
+      resolveWatchEntries(
+        watchList,
+        shortlist?.dataset.players ?? null,
+        squad?.dataset.players ?? null,
+      ),
+    [watchList, shortlist, squad],
+  );
 
   const entries = useMemo(() => {
-    const out: {
-      id: string;
-      name: string;
-      kind: "shortlist" | "squad";
-      arch: string;
-      score: number;
-      rec: ReturnType<typeof recommend>;
-    }[] = [];
-    for (const bundle of [shortlist, squad]) {
-      if (!bundle) continue;
-      const kind = bundle === shortlist ? "shortlist" : "squad";
-      for (const id of watchIds) {
-        const p = bundle.dataset.players.find((x) => x.id === id);
-        if (!p) continue;
-        const s = bundle.scoreById.get(id)!;
-        const arch = s.topArchetype ? getArchetype(s.topArchetype.id).name : "Utility";
-        out.push({
-          id,
-          name: p.name,
-          kind,
-          arch,
-          score: Math.round(s.topArchetype?.score ?? 0),
-          rec: recommend(p, s, kind === "shortlist" ? (squadContext ?? undefined) : undefined),
-        });
-      }
-    }
-    const seen = new Set<string>();
-    return out.filter((e) => {
-      if (seen.has(e.id)) return false;
-      seen.add(e.id);
-      return true;
+    return resolved.map(({ entry, p, kind, id }) => {
+      const s = (kind === "squad" ? squad : shortlist)!.scoreById.get(id)!;
+      const arch = s.topArchetype ? getArchetype(s.topArchetype.id).name : "Utility";
+      return {
+        entry,
+        id,
+        name: p.name,
+        kind,
+        arch,
+        score: Math.round(s.topArchetype?.score ?? 0),
+        rec: recommend(p, s, kind === "shortlist" ? (squadContext ?? undefined) : undefined),
+      };
     });
-  }, [shortlist, squad, squadContext, watchIds]);
+  }, [resolved, shortlist, squad, squadContext]);
+
+  const missing = watchList.length - entries.length;
 
   return (
     <div className="wrap">
       <Masthead current="watch" />
-      <Dateline left="Watch list" center={`${entries.length} players`} right="Press s on the desk to add" />
+      <Dateline
+        left="Watch list"
+        center={`${entries.length} active${missing > 0 ? ` · ${missing} awaiting re-import` : ""}`}
+        right="Press s on the desk to add"
+      />
 
       {!ready ? (
         <div className="empty">Setting the page…</div>
-      ) : entries.length === 0 ? (
+      ) : watchList.length === 0 ? (
         <div className="empty">
           No one on the watch list yet. Open the{" "}
           <Link href="/scout" className="link-red">
@@ -63,24 +75,41 @@ export default function WatchPage() {
           and press <span className="kbd-hint">s</span> on a player.
         </div>
       ) : (
-        <table className="rowlist">
+        <table className="rowlist watch-table">
           <thead>
             <tr className="head">
               <th>Player</th>
+              <th>Status</th>
               <th>Verdict</th>
               <th>Identity</th>
               <th className="c-num">Score</th>
+              <th>Note</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr className="player" key={e.id}>
+              <tr className="player" key={e.entry.identityKey}>
                 <td className="c-name">
                   <Link className="pname" href={`/scout/${e.kind}/${e.id}`}>
                     {e.name}
                   </Link>
                   <div className="sub">{e.kind === "shortlist" ? "Shortlist" : "Squad"}</div>
+                </td>
+                <td>
+                  <select
+                    className="watch-status"
+                    value={e.entry.status}
+                    onChange={(ev) =>
+                      setWatchStatus(e.entry.identityKey, ev.target.value as WatchStatus)
+                    }
+                  >
+                    {WATCH_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {WATCH_STATUS_LABEL[s]}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className="c-verdict">
                   <VerdictBadge rec={e.rec} />
@@ -91,8 +120,20 @@ export default function WatchPage() {
                 <td className="c-num">
                   <span className="score num">{e.score}</span>
                 </td>
+                <td className="c-note">
+                  <input
+                    className="watch-note"
+                    placeholder="One-line note…"
+                    value={e.entry.note}
+                    onChange={(ev) => setWatchNote(e.entry.identityKey, ev.target.value)}
+                  />
+                </td>
                 <td>
-                  <button type="button" className="btn ghost" onClick={() => toggleWatch(e.id)}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => removeWatch(e.entry.identityKey)}
+                  >
                     Remove
                   </button>
                 </td>

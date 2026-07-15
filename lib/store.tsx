@@ -22,6 +22,13 @@ import type { Player } from "@/src/domain/player.js";
 import { buildScores, type PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { parseExport } from "@/src/import/parse.js";
 import { buildSquadContext, type SquadContext } from "@/src/domain/recommendation.js";
+import { playerIdentityKey } from "@/src/domain/player-identity.js";
+import {
+  createWatchEntry,
+  isPlayerWatched,
+  type WatchEntry,
+  type WatchStatus,
+} from "@/lib/watch-list";
 
 export type DatasetKind = "shortlist" | "squad";
 
@@ -45,16 +52,21 @@ interface StoreState {
   readonly squadContext: SquadContext | null;
   readonly ready: boolean;
   readonly lastAssistantRun: LastAssistantRun | null;
-  readonly watchIds: ReadonlySet<string>;
+  readonly watchList: readonly WatchEntry[];
   loadText(kind: DatasetKind, text: string, source: string, label?: string): number;
   clear(kind: DatasetKind): void;
   setLastAssistantRun(run: LastAssistantRun): void;
-  toggleWatch(playerId: string): void;
+  toggleWatch(p: Player): void;
+  setWatchStatus(identityKey: string, status: WatchStatus): void;
+  setWatchNote(identityKey: string, note: string): void;
+  removeWatch(identityKey: string): void;
+  isWatched(p: Player): boolean;
 }
 
 const KEY = "tfp.datasets.v1";
 const SETTINGS_KEY = "tfp.assistant.v1";
-const WATCH_KEY = "tfp.watch.v1";
+const WATCH_KEY = "tfp.watch.v2";
+const WATCH_KEY_LEGACY = "tfp.watch.v1";
 
 export interface LastAssistantRun {
   readonly formationId: string;
@@ -75,7 +87,7 @@ function bundle(dataset: Dataset | null): DatasetBundle | null {
 export function DatasetProvider({ children }: { children: ReactNode }) {
   const [raw, setRaw] = useState<Persisted>({});
   const [lastAssistantRun, setLastAssistantRunState] = useState<LastAssistantRun | null>(null);
-  const [watchIds, setWatchIds] = useState<ReadonlySet<string>>(new Set());
+  const [watchList, setWatchList] = useState<WatchEntry[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -89,7 +101,33 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       const settings = localStorage.getItem(SETTINGS_KEY);
       if (settings) setLastAssistantRunState(JSON.parse(settings) as LastAssistantRun);
       const watch = localStorage.getItem(WATCH_KEY);
-      if (watch) setWatchIds(new Set(JSON.parse(watch) as string[]));
+      if (watch) {
+        setWatchList(JSON.parse(watch) as WatchEntry[]);
+      } else {
+        const legacy = localStorage.getItem(WATCH_KEY_LEGACY);
+        if (legacy) {
+          const ids = JSON.parse(legacy) as string[];
+          const migrated: WatchEntry[] = [];
+          const stored = localStorage.getItem(KEY);
+          if (stored) {
+            const data = JSON.parse(stored) as Persisted;
+            for (const id of ids) {
+              for (const kind of ["shortlist", "squad"] as const) {
+                const p = data[kind]?.players.find((x) => x.id === id);
+                if (p) {
+                  migrated.push(createWatchEntry(p));
+                  break;
+                }
+              }
+            }
+          }
+          setWatchList(migrated);
+          if (migrated.length > 0) {
+            localStorage.setItem(WATCH_KEY, JSON.stringify(migrated));
+            localStorage.removeItem(WATCH_KEY_LEGACY);
+          }
+        }
+      }
     } catch {
       // Corrupt or unavailable storage — start empty rather than crash.
     }
@@ -117,19 +155,63 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const toggleWatch = useCallback((playerId: string) => {
-    setWatchIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(playerId)) next.delete(playerId);
-      else next.add(playerId);
+  const toggleWatch = useCallback((p: Player) => {
+    setWatchList((prev) => {
+      const key = playerIdentityKey(p);
+      const exists = prev.some((e) => e.identityKey === key);
+      const next = exists
+        ? prev.filter((e) => e.identityKey !== key)
+        : [...prev, createWatchEntry(p)];
       try {
-        localStorage.setItem(WATCH_KEY, JSON.stringify([...next]));
+        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
+        localStorage.removeItem(WATCH_KEY_LEGACY);
       } catch {
         // Session-only.
       }
       return next;
     });
   }, []);
+
+  const setWatchStatus = useCallback((identityKey: string, status: WatchStatus) => {
+    setWatchList((prev) => {
+      const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, status } : e));
+      try {
+        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
+      } catch {
+        // Session-only.
+      }
+      return next;
+    });
+  }, []);
+
+  const setWatchNote = useCallback((identityKey: string, note: string) => {
+    setWatchList((prev) => {
+      const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, note } : e));
+      try {
+        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
+      } catch {
+        // Session-only.
+      }
+      return next;
+    });
+  }, []);
+
+  const removeWatch = useCallback((identityKey: string) => {
+    setWatchList((prev) => {
+      const next = prev.filter((e) => e.identityKey !== identityKey);
+      try {
+        localStorage.setItem(WATCH_KEY, JSON.stringify(next));
+      } catch {
+        // Session-only.
+      }
+      return next;
+    });
+  }, []);
+
+  const isWatched = useCallback(
+    (p: Player) => isPlayerWatched(p, watchList),
+    [watchList],
+  );
 
   const loadText = useCallback(
     (kind: DatasetKind, text: string, source: string, label?: string): number => {
@@ -202,13 +284,32 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       squadContext,
       ready,
       lastAssistantRun,
-      watchIds,
+      watchList,
       loadText,
       clear,
       setLastAssistantRun,
       toggleWatch,
+      setWatchStatus,
+      setWatchNote,
+      removeWatch,
+      isWatched,
     }),
-    [shortlist, squad, squadContext, ready, lastAssistantRun, watchIds, loadText, clear, setLastAssistantRun, toggleWatch],
+    [
+      shortlist,
+      squad,
+      squadContext,
+      ready,
+      lastAssistantRun,
+      watchList,
+      loadText,
+      clear,
+      setLastAssistantRun,
+      toggleWatch,
+      setWatchStatus,
+      setWatchNote,
+      removeWatch,
+      isWatched,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -20,7 +20,7 @@ function rowsFromBundle(bundle: NonNullable<ReturnType<typeof useDatasets>["shor
 }
 
 export function FrontPage() {
-  const { shortlist, squad, squadContext, ready, watchIds } = useDatasets();
+  const { shortlist, squad, squadContext, ready, watchList } = useDatasets();
 
   const bundle = shortlist ?? squad;
   const rows = useMemo(() => (bundle ? rowsFromBundle(bundle) : []), [bundle]);
@@ -74,7 +74,7 @@ export function FrontPage() {
       <Dateline
         left={bundle.dataset.label}
         center={`${bundle.dataset.players.length} players · ${masked}% masked`}
-        right={`${watchIds.size} on watch`}
+        right={`${watchList.length} on watch`}
       />
 
       {lead ? (
