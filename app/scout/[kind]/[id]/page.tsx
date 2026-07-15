@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { AppHeader } from "@/components/AppHeader";
+import { Masthead } from "@/components/kit/Masthead";
 import { Dossier } from "@/components/Dossier";
 import type { DatasetKind } from "@/lib/store";
 
@@ -12,7 +12,7 @@ export default function DossierPage() {
 
   return (
     <div className="wrap">
-      <AppHeader current="scout" />
+      <Masthead current="scout" />
       <Dossier kind={kind} id={id} />
     </div>
   );

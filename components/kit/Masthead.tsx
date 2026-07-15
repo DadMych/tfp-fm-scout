@@ -1,0 +1,31 @@
+import Link from "next/link";
+
+export type MastheadPage = "home" | "upload" | "scout" | "assistant" | "watch";
+
+const NAV: readonly { readonly id: MastheadPage; readonly href: string; readonly label: string }[] = [
+  { id: "home", href: "/", label: "Home" },
+  { id: "upload", href: "/upload", label: "Upload" },
+  { id: "assistant", href: "/assistant", label: "Assistant" },
+  { id: "scout", href: "/scout", label: "Scout" },
+  { id: "watch", href: "/watch", label: "Watch" },
+];
+
+export function Masthead({ current }: { current: MastheadPage }) {
+  return (
+    <div className="masthead">
+      <Link href="/" className="logo">
+        The <span>Scouting</span> Post
+      </Link>
+      <nav className="mast-nav" aria-label="Primary">
+        {NAV.map((item) => (
+          <Link key={item.id} href={item.href} className={current === item.id ? "on" : ""}>
+            {item.label}
+          </Link>
+        ))}
+        <a href="https://buymeacoffee.com/tfpdev" target="_blank" rel="noopener noreferrer">
+          Support
+        </a>
+      </nav>
+    </div>
+  );
+}

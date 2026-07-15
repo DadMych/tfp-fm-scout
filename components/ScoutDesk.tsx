@@ -6,9 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { playerGroups, type PositionGroup } from "@/src/domain/positions.js";
+import { standouts } from "@/src/domain/front-page.js";
 import { recommend, type Recommendation, type Verdict } from "@/src/domain/recommendation.js";
 import { formatMoney, scoutGradeRank } from "@/src/report/format.js";
 import { VerdictBadge } from "@/components/VerdictBadge";
+import { InkBar } from "@/components/kit/InkBar";
 
 const GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
 
@@ -27,6 +29,7 @@ interface Row {
   archName: string;
   grade: string | null;
   rec: Recommendation;
+  standout: { label: string; pct: number } | null;
 }
 
 export function ScoutDesk() {
@@ -63,6 +66,7 @@ export function ScoutDesk() {
         archName: arch?.name ?? "Utility",
         grade: p.scoutGrade ?? null,
         rec: recommend(p, s, ctx),
+        standout: standouts(s, 1)[0] ?? null,
       };
     });
   }, [bundle, kind, squadContext]);
@@ -151,7 +155,7 @@ export function ScoutDesk() {
     return (
       <div className="empty">
         No {kind} loaded.{" "}
-        <Link href="/" style={{ color: "var(--red)" }}>
+        <Link href="/upload" style={{ color: "var(--red)" }}>
           Upload an export
         </Link>{" "}
         to begin.
@@ -267,6 +271,7 @@ export function ScoutDesk() {
               Verdict
             </th>
             <th>Identity</th>
+            <th>Standout</th>
             <th
               onClick={() => toggleSort("age")}
               className={`c-num ${sort === "age" ? "sorted" : ""}`}
@@ -296,7 +301,7 @@ export function ScoutDesk() {
         <tbody>
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan={7} className="empty">
+              <td colSpan={8} className="empty">
                 No players match. Loosen the filters.
               </td>
             </tr>
@@ -328,6 +333,17 @@ export function ScoutDesk() {
                 {r.badge ? (
                   <span className={`stamp ${r.badge === "Elite" ? "gold" : ""}`}>{r.badge}</span>
                 ) : null}
+              </td>
+              <td className="c-standout">
+                {r.standout ? (
+                  <div className="so-cell">
+                    <span className="so-l">{r.standout.label}</span>
+                    <InkBar value={r.standout.pct} width={44} />
+                    <span className="num">{Math.round(r.standout.pct)}</span>
+                  </div>
+                ) : (
+                  "—"
+                )}
               </td>
               <td className="c-num">{r.age ?? "—"}</td>
               <td className="c-num">{r.grade ?? "—"}</td>

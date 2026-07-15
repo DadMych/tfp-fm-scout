@@ -31,6 +31,7 @@ import { VerdictBadge } from "@/components/VerdictBadge";
 import { ArchetypeColumns } from "@/components/kit/ArchetypeColumns";
 import { AttrValueCell } from "@/components/kit/AttrValue";
 import { Dateline } from "@/components/kit/Dateline";
+import { FactsRail } from "@/components/kit/FactsRail";
 import { InkBar } from "@/components/kit/InkBar";
 import { PullQuote } from "@/components/kit/PullQuote";
 import { useBundle, useDatasets, type DatasetKind } from "@/lib/store";
@@ -194,54 +195,23 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
           {director ? <DirectorRead kind={kind} p={p} s={s} ctx={director.ctx} board={director.board} /> : null}
         </div>
 
-        <div className="facts">
-          <dl>
-            <div className="row">
-              <dt>Club</dt>
-              <dd>{p.club || "—"}</dd>
-            </div>
-            <div className="row">
-              <dt>Nation</dt>
-              <dd>{p.nationality || "—"}</dd>
-            </div>
-            <div className="row">
-              <dt>Age</dt>
-              <dd className="num">{p.age ?? "—"}</dd>
-            </div>
-            <div className="row">
-              <dt>Height</dt>
-              <dd className="num">{formatHeight(p.heightCm)}</dd>
-            </div>
-            <div className="row">
-              <dt>Foot</dt>
-              <dd>{footLabel(p.foot)}</dd>
-            </div>
-            <div className="row">
-              <dt>Positions</dt>
-              <dd>{p.positions.join("/") || "—"}</dd>
-            </div>
-            <div className="row">
-              <dt>Value</dt>
-              <dd className="num">{formatMoney(p.value)}</dd>
-            </div>
-            <div className="row">
-              <dt>Top archetype</dt>
-              <dd>
-                <b>{arch ? arch.name : "Utility"}</b>
-              </dd>
-            </div>
-            <div className="row">
-              <dt>FM grade</dt>
-              <dd>
-                <b>{p.scoutGrade || "—"}</b>
-              </dd>
-            </div>
-            <div className="row">
-              <dt>Known</dt>
-              <dd className="num">{conf}%</dd>
-            </div>
-          </dl>
-        </div>
+        <FactsRail
+          rows={[
+            { label: "Club", value: p.club || "—" },
+            { label: "Nation", value: p.nationality || "—" },
+            { label: "Age", value: <span className="num">{p.age ?? "—"}</span> },
+            { label: "Height", value: <span className="num">{formatHeight(p.heightCm)}</span> },
+            { label: "Foot", value: footLabel(p.foot) },
+            { label: "Positions", value: p.positions.join("/") || "—" },
+            { label: "Value", value: <span className="num">{formatMoney(p.value)}</span> },
+            {
+              label: "Top archetype",
+              value: <b>{arch ? arch.name : "Utility"}</b>,
+            },
+            { label: "FM grade", value: <b>{p.scoutGrade || "—"}</b> },
+            { label: "Known", value: <span className="num">{conf}%</span> },
+          ]}
+        />
       </section>
 
       <ArchetypeColumns archetypes={identity} />

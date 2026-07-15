@@ -1,0 +1,193 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo } from "react";
+import { useDatasets } from "@/lib/store";
+import { getArchetype } from "@/src/domain/archetypes/registry.js";
+import { pickBargain, pickLead, posLabel, standouts, type ScoredRow } from "@/src/domain/front-page.js";
+import { recommend } from "@/src/domain/recommendation.js";
+import { formatMoney, ordinal } from "@/src/report/format.js";
+import { Dateline } from "@/components/kit/Dateline";
+import { FactsRail } from "@/components/kit/FactsRail";
+import { InkBar } from "@/components/kit/InkBar";
+import { PullQuote } from "@/components/kit/PullQuote";
+
+function rowsFromBundle(bundle: NonNullable<ReturnType<typeof useDatasets>["shortlist"]>): ScoredRow[] {
+  return bundle.dataset.players.map((p) => ({
+    p,
+    s: bundle.scoreById.get(p.id)!,
+  }));
+}
+
+export function FrontPage() {
+  const { shortlist, squad, squadContext, ready, watchIds } = useDatasets();
+
+  const bundle = shortlist ?? squad;
+  const rows = useMemo(() => (bundle ? rowsFromBundle(bundle) : []), [bundle]);
+
+  const lead = useMemo(() => pickLead(rows), [rows]);
+  const bargain = useMemo(() => pickBargain(rows), [rows]);
+
+  const briefs = useMemo(() => {
+    if (!bundle) return [];
+    return [...rows]
+      .map((r) => ({
+        ...r,
+        rec: recommend(r.p, r.s, bundle === shortlist ? (squadContext ?? undefined) : undefined),
+      }))
+      .filter((r) => r.rec.verdict !== "Not for us")
+      .sort((a, b) => a.rec.rank - b.rec.rank || (b.s.topArchetype?.score ?? 0) - (a.s.topArchetype?.score ?? 0))
+      .slice(0, 4);
+  }, [rows, bundle, squadContext, shortlist]);
+
+  if (!ready) return <div className="empty">Setting the page…</div>;
+
+  if (!bundle) {
+    return (
+      <>
+        <Dateline left="The Scouting Post" center="No dataset loaded" right="Upload to begin" />
+        <section className="hero-lead">
+          <p className="eyebrow">The FM26 scouting companion</p>
+          <h1>Your squad&rsquo;s scouting annual starts here.</h1>
+          <p>
+            Load a shortlist or squad export and this page becomes your front page — lead story,
+            value picks, and the day&rsquo;s briefs before you open the ledger.
+          </p>
+        </section>
+        <div className="cta-row">
+          <Link className="btn" href="/upload">
+            Upload your players →
+          </Link>
+          <Link className="btn ghost" href="/scout">
+            Scout desk
+          </Link>
+        </div>
+      </>
+    );
+  }
+
+  const masked = Math.round(bundle.dataset.maskedShare * 100);
+  const kind = shortlist ? "shortlist" : "squad";
+
+  return (
+    <>
+      <Dateline
+        left={bundle.dataset.label}
+        center={`${bundle.dataset.players.length} players · ${masked}% masked`}
+        right={`${watchIds.size} on watch`}
+      />
+
+      {lead ? (
+        <section className="fp-hero">
+          <div>
+            <p className="eyebrow">
+              {[lead.s.general.family, lead.p.age != null ? `Age ${lead.p.age}` : null, posLabel(lead.p)]
+                .filter(Boolean)
+                .join("  ·  ")}
+            </p>
+            <h1>
+              <Link href={`/scout/${kind}/${lead.p.id}`}>{lead.p.name}</Link>
+            </h1>
+            <p className="standfirst">{lead.s.summary}</p>
+            {(() => {
+              const top = standouts(lead.s, 1)[0];
+              return top ? (
+                <PullQuote>
+                  In this database he sits in the {ordinal(Math.round(top.pct))} percentile for{" "}
+                  {top.label.toLowerCase()}.
+                </PullQuote>
+              ) : null;
+            })()}
+          </div>
+          <FactsRail
+            rows={[
+              { label: "Club", value: lead.p.club || "—" },
+              { label: "Nation", value: lead.p.nationality || "—" },
+              { label: "Value", value: <span className="num">{formatMoney(lead.p.value)}</span> },
+              { label: "Positions", value: posLabel(lead.p) },
+              {
+                label: "Top archetype",
+                value: (
+                  <b>{lead.s.topArchetype ? getArchetype(lead.s.topArchetype.id).name : "Utility"}</b>
+                ),
+              },
+              {
+                label: "Score",
+                value: (
+                  <span className="num">
+                    {lead.s.topArchetype ? Math.round(lead.s.topArchetype.score) : "—"}
+                  </span>
+                ),
+              },
+              {
+                label: "Known",
+                value: <span className="num">{Math.round(lead.s.confidence * 100)}%</span>,
+              },
+            ]}
+          />
+        </section>
+      ) : null}
+
+      {bargain ? (
+        <div className="valuepick">
+          <span className="vp-label">Value pick</span>
+          <span className="vp-body">
+            <Link href={`/scout/${kind}/${bargain.p.id}`}>{bargain.p.name}</Link>
+            {" — "}
+            <b>
+              {bargain.s.topArchetype ? getArchetype(bargain.s.topArchetype.id).name : "Utility"}
+            </b>{" "}
+            <span className="num">{Math.round(bargain.s.topArchetype?.score ?? 0)}</span> at{" "}
+            <span className="num">{formatMoney(bargain.p.value)}</span>
+            {bargain.p.age != null ? (
+              <>
+                , age <span className="num">{bargain.p.age}</span>
+              </>
+            ) : null}
+          </span>
+        </div>
+      ) : null}
+
+      {briefs.length > 0 ? (
+        <>
+          <p className="section-label">Today&apos;s briefs</p>
+          <div className="briefs">
+            {briefs.map(({ p, s, rec }) => {
+              const top = standouts(s, 1)[0];
+              return (
+                <article className="brief-card" key={p.id}>
+                  <Link className="brief-name" href={`/scout/${kind}/${p.id}`}>
+                    {p.name}
+                  </Link>
+                  <span className={`verdict ${rec.tone}`}>{rec.verdict}</span>
+                  <p className="brief-head">{rec.headline}</p>
+                  {top ? (
+                    <div className="brief-bar">
+                      <span className="brief-metric">{top.label}</span>
+                      <InkBar value={top.pct} width={44} />
+                      <span className="num">{Math.round(top.pct)}</span>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
+      <div className="cta-row fp-actions">
+        <Link className="btn" href="/scout">
+          Open the scout desk →
+        </Link>
+        <Link className="btn ghost" href="/upload">
+          Upload another file
+        </Link>
+        {squad ? (
+          <Link className="btn ghost" href="/assistant">
+            Team report
+          </Link>
+        ) : null}
+      </div>
+    </>
+  );
+}

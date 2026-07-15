@@ -12,7 +12,8 @@ import { playerGroups, type PositionGroup } from "../domain/positions.js";
 import type { PlayerScores } from "../domain/scoring/dataset.js";
 import { getArchetype } from "../domain/archetypes/registry.js";
 import { getRole } from "../domain/roles/registry.js";
-import { esc, formatMoney, metricLabel, ordinal } from "./format.js";
+import { pickBargain, pickLead, posLabel, standouts } from "../domain/front-page.js";
+import { esc, formatMoney, ordinal } from "./format.js";
 
 export interface ReportMeta {
   readonly datasetLabel: string;
@@ -50,16 +51,6 @@ function primaryGroup(p: Player): LedgerGroup {
   return playerGroups(p.positions)[0] ?? "Unlisted";
 }
 
-/** The player's strongest percentile metrics, as labelled bars (doc 09 "standout facts"). */
-function standouts(s: PlayerScores, n = 3): { label: string; pct: number }[] {
-  return Object.entries(s.percentiles)
-    .filter((e): e is [string, number] => e[1] != null)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([m, v]) => ({ label: metricLabel(m), pct: v }));
-}
-
-/** `pct` is a 0–100 percentile within the dataset (doc 04 §4). */
 function inkBar(pct: number): string {
   const w = Math.max(0, Math.min(100, Math.round(pct)));
   const hi = pct >= 80 ? " hi" : "";
@@ -70,10 +61,6 @@ function stamp(badge: string | null): string {
   if (!badge) return "";
   const cls = badge === "Elite" ? "gold" : "ink";
   return `<span class="stamp ${cls}">— ${esc(badge)} —</span>`;
-}
-
-function posLabel(p: Player): string {
-  return p.positions.length ? p.positions.join("/") : "—";
 }
 
 function factsLine(p: Player): string {
@@ -123,42 +110,6 @@ function entry(p: Player, s: PlayerScores, href: string | null): string {
       <div class="role-line">Best role · <b>${role ? esc(role.name) : "—"}</b> <span class="num">${roleScore ?? ""}</span> · <span class="num">${conf}%</span> known</div>
     </div>
   </article>`;
-}
-
-/**
- * Pick the lead story (doc 09 Front Page): youngest Elite, else the highest top-archetype
- * score. Restricted to players we actually know (≥50% of expected attributes exact) so the
- * headline never inflates a scouted guess into a confident claim (doc 09 honesty rule).
- */
-function pickLead(
-  rows: { p: Player; s: PlayerScores }[],
-): { p: Player; s: PlayerScores } | null {
-  const known = rows.filter((r) => r.s.confidence >= 0.5);
-  const pool = known.length ? known : rows;
-  const elite = pool.filter((r) => r.s.topArchetype?.badge === "Elite" && r.p.age != null);
-  if (elite.length) {
-    return elite.sort((a, b) => (a.p.age as number) - (b.p.age as number))[0]!;
-  }
-  return pool[0] ?? rows[0] ?? null;
-}
-
-/**
- * Value pick (doc 09 Front Page): the best score-per-euro among quality, known players. We
- * require a real fee (≥ €1M) so free agents don't trivially win, a passing archetype ≥ 65,
- * and ≥ 50% known attributes so the claim is honest. Returns null when nothing qualifies.
- */
-function pickBargain(
-  rows: { p: Player; s: PlayerScores }[],
-): { p: Player; s: PlayerScores; perM: number } | null {
-  let best: { p: Player; s: PlayerScores; perM: number } | null = null;
-  for (const r of rows) {
-    const v = r.p.value;
-    const score = r.s.topArchetype?.score ?? 0;
-    if (v == null || v < 1e6 || score < 65 || r.s.confidence < 0.5) continue;
-    const perM = score / (v / 1e6);
-    if (!best || perM > best.perM) best = { p: r.p, s: r.s, perM };
-  }
-  return best;
 }
 
 function bargainLine(
