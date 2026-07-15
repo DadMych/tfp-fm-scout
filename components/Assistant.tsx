@@ -79,7 +79,7 @@ export function Assistant() {
     return (
       <div className="empty">
         No squad loaded.{" "}
-        <Link href="/" className="link-red">
+        <Link href="/upload" className="link-red">
           Upload your squad export
         </Link>{" "}
         so the assistant can analyse it.
@@ -141,7 +141,7 @@ export function Assistant() {
           {!shortlist ? (
             <p className="lede">
               Load a shortlist on the{" "}
-              <Link href="/" className="link-red">
+              <Link href="/upload" className="link-red">
                 upload page
               </Link>{" "}
               and the assistant will draft several named transfer plans that plug these gaps within budget.

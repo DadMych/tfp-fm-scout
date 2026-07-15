@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
+import { parseScoutFilters, serializeScoutFilters, type ScoutSortKey } from "@/lib/scout-filters";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { playerGroups, type PositionGroup } from "@/src/domain/positions.js";
 import { standouts } from "@/src/domain/front-page.js";
@@ -14,7 +15,7 @@ import { InkBar } from "@/components/kit/InkBar";
 
 const GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
 
-type SortKey = "reco" | "score" | "grade" | "age" | "value" | "name";
+type SortKey = ScoutSortKey;
 
 interface Row {
   id: string;
@@ -34,18 +35,34 @@ interface Row {
 
 export function ScoutDesk() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initial = useMemo(() => parseScoutFilters(searchParams), [searchParams]);
   const { shortlist, squad, squadContext, ready, watchIds, toggleWatch } = useDatasets();
-  const [kind, setKind] = useState<DatasetKind>("shortlist");
+  const [kind, setKind] = useState<DatasetKind>(initial.kind);
   const bundle = kind === "squad" ? squad : shortlist;
 
-  const [q, setQ] = useState("");
-  const [group, setGroup] = useState<PositionGroup | "all">("all");
-  const [maxAge, setMaxAge] = useState("");
-  const [maxValue, setMaxValue] = useState("");
-  const [verdict, setVerdict] = useState<Verdict | "all">("all");
-  const [sort, setSort] = useState<SortKey>("reco");
-  const [dir, setDir] = useState<"asc" | "desc">("asc");
+  const [q, setQ] = useState(initial.q);
+  const [group, setGroup] = useState<PositionGroup | "all">(initial.group);
+  const [maxAge, setMaxAge] = useState(initial.maxAge);
+  const [maxValue, setMaxValue] = useState(initial.maxValue);
+  const [verdict, setVerdict] = useState<Verdict | "all">(initial.verdict);
+  const [sort, setSort] = useState<SortKey>(initial.sort);
+  const [dir, setDir] = useState<"asc" | "desc">(initial.dir);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const href = serializeScoutFilters({
+      kind,
+      q,
+      group,
+      maxAge,
+      maxValue,
+      verdict,
+      sort,
+      dir,
+    });
+    router.replace(href, { scroll: false });
+  }, [kind, q, group, maxAge, maxValue, verdict, sort, dir, router]);
 
   const rows = useMemo<Row[]>(() => {
     if (!bundle) return [];
