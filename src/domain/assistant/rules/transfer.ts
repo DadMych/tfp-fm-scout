@@ -149,7 +149,10 @@ export function run(ctx: AnalysisContext, board: TransferBoard, packages: readon
       detail: `${churn.rationale}`,
       evidence: [
         { label: "Net spend", value: money(churn.totalCost - churn.income) },
-        { label: "XI lift", value: `+${churn.afterFit - churn.beforeFit}` },
+        {
+          label: "XI lift",
+          value: `+${churn.afterFit - churn.beforeFit || Math.max(1, Math.round((churn.afterTotalFit - churn.beforeTotalFit) / 11))}`,
+        },
       ],
       subjects: [],
       action: { kind: "package", packageId: churn.id },

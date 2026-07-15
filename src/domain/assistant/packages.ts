@@ -59,6 +59,9 @@ export interface TransferPackage {
   readonly totalCost: number;
   readonly beforeFit: number;
   readonly afterFit: number;
+  /** Sum of slot fits before/after signings — gate for real XI lift when rounded avg ties. */
+  readonly beforeTotalFit: number;
+  readonly afterTotalFit: number;
   readonly afterVerdict: string;
   readonly displaced: readonly string[];
   readonly rationale: string;
@@ -578,7 +581,7 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
     const allRows = [...ctx.squad, ...boughtRows];
     const newXi = solveXI(allRows, ctx.formation);
     const afterFit = newXi.avgFit;
-    if (afterFit <= ctx.avgFit) continue;
+    if (newXi.totalFit <= ctx.xi.totalFit) continue;
 
     const newStarterIds = new Set([...newXi.assignment.values()].map((a) => a.id));
     const displaced = [...oldStarterIds]
@@ -609,6 +612,8 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
       totalCost,
       beforeFit: ctx.avgFit,
       afterFit,
+      beforeTotalFit: ctx.xi.totalFit,
+      afterTotalFit: newXi.totalFit,
       afterVerdict,
       displaced,
       rationale: rationaleFor({
@@ -679,8 +684,9 @@ function buildChurnPackage(
 
   const boughtRows = picks.map((p) => p.row);
   const allRows = [...ctx.squad, ...boughtRows];
-  const afterFit = solveXI(allRows, ctx.formation).avgFit;
-  if (afterFit <= ctx.avgFit) return null;
+  const newXi = solveXI(allRows, ctx.formation);
+  const afterFit = newXi.avgFit;
+  if (newXi.totalFit <= ctx.xi.totalFit) return null;
 
   const totalCost = picks.reduce((s, p) => s + (p.cost ?? 0), 0);
   const { sales: pkgSales, income } = fundingPass(ctx, allRows, picks, afterFit, totalCost, saleCandidates);
@@ -708,6 +714,8 @@ function buildChurnPackage(
     totalCost,
     beforeFit: ctx.avgFit,
     afterFit,
+    beforeTotalFit: ctx.xi.totalFit,
+    afterTotalFit: newXi.totalFit,
     afterVerdict,
     displaced: [],
     rationale,

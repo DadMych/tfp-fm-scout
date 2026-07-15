@@ -12,7 +12,10 @@ export function PackageCard({
   nameById: Map<string, Player>;
   cap: number;
 }) {
-  const lift = pk.afterFit - pk.beforeFit;
+  const roundedLift = pk.afterFit - pk.beforeFit;
+  const totalLift = pk.afterTotalFit - pk.beforeTotalFit;
+  const lift =
+    roundedLift > 0 ? roundedLift : totalLift > 0 ? Math.max(1, Math.round(totalLift / 11)) : 0;
   const stratCap = pk.totalCost + pk.remaining;
   const usedPct = Math.min(100, Math.round(pk.capUsed * 100));
 

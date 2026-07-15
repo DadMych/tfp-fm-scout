@@ -56,7 +56,7 @@ describe("buildAssistantReport (real data)", () => {
     const rep = buildAssistantReport(params);
     for (const pk of rep.packages) {
       expect(pk.totalCost).toBeLessThanOrEqual(rep.budgetCap);
-      expect(pk.afterFit).toBeGreaterThan(pk.beforeFit);
+      expect(pk.afterTotalFit).toBeGreaterThan(pk.beforeTotalFit);
     }
   });
 

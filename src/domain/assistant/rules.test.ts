@@ -118,12 +118,9 @@ describe("SLOT rules", () => {
     ];
     const insights = slot.run(ctxWith(squad));
     const wrong = insights.find((i) => i.id.startsWith("slot.wrong-side"));
-    if (wrong) {
-      expect(wrong.evidence).toHaveLength(4);
-      expect(wrong.detail).toMatch(/Swap/i);
-    } else {
-      expect(wrongSideGate(64, 69, 74, 74)).toBe(true);
-    }
+    expect(wrong).toBeDefined();
+    expect(wrong!.evidence).toHaveLength(4);
+    expect(wrong!.detail).toMatch(/Swap/i);
   });
 });
 
