@@ -56,6 +56,10 @@ always shows gross / income / net spend when income > 0.
 
 `fundingNote` explains the maths when sales fund the window.
 
+The **Self-funding rebuild** (churn) is not clipped by the cash budget at all: every euro
+its sales raise is reinvestable, since net spend ≤ 0 is enforced. Selling a €59M starter
+means the plan may sign a €59M replacement — selling good players buys good players.
+
 ## Prospects
 
 A **prospect** move is a shortlist player aged ≤ `PROSPECT_AGE` (21) signed to develop.

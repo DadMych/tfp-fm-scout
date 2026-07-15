@@ -30,6 +30,7 @@ export function PackageCard({
   cap: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [exitsOpen, setExitsOpen] = useState(false);
   const roundedLift = pk.afterFit - pk.beforeFit;
   const totalLift = pk.afterTotalFit - pk.beforeTotalFit;
   const lift =
@@ -39,10 +40,10 @@ export function PackageCard({
 
   const starters = pk.moves.filter((m) => m.kind !== "depth");
   const depth = pk.moves.filter((m) => m.kind === "depth");
-  const showCollapse = pk.moves.length > 5;
-  const visibleMoves = showCollapse && !expanded ? starters : pk.moves;
-  const hiddenDepth = showCollapse && !expanded ? depth.length : 0;
+  const visibleMoves = expanded ? pk.moves : starters;
+  const hiddenDepth = expanded ? 0 : depth.length;
   const squadLoans = pk.loans.filter((l) => !pk.moves.some((m) => m.playerId === l.playerId && m.kind === "prospect"));
+  const exitCount = pk.sales.length + squadLoans.length;
 
   const maps = useMemo(
     () => ({ squadById, shortlistById, scoreById }),
@@ -92,21 +93,39 @@ export function PackageCard({
       <p className="plan-rationale">{pk.rationale}</p>
       <p className="window-summary">{pk.windowSummary}</p>
 
-      {pk.sales.length > 0 || squadLoans.length > 0 ? (
+      {exitCount > 0 ? (
         <div className="exits-block">
-          <p className="exits-h">Exits</p>
-          <ul className="exits-list">
-            {pk.sales.map((s) => (
-              <li key={s.playerId}>
-                Sell {link(s.playerId, s.playerName)} ({formatMoney(s.fee)}) — {s.consequence}
-              </li>
-            ))}
-            {squadLoans.map((l) => (
-              <li key={l.playerId}>
-                {l.destination === "b-team" ? "B team" : "Loan"} {link(l.playerId, l.playerName)} — {l.reason}
-              </li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            className="exits-toggle"
+            aria-expanded={exitsOpen}
+            onClick={() => setExitsOpen((v) => !v)}
+          >
+            <span className="exits-h">
+              {exitCount} exit{exitCount === 1 ? "" : "s"}
+              {pk.income > 0 ? (
+                <>
+                  {" · "}
+                  <span className="num">{formatMoney(pk.income)}</span> in
+                </>
+              ) : null}
+            </span>
+            <span className="exits-caret">{exitsOpen ? "−" : "+"}</span>
+          </button>
+          {exitsOpen ? (
+            <ul className="exits-list">
+              {pk.sales.map((s) => (
+                <li key={s.playerId}>
+                  Sell {link(s.playerId, s.playerName)} ({formatMoney(s.fee)}) — {s.consequence}
+                </li>
+              ))}
+              {squadLoans.map((l) => (
+                <li key={l.playerId}>
+                  {l.destination === "b-team" ? "B team" : "Loan"} {link(l.playerId, l.playerName)} — {l.reason}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 

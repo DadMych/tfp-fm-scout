@@ -1034,7 +1034,9 @@ function buildChurnPackage(
     filter: (c) => c.age != null && c.age <= T.AGE_PEAK_END,
     cmp: byFitThenCostDesc,
   };
-  const churnCap = ctx.budgetCap > 0 ? Math.min(availableFunds, ctx.budgetCap) : availableFunds;
+  // Self-funding: every euro raised is reinvestable — the cash budget doesn't clip
+  // a plan that pays for itself (net ≤ 0 is enforced below).
+  const churnCap = availableFunds;
   const pool = candidates
     .filter((c) => strat.filter!(c, ctx))
     .sort((a, b) => strat.cmp(a, b, ctx));
