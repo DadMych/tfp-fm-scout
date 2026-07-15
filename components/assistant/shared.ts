@@ -37,15 +37,14 @@ export const SEVERITY_TONE: Record<Severity, string> = {
 
 export const FEED_COLLAPSED_COUNT = 8;
 
-export type FeedGroup = "all" | "squad" | "tactics" | "market" | "risk" | "transfers";
+export type FeedGroup = "all" | "squad" | "tactics" | "market" | "risk";
 
 export const FEED_GROUPS: Record<FeedGroup, readonly InsightClass[] | null> = {
   all: null,
   squad: ["slot", "age", "development", "physical"],
   tactics: ["shape", "dna", "setpiece", "chemistry"],
-  market: ["market"],
+  market: ["market", "transfer"],
   risk: ["risk", "shortlist"],
-  transfers: ["transfer"],
 };
 
 export const FEED_LABEL: Record<FeedGroup, string> = {
@@ -54,7 +53,6 @@ export const FEED_LABEL: Record<FeedGroup, string> = {
   tactics: "Tactics",
   market: "Market",
   risk: "Risks",
-  transfers: "Transfers",
 };
 
 export const VERDICT_LABEL: Record<SaleRecommendation["verdict"], string> = {

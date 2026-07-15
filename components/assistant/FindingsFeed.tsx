@@ -1,4 +1,5 @@
 import type { Insight } from "@/src/domain/assistant/types.js";
+import { SectionRule } from "@/components/kit/SectionRule";
 import { InsightRow } from "./InsightRow";
 import { FEED_COLLAPSED_COUNT, FEED_LABEL, type FeedGroup } from "./shared";
 
@@ -29,7 +30,7 @@ export function FindingsFeed({
 }) {
   return (
     <>
-      <div className="section-label section-gap">Scouting report ({findings.length} findings)</div>
+      <SectionRule gap="sm">Scouting report ({findings.length} findings)</SectionRule>
       {visibleGroups.length > 2 ? (
         <div className="feed-tabs" role="tablist">
           {visibleGroups.map((g) => (

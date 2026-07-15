@@ -14,8 +14,9 @@ the bar the docs set.
 
 ## 0. Progress update (2026-07-15, after P0–P4 + docs 17–18)
 
-Since the audit snapshot in §1–5 below: **git + `pnpm check`** (210 unit + E2E),
-Broadsheet finish (doc 15 P1), engine truth and scouting tools (P2), import contract /
+Since the audit snapshot in §1–5 below: **git + `pnpm check`** (217 unit + E2E),
+Broadsheet finish (doc 15 P1 — kit `Footline`/`Stamp`/`SectionRule`, dossier squad-fit
+section, transfer→Market merge, `AttrValue` test), engine truth and scouting tools (P2), import contract /
 Web Worker / IndexedDB / calibration / branded types (P3), **hosted v1** (Neon,
 Auth.js, store seam, persistence E2E), **doc 17 engine coherence** (verdict/fit
 currency on preset pairFit, percentile cohort truth, SD chains/packages/rules — all
