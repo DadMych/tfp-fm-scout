@@ -1,21 +1,27 @@
 import Link from "next/link";
+import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 
 export default function NotFound() {
   return (
     <div className="wrap">
-      <p className="eyebrow">Not found</p>
-      <h1 style={{ fontSize: 42, margin: "0 0 16px" }}>No dossier at this address.</h1>
-      <p className="standfirst" style={{ maxWidth: "48ch" }}>
-        The player or page you asked for is not in this edition of the desk.
-      </p>
-      <div className="cta-row" style={{ marginTop: 28 }}>
-        <Link className="btn" href="/scout">
-          Open the scout desk
-        </Link>
-        <Link className="btn ghost" href="/">
-          Upload
-        </Link>
-      </div>
+      <EmptyBroadsheet
+        art="lost-ball"
+        artWidth={160}
+        eyebrow="Not found"
+        title="No dossier at this address."
+        actions={
+          <>
+            <Link className="btn" href="/scout">
+              Open the scout desk
+            </Link>
+            <Link className="btn ghost" href="/">
+              Upload
+            </Link>
+          </>
+        }
+      >
+        <p>The player or page you asked for is not in this edition of the desk.</p>
+      </EmptyBroadsheet>
     </div>
   );
 }

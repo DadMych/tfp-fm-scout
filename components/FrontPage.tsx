@@ -13,6 +13,7 @@ import { recommend } from "@/src/domain/recommendation.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
 import { formatMoney } from "@/src/report/format.js";
 import { Dateline } from "@/components/kit/Dateline";
+import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { FactsRail } from "@/components/kit/FactsRail";
 import { InkBar } from "@/components/kit/InkBar";
 import { PullQuote } from "@/components/kit/PullQuote";
@@ -83,22 +84,25 @@ export function FrontPage() {
     return (
       <>
         <Dateline left="The Scouting Post" center="No dataset loaded" right="Upload to begin" />
-        <section className="hero-lead">
-          <p className="eyebrow">The FM26 scouting companion</p>
-          <h1>Your squad&rsquo;s scouting annual starts here.</h1>
+        <EmptyBroadsheet
+          eyebrow="The FM26 scouting companion"
+          title="Your squad's scouting annual starts here."
+          actions={
+            <>
+              <Link className="btn" href="/upload">
+                Upload your players →
+              </Link>
+              <Link className="btn ghost" href="/scout">
+                Scout desk
+              </Link>
+            </>
+          }
+        >
           <p>
             Load a shortlist or squad export and this page becomes your front page — lead story,
             value picks, and the day&rsquo;s briefs before you open the ledger.
           </p>
-        </section>
-        <div className="cta-row">
-          <Link className="btn" href="/upload">
-            Upload your players →
-          </Link>
-          <Link className="btn ghost" href="/scout">
-            Scout desk
-          </Link>
-        </div>
+        </EmptyBroadsheet>
       </>
     );
   }

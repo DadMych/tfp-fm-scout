@@ -21,6 +21,18 @@ const sans = Inter({
 export const metadata: Metadata = {
   title: "The Scouting Post — FM26 companion",
   description: "Upload your FM26 squad and shortlist; get scout-grade recommendations.",
+  openGraph: {
+    title: "The Scouting Post",
+    description: "Upload your FM26 squad and shortlist; get scout-grade recommendations.",
+    images: [{ url: "/art/og.png", width: 1200, height: 630, alt: "The Scouting Post" }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Scouting Post",
+    description: "Upload your FM26 squad and shortlist; get scout-grade recommendations.",
+    images: ["/art/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

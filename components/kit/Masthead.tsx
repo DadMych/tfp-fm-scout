@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AccountNav } from "@/components/AccountNav";
+import { BroadsheetIllustration } from "@/components/kit/BroadsheetIllustration";
 
 export type MastheadPage = "home" | "upload" | "scout" | "assistant" | "watch";
 
@@ -15,7 +16,10 @@ export function Masthead({ current }: { current: MastheadPage }) {
   return (
     <div className="masthead">
       <Link href="/" className="logo">
-        The <span>Scouting</span> Post
+        <BroadsheetIllustration id="masthead-vignette" width={36} className="logo-vignette" />
+        <span className="logo-text">
+          The <span>Scouting</span> Post
+        </span>
       </Link>
       <nav className="mast-nav" aria-label="Primary">
         {NAV.map((item) => (

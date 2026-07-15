@@ -11,6 +11,7 @@ import type { AssistantReport } from "@/src/domain/assistant/types.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { formatMoney } from "@/src/report/format.js";
 import { AssistantControls } from "@/components/assistant/AssistantControls";
+import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { FindingsFeed } from "@/components/assistant/FindingsFeed";
 import { PackageCard } from "@/components/assistant/PackageCard";
 import { PraiseStrip } from "@/components/assistant/PraiseStrip";
@@ -77,13 +78,17 @@ export function Assistant() {
 
   if (!squad) {
     return (
-      <div className="empty">
-        No squad loaded.{" "}
-        <Link href="/upload" className="link-red">
-          Upload your squad export
-        </Link>{" "}
-        so the assistant can analyse it.
-      </div>
+      <EmptyBroadsheet
+        eyebrow="Sporting director"
+        title="No squad loaded."
+        actions={
+          <Link className="btn" href="/upload">
+            Upload your squad export →
+          </Link>
+        }
+      >
+        <p>The assistant needs your current squad to analyse shape, gaps, and transfer plans.</p>
+      </EmptyBroadsheet>
     );
   }
 

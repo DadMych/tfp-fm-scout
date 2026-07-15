@@ -14,6 +14,7 @@ import { recommend, type Recommendation, type Verdict } from "@/src/domain/recom
 import { formatMoney, scoutGradeRank } from "@/src/report/format.js";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
+import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { InkBar } from "@/components/kit/InkBar";
 
 const GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
@@ -204,13 +205,17 @@ export function ScoutDesk() {
 
   if (!bundle) {
     return (
-      <div className="empty">
-        No {kind} loaded.{" "}
-        <Link href="/upload" style={{ color: "var(--red)" }}>
-          Upload an export
-        </Link>{" "}
-        to begin.
-      </div>
+      <EmptyBroadsheet
+        eyebrow="Scout desk"
+        title={`No ${kind} loaded.`}
+        actions={
+          <Link className="btn" href="/upload">
+            Upload an export →
+          </Link>
+        }
+      >
+        <p>Drop in an FM26 export to open the ledger for this pool.</p>
+      </EmptyBroadsheet>
     );
   }
 

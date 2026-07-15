@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { Masthead } from "@/components/kit/Masthead";
 import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
+import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { useDatasets } from "@/lib/store";
 import {
@@ -69,13 +70,19 @@ export default function WatchPage() {
       {!ready ? (
         <div className="empty">Setting the page…</div>
       ) : watchList.length === 0 ? (
-        <div className="empty">
-          No one on the watch list yet. Open the{" "}
-          <Link href="/scout" className="link-red">
-            scout desk
-          </Link>{" "}
-          and press <span className="kbd-hint">s</span> on a player.
-        </div>
+        <EmptyBroadsheet
+          eyebrow="Watch list"
+          title="No one on the watch list yet."
+          actions={
+            <Link className="btn" href="/scout">
+              Open the scout desk →
+            </Link>
+          }
+        >
+          <p>
+            Press <span className="kbd-hint">s</span> on any player in the ledger to pin him here.
+          </p>
+        </EmptyBroadsheet>
       ) : (
         <table className="rowlist watch-table">
           <thead>
