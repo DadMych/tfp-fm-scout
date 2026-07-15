@@ -8,6 +8,7 @@ const bodySchema = z.object({
   formationId: z.string(),
   budget: z.number(),
   useFull: z.boolean(),
+  squadCap: z.number().int().min(11).max(40).optional(),
 });
 
 export async function PUT(req: Request) {

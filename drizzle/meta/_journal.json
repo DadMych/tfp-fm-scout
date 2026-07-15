@@ -8,6 +8,13 @@
       "when": 1784123675583,
       "tag": "0000_purple_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784130000000,
+      "tag": "0001_squad_cap",
+      "breakpoints": true
     }
   ]
 }

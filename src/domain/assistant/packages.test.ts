@@ -37,8 +37,8 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     const spenders = pkgs.filter((p) => SPENDER_IDS.has(p.id));
     expect(spenders.length).toBeGreaterThan(0);
     for (const p of spenders) {
-      const stratCap = p.totalCost + p.remaining;
-      expect(p.totalCost).toBeGreaterThanOrEqual(T.PKG_SPEND_FLOOR * stratCap);
+      const strategyCap = p.netSpend + p.remaining;
+      expect(p.totalCost).toBeGreaterThanOrEqual(T.PKG_SPEND_FLOOR * strategyCap);
     }
   });
 
@@ -100,24 +100,41 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     }
   });
 
-  it("never breaches the strategy cap", () => {
+  it("never breaches the strategy cash cap on net spend (doc 20)", () => {
     const pkgs = buildPackages(ctx);
     for (const p of pkgs) {
-      expect(p.totalCost).toBeLessThanOrEqual(ctx.budgetCap);
+      if (p.id === "churn") {
+        expect(p.netSpend).toBeLessThanOrEqual(0);
+        continue;
+      }
+      expect(p.netSpend).toBeLessThanOrEqual(ctx.budgetCap);
     }
   });
 
-  it("affordable packages propose no sales or funding notes (doc 19 §4)", () => {
-    const smallCtx = ctxFor(40e6);
-    const pkgs = buildPackages(smallCtx);
+  it("keeps every package inside the squad cap with coherent cash (doc 20)", () => {
+    const pkgs = buildPackages(ctx);
     expect(pkgs.length).toBeGreaterThan(0);
     for (const p of pkgs) {
-      if (p.id === "churn") continue;
-      if (p.totalCost <= smallCtx.budgetCap) {
-        expect(p.sales).toHaveLength(0);
-        expect(p.fundingNote).toBeNull();
-      }
+      expect(p.squadAfter).toBeLessThanOrEqual(ctx.squadCap);
+      expect(p.netSpend).toBe(p.totalCost - p.income);
+      expect(p.netSpend).toBeLessThanOrEqual(ctx.budgetCap + 1);
+      expect(p.windowSummary).toMatch(/squad \d+\/\d+/);
+      expect(p.loans).toBeDefined();
     }
+  });
+
+  it("may attach sales or loans when the squad is over the registration cap (doc 20)", () => {
+    const tight = buildContext({
+      squad,
+      shortlist,
+      formation: getFormation("4-2-3-1"),
+      budget: 80e6,
+      useFullBudget: false,
+      squadCap: 25,
+    });
+    const pkgs = buildPackages(tight);
+    // Real FM squads are often >25; at least one plan should free places or stay under.
+    expect(pkgs.every((p) => p.squadAfter <= 25)).toBe(true);
   });
 
   it("non-depth moves name displaced players and fate (doc 19 §5)", () => {
@@ -126,13 +143,15 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     if (!withMoves) return;
     const starter = withMoves.moves.find((m) => m.kind !== "depth" && m.out);
     expect(starter?.out?.name.length).toBeGreaterThan(0);
-    expect(["bench", "sell", "cover"]).toContain(starter?.out?.fate);
+    expect(["bench", "sell", "cover", "loan"]).toContain(starter?.out?.fate);
   });
 
-  it("window summary is arithmetically consistent (doc 19 §5)", () => {
+  it("window summary names the registration ledger (doc 20)", () => {
     const pkgs = buildPackages(ctx);
     for (const p of pkgs) {
-      expect(p.windowSummary).toMatch(/\d+ in, \d+ sold, \d+ to the bench/);
+      expect(p.windowSummary).toMatch(/\d+ in/);
+      expect(p.windowSummary).toMatch(/sold/);
+      expect(p.windowSummary).toMatch(/loaned/);
       expect(p.xiDiff.length).toBeGreaterThan(0);
     }
   });
@@ -141,6 +160,7 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     const pkgs = buildPackages(ctx);
     for (const p of pkgs) {
       for (const m of p.moves) {
+        if (m.kind === "prospect") continue;
         if (m.currentFit > 0) expect(m.delta).toBeGreaterThanOrEqual(3);
       }
     }

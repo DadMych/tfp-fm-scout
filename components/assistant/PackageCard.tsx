@@ -9,6 +9,7 @@ const FATE_LABEL = {
   bench: "drops to the bench",
   sell: "is sold to fund the window",
   cover: "becomes first-choice cover",
+  loan: "leaves on loan",
 } as const;
 
 export function PackageCard({
@@ -25,7 +26,7 @@ export function PackageCard({
   const totalLift = pk.afterTotalFit - pk.beforeTotalFit;
   const lift =
     roundedLift > 0 ? roundedLift : totalLift > 0 ? Math.max(1, Math.round(totalLift / 11)) : 0;
-  const stratCap = pk.totalCost + pk.remaining;
+  const stratCap = pk.netSpend + pk.remaining;
   const usedPct = Math.min(100, Math.round(pk.capUsed * 100));
 
   const starters = pk.moves.filter((m) => m.kind !== "depth");
@@ -33,6 +34,7 @@ export function PackageCard({
   const showCollapse = pk.moves.length > 5;
   const visibleMoves = showCollapse && !expanded ? starters : pk.moves;
   const hiddenDepth = showCollapse && !expanded ? depth.length : 0;
+  const squadLoans = pk.loans.filter((l) => !pk.moves.some((m) => m.playerId === l.playerId && m.kind === "prospect"));
 
   return (
     <div className="plan">
@@ -56,20 +58,33 @@ export function PackageCard({
           <i className={pk.capUsed > 0.95 ? "spend-fill hot" : "spend-fill"} style={{ width: `${usedPct}%` }} />
         </span>
         <span className="num spend-label">
-          {formatMoney(pk.totalCost)} of {formatMoney(stratCap)}
-          {stratCap !== cap ? " (half-cap plan)" : ""}
+          {formatMoney(pk.totalCost)} gross
+          {pk.income > 0 ? ` · ${formatMoney(pk.income)} in` : ""}
+          {" · "}
+          net {formatMoney(pk.netSpend)}
+          {stratCap !== cap && stratCap > 0 ? " (half-cap plan)" : ""}
         </span>
       </div>
 
       <p className="plan-rationale">{pk.rationale}</p>
       <p className="window-summary">{pk.windowSummary}</p>
 
-      {pk.sales.length > 0 ? (
-        <p className="sale-funding">
-          {pk.sales
-            .map((s) => `Sell ${s.playerName} (${formatMoney(s.fee)}) — ${s.consequence}`)
-            .join(" ")}
-        </p>
+      {pk.sales.length > 0 || squadLoans.length > 0 ? (
+        <div className="exits-block">
+          <p className="exits-h">Exits</p>
+          <ul className="exits-list">
+            {pk.sales.map((s) => (
+              <li key={s.playerId}>
+                Sell <b>{s.playerName}</b> ({formatMoney(s.fee)}) — {s.consequence}
+              </li>
+            ))}
+            {squadLoans.map((l) => (
+              <li key={l.playerId}>
+                Loan <b>{l.playerName}</b> — {l.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       <ul className="move-list">
@@ -83,6 +98,7 @@ export function PackageCard({
                   {p?.name ?? m.playerId}
                 </Link>
                 <span className="move-slot">{m.slotLabel}</span>
+                {m.kind === "prospect" ? <span className="move-profile">Prospect · on loan</span> : null}
                 <span className="move-profile">{m.profile}</span>
                 <span className="num move-cost">{formatMoney(m.cost)}</span>
               </div>
@@ -132,11 +148,11 @@ export function PackageCard({
           </div>
         ) : null}
         {pk.fundingNote ? <p className="funding-note">{pk.fundingNote}</p> : null}
-        {pk.netSpend !== pk.totalCost ? (
-          <p className="funding-note">
-            Net spend: <span className="num">{formatMoney(pk.netSpend)}</span>
-          </p>
-        ) : null}
+        <p className="funding-note">
+          Net spend: <span className="num">{formatMoney(pk.netSpend)}</span>
+          {" · "}
+          Squad after: <span className="num">{pk.squadAfter}</span>
+        </p>
       </div>
     </div>
   );

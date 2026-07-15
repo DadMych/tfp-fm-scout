@@ -205,15 +205,16 @@ export function run(ctx: AnalysisContext): RawInsight[] {
   return out;
 }
 
-/** Optional headroom when plans are tight — sales are never assumed (doc 19 §4). */
+/** Extra sellable depth beyond what packages already plan (doc 20). */
 export function headroomInsight(
   ctx: AnalysisContext,
   packages: readonly TransferPackage[],
 ): RawInsight | null {
   if (packages.length === 0 || ctx.budgetCap <= 0) return null;
-  if (!packages.some((p) => p.capUsed > 0.8)) return null;
-  const unused = unusedValueCandidates(ctx);
+  const planned = new Set(packages.flatMap((p) => p.sales.map((s) => s.playerId)));
+  const unused = unusedValueCandidates(ctx).filter((u) => !planned.has(u.row.player.id));
   if (unused.length === 0) return null;
+  if (!packages.some((p) => p.capUsed > 0.8 || p.netSpend > 0.8 * ctx.budgetCap)) return null;
   const top = unused[0]!;
   const fee = saleProceeds(top.value);
   const stretched = ctx.budgetCap + fee;
@@ -222,10 +223,10 @@ export function headroomInsight(
     id: insightId("mkt.headroom", top.row.player.id),
     cls: "market",
     severity: "low",
-    title: `Selling ${name} stretches the window`,
-    detail: `Selling ${name} (≈${money(fee)} after the usual haircut) would stretch the budget to ${money(stretched)} — optional, not assumed by the plans below.`,
+    title: `Selling ${name} stretches the window further`,
+    detail: `Beyond the exits already in the plans, selling ${name} (≈${money(fee)} after the usual haircut) would stretch cash to ${money(stretched)}.`,
     evidence: [
-      { label: "Proceeds", value: money(fee) },
+      { label: "Extra proceeds", value: money(fee) },
       { label: "Stretched cap", value: money(stretched) },
     ],
     subjects: [top.row.player.id],

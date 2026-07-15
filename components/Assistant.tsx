@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useDatasets } from "@/lib/store";
 import type { Player } from "@/src/domain/player.js";
+import { DEFAULT_BUDGET, DEFAULT_SQUAD_CAP } from "@/src/domain/assistant/defaults.js";
 import { FORMATIONS } from "@/src/domain/squad/formations.js";
 import { buildAssistantReport } from "@/src/domain/assistant/report.js";
 import type { PlayerRow } from "@/src/domain/assistant/report.js";
@@ -28,7 +29,10 @@ export function Assistant() {
 
   const [formationId, setFormationId] = useState(lastAssistantRun?.formationId ?? "4-2-3-1");
   const [budgetM, setBudgetM] = useState(
-    lastAssistantRun ? String(Math.round(lastAssistantRun.budget / 1e6)) : "50",
+    lastAssistantRun ? String(Math.round(lastAssistantRun.budget / 1e6)) : String(Math.round(DEFAULT_BUDGET / 1e6)),
+  );
+  const [squadCap, setSquadCap] = useState(
+    String(lastAssistantRun?.squadCap ?? DEFAULT_SQUAD_CAP),
   );
   const [useFull, setUseFull] = useState(lastAssistantRun?.useFull ?? false);
   const [feedGroup, setFeedGroup] = useState<FeedGroup>("all");
@@ -37,21 +41,41 @@ export function Assistant() {
     formationId: string;
     budget: number;
     useFull: boolean;
-  } | null>(lastAssistantRun);
+    squadCap: number;
+  } | null>(
+    lastAssistantRun
+      ? {
+          formationId: lastAssistantRun.formationId,
+          budget: lastAssistantRun.budget,
+          useFull: lastAssistantRun.useFull,
+          squadCap: lastAssistantRun.squadCap ?? DEFAULT_SQUAD_CAP,
+        }
+      : null,
+  );
 
-  function commitRun(next: { formationId: string; budget: number; useFull: boolean }) {
+  function commitRun(next: { formationId: string; budget: number; useFull: boolean; squadCap: number }) {
     setFeedExpanded(false);
     setCommitted(next);
     setLastAssistantRun(next);
   }
 
   function runSearch() {
-    commitRun({ formationId, budget: (Number(budgetM) || 0) * 1e6, useFull });
+    commitRun({
+      formationId,
+      budget: (Number(budgetM) || 0) * 1e6,
+      useFull,
+      squadCap: Math.max(11, Number(squadCap) || DEFAULT_SQUAD_CAP),
+    });
   }
 
   function tryFormation(id: string) {
     setFormationId(id);
-    commitRun({ formationId: id, budget: (Number(budgetM) || 0) * 1e6, useFull });
+    commitRun({
+      formationId: id,
+      budget: (Number(budgetM) || 0) * 1e6,
+      useFull,
+      squadCap: Math.max(11, Number(squadCap) || DEFAULT_SQUAD_CAP),
+    });
   }
 
   const nameById = useMemo(() => {
@@ -71,6 +95,7 @@ export function Assistant() {
       formation,
       budget: committed.budget,
       useFullBudget: committed.useFull,
+      squadCap: committed.squadCap,
     });
   }, [committed, squad, shortlist]);
 
@@ -109,9 +134,11 @@ export function Assistant() {
       <AssistantControls
         formationId={formationId}
         budgetM={budgetM}
+        squadCap={squadCap}
         useFull={useFull}
         onFormationChange={setFormationId}
         onBudgetChange={setBudgetM}
+        onSquadCapChange={setSquadCap}
         onUseFullChange={setUseFull}
         onRun={runSearch}
       />

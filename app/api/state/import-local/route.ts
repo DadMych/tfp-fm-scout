@@ -39,6 +39,7 @@ const importSchema = z.object({
       formationId: z.string(),
       budget: z.number(),
       useFull: z.boolean(),
+      squadCap: z.number().optional(),
     })
     .nullable()
     .optional()

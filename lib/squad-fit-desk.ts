@@ -10,6 +10,7 @@ export interface AssistantRunPrefs {
   readonly formationId?: string;
   readonly budget?: number;
   readonly useFull?: boolean;
+  readonly squadCap?: number | undefined;
 }
 
 export interface FitDeskContext {
@@ -39,6 +40,7 @@ export function buildFitDeskContext(
     formation,
     budget: prefs?.budget ?? DEFAULT_BUDGET,
     useFullBudget: prefs?.useFull ?? true,
+    squadCap: prefs?.squadCap,
   });
   const nameById = new Map<string, string>();
   for (const r of squadRows) nameById.set(r.player.id, r.player.name);
@@ -58,9 +60,8 @@ export function squadFitForRow(row: PlayerRow, fitCtx: FitDeskContext): SquadFit
 
 export function fitsGap(fit: SquadFitResult, needBySlotKey: ReadonlyMap<string, SlotNeed>): boolean {
   const need = needBySlotKey.get(fit.slotKey);
-  if (!need || need === "solid") return false;
-  if (need === "hole" || need === "weak") {
-    return fit.verdict === "Upgrade" || (fit.delta ?? 0) >= 8;
-  }
+  if (!need) return false;
+  if (need === "solid") return fit.verdict === "Upgrade";
+  if (need === "hole" || need === "weak") return fit.verdict === "Upgrade";
   return fit.verdict !== "Not for you";
 }

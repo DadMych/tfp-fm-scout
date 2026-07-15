@@ -58,7 +58,7 @@ describe("computeSquadFit", () => {
     const fit = computeSquadFit(star, ctx.formation.id, ctx.slots, names);
     expect(fit?.verdict).toBe("Upgrade");
     expect(fit?.slotLabel).toBe("ST");
-    expect((fit?.delta ?? 0) >= 8).toBe(true);
+    expect((fit?.delta ?? 0) >= 5).toBe(true);
   });
 
   it("prefers the empty slot with the largest delta over a high-fit rotation role (doc 17 §8.1)", () => {

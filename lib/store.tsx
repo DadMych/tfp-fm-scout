@@ -83,6 +83,7 @@ export interface LastAssistantRun {
   readonly formationId: string;
   readonly budget: number;
   readonly useFull: boolean;
+  readonly squadCap?: number | undefined;
 }
 
 const Ctx = createContext<StoreState | null>(null);

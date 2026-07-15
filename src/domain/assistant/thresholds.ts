@@ -39,4 +39,10 @@ export const T = {
   TRANSFER_CLASS_CAP: 6,
   /** Expected sale proceeds as a fraction of list value (doc 19 §4). */
   SALE_HAIRCUT: 0.9,
+  /** Registered-squad ceiling after a transfer window (doc 20). */
+  SQUAD_CAP: 25,
+  /** Max age for prospect signings that leave on loan (doc 20). */
+  PROSPECT_AGE: 21,
+  /** Min top-archetype score for Prospect pipeline candidates. */
+  PROSPECT_ARCH_MIN: 60,
 } as const;

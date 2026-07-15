@@ -18,6 +18,7 @@ export interface StoredAssistantRun {
   readonly formationId: string;
   readonly budget: number;
   readonly useFull: boolean;
+  readonly squadCap?: number | undefined;
 }
 
 export interface UserStateSnapshot {
@@ -121,6 +122,7 @@ export async function loadUserState(db: Db, userId: string): Promise<UserStateSn
           formationId: assistant.formationId,
           budget: assistant.budget,
           useFull: assistant.useFull,
+          squadCap: assistant.squadCap ?? 25,
         }
       : null,
     watchList: watchRows.map((w) => ({
@@ -221,6 +223,7 @@ export async function saveUserAssistantRun(
       formationId: run.formationId,
       budget: run.budget,
       useFull: run.useFull,
+      squadCap: run.squadCap ?? 25,
     })
     .onConflictDoUpdate({
       target: schema.assistantRuns.userId,
@@ -228,6 +231,7 @@ export async function saveUserAssistantRun(
         formationId: run.formationId,
         budget: run.budget,
         useFull: run.useFull,
+        squadCap: run.squadCap ?? 25,
       },
     });
 }

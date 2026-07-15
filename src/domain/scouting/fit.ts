@@ -22,7 +22,7 @@ export interface SquadFitResult {
 const PROJECT_AGE_MAX = 23;
 
 function verdictFor(delta: number, age: number | null): FitVerdict {
-  if (delta >= 8) return "Upgrade";
+  if (delta >= 5) return "Upgrade";
   if (delta >= -3) return "Rotation";
   if (delta < -3 && age != null && age <= PROJECT_AGE_MAX) return "Project";
   return "Not for you";

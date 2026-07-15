@@ -110,4 +110,5 @@ export const assistantRuns = pgTable("assistant_runs", {
   formationId: text("formation_id").notNull(),
   budget: integer("budget").notNull(),
   useFull: boolean("use_full").notNull(),
+  squadCap: integer("squad_cap").notNull().default(25),
 });

@@ -6,6 +6,7 @@
 import type { Formation, Zone } from "../squad/formations.js";
 import { deriveSlots, rankFormations, verdictOf, zoneStrengthOf, avgFitOf, type FormationFit, type SlotAssignment, type Verdict } from "./slots.js";
 import { solveXI, type PlayerRow, type XiSolution } from "./xi.js";
+import { T } from "./thresholds.js";
 
 export type { PlayerRow };
 
@@ -14,6 +15,8 @@ export interface AnalysisContext {
   readonly shortlist: readonly PlayerRow[];
   readonly formation: Formation;
   readonly budgetCap: number;
+  /** Registered-squad ceiling after the window (doc 20). */
+  readonly squadCap: number;
   readonly xi: XiSolution;
   readonly slots: readonly SlotAssignment[];
   readonly zoneStrength: Readonly<Record<Zone, number>>;
@@ -31,10 +34,12 @@ export interface ContextParams {
   readonly formation: Formation;
   readonly budget: number;
   readonly useFullBudget: boolean;
+  readonly squadCap?: number | undefined;
 }
 
 export function buildContext(params: ContextParams): AnalysisContext {
   const budgetCap = params.useFullBudget ? params.budget : Math.round(params.budget * 0.8);
+  const squadCap = Math.max(11, Math.round(params.squadCap ?? T.SQUAD_CAP));
   const xi = solveXI(params.squad, params.formation);
   const slots = deriveSlots(xi, params.squad, params.formation);
   const zoneStrength = zoneStrengthOf(slots);
@@ -51,6 +56,7 @@ export function buildContext(params: ContextParams): AnalysisContext {
     shortlist: params.shortlist,
     formation: params.formation,
     budgetCap,
+    squadCap,
     xi,
     slots,
     zoneStrength,
