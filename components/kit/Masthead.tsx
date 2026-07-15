@@ -22,6 +22,7 @@ export function Masthead({ current }: { current: MastheadPage }) {
             {item.label}
           </Link>
         ))}
+        <Link href="/login">Account</Link>
         <a href="https://buymeacoffee.com/tfpdev" target="_blank" rel="noopener noreferrer">
           Support
         </a>

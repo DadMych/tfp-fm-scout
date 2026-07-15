@@ -48,7 +48,11 @@ button{font-family:inherit;cursor:pointer;}
 .err{color:var(--red);font-family:var(--sans);font-size:13px;}
 .import-progress{font-style:italic;max-width:42ch;margin:0 auto;line-height:1.55;}
 
-.cta-row{display:flex;gap:16px;align-items:center;padding-top:8px;}
+.cta-row{display:flex;gap:16px;align-items:center;padding-top:8px;flex-wrap:wrap;}
+.auth-form{max-width:420px;display:flex;flex-direction:column;gap:16px;padding:24px 0;}
+.auth-form label{display:flex;flex-direction:column;gap:6px;font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);}
+.auth-form input{font-family:var(--serif);font-size:18px;padding:10px 12px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);}
+.auth-divider{font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);padding:8px 0 20px;}
 .btn{font-family:var(--sans);font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:12px 22px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);text-decoration:none;display:inline-block;}
 .btn:hover{background:var(--red);border-color:var(--red);}
 .btn.ghost{background:none;color:var(--ink);}

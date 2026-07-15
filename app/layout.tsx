@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import { DatasetProvider } from "@/lib/store";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const serif = Source_Serif_4({
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
-        <DatasetProvider>{children}</DatasetProvider>
+        <AuthProvider>
+          <DatasetProvider>{children}</DatasetProvider>
+        </AuthProvider>
       </body>
     </html>
   );
