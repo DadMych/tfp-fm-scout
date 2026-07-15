@@ -66,8 +66,8 @@ function playerToRow(datasetId: string, p: Player): typeof schema.players.$infer
     attrs: p.attrs,
     club: p.club ?? null,
     nationality: p.nationality ?? null,
-    value: p.value ?? null,
-    heightCm: p.heightCm ?? null,
+    value: p.value != null ? Math.round(p.value) : null,
+    heightCm: p.heightCm != null ? Math.round(p.heightCm) : null,
     foot: p.foot ?? null,
     scoutGrade: p.scoutGrade ?? null,
   };

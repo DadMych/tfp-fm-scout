@@ -124,25 +124,33 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   const [watchList, setWatchList] = useState<WatchEntry[]>([]);
   const [readyTarget, setReadyTarget] = useState<string | null>(null);
   const scoringRef = useRef(new Set<DatasetKind>());
+  const sessionDirtyRef = useRef(false);
   const storageKey = `${status}:${hosted}`;
   const ready = status !== "loading" && readyTarget === storageKey;
+
+  const markSessionDirty = useCallback(() => {
+    sessionDirtyRef.current = true;
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
 
     const key = storageKey;
+    sessionDirtyRef.current = false;
     let cancelled = false;
 
     void (async () => {
       try {
         const snapshot = hosted ? await loadHostedStorage() : await loadClientStorage();
         if (cancelled) return;
-        applySnapshot(snapshot, {
-          setRaw,
-          setLastAssistantRunState,
-          setWatchList,
-          setScoreByKind,
-        });
+        if (!sessionDirtyRef.current) {
+          applySnapshot(snapshot, {
+            setRaw,
+            setLastAssistantRunState,
+            setWatchList,
+            setScoreByKind,
+          });
+        }
       } catch {
         // Corrupt or unavailable storage — start empty rather than crash.
       }
@@ -181,6 +189,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback(
     (next: Persisted | ((prev: Persisted) => Persisted)) => {
+      markSessionDirty();
       setRaw((prev) => {
         const resolved = typeof next === "function" ? next(prev) : next;
         const save = hosted ? saveHostedDatasets : saveDatasets;
@@ -190,28 +199,30 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
         return resolved;
       });
     },
-    [hosted],
+    [hosted, markSessionDirty],
   );
 
   const setLastAssistantRun = useCallback(
     (run: LastAssistantRun) => {
+      markSessionDirty();
       setLastAssistantRunState(run);
       const save = hosted ? saveHostedAssistantSettings : saveAssistantSettings;
       void save(run).catch(() => {
         // Session-only if storage is unavailable.
       });
     },
-    [hosted],
+    [hosted, markSessionDirty],
   );
 
   const persistWatch = useCallback(
     (next: WatchEntry[]) => {
+      markSessionDirty();
       const save = hosted ? saveHostedWatchList : saveWatchList;
       void save(next).catch(() => {
         // Session-only.
       });
     },
-    [hosted],
+    [hosted, markSessionDirty],
   );
 
   const toggleWatch = useCallback(
