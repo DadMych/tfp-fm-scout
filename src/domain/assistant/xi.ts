@@ -78,6 +78,18 @@ export function bestPairFitForGroup(
   return best;
 }
 
+/** Best preset pairFit across all eligible formation slots (doc 17 §9). */
+export function bestPresetFit(row: PlayerRow, formationId: string): number {
+  const formation = getFormation(formationId);
+  let best = 0;
+  for (const fs of formation.slots) {
+    if (!row.player.positions.includes(fs.slot)) continue;
+    const fit = slotFit(row, formationId, fs);
+    if (fit > best) best = fit;
+  }
+  return best;
+}
+
 /** First formation slot key for a position slot (compare / preset pair lookup). */
 export function slotKeyForPosition(formationId: string, slot: PositionSlot): string | null {
   return getFormation(formationId).slots.find((fs) => fs.slot === slot)?.key ?? null;

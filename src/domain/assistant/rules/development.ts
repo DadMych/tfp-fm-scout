@@ -7,7 +7,7 @@ import type { AnalysisContext } from "../context.js";
 import type { RawInsight } from "../types.js";
 import { T } from "../thresholds.js";
 import { surname } from "../phrases.js";
-import { slotFit } from "../xi.js";
+import { slotFit, bestPresetFit } from "../xi.js";
 import { insightId } from "./helpers.js";
 
 export function run(ctx: AnalysisContext): RawInsight[] {
@@ -16,15 +16,15 @@ export function run(ctx: AnalysisContext): RawInsight[] {
   // DEV-1: bench gems.
   for (const r of ctx.bench) {
     const age = r.player.age;
-    const fit = r.scores.bestRole?.score ?? 0;
+    const fit = bestPresetFit(r, ctx.formation.id);
     if (age != null && age <= T.AGE_DEV && fit >= T.GEM_FIT) {
       out.push({
         id: insightId("dev.gem", r.player.id),
         cls: "development",
         severity: "praise",
         title: `Development gem: ${surname(r.player.name)}`,
-        detail: `${surname(r.player.name)} is only ${age} but already rates ${Math.round(fit)} in his best role off the bench — ready to push for minutes.`,
-        evidence: [{ label: "Best role fit", value: `${Math.round(fit)}` }],
+        detail: `${surname(r.player.name)} is only ${age} but already rates ${Math.round(fit)} in his best preset slot off the bench — ready to push for minutes.`,
+        evidence: [{ label: "Best slot fit", value: `${Math.round(fit)}` }],
         subjects: [r.player.id],
       });
     }
@@ -59,7 +59,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
   // DEV-3: versatile players.
   for (const r of ctx.squad) {
     const groups = new Set(playerGroups(r.player.positions));
-    const fit = r.scores.bestRole?.score ?? 0;
+    const fit = bestPresetFit(r, ctx.formation.id);
     if (groups.size >= 3 && fit >= T.GOOD_FIT) {
       out.push({
         id: insightId("dev.swiss-knife", r.player.id),

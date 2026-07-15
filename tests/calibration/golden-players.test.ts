@@ -14,12 +14,16 @@ interface GoldenAssertion {
   readonly max?: number;
 }
 
+interface GoldenPlayer {
+  readonly name: string;
+  readonly assertions: readonly GoldenAssertion[];
+  /** Minimum best-role score (doc 17 §11 role-ordering anchors). */
+  readonly bestRoleMin?: number;
+}
+
 interface GoldenFixture {
   readonly source: string;
-  readonly players: readonly {
-    readonly name: string;
-    readonly assertions: readonly GoldenAssertion[];
-  }[];
+  readonly players: readonly GoldenPlayer[];
 }
 
 const fixture = JSON.parse(
@@ -44,6 +48,9 @@ describe("golden players — ordinal calibration (doc 05/06)", () => {
         expect(arch, `missing archetype ${a.archetype}`).toBeDefined();
         if (a.min != null) expect(arch!.score).toBeGreaterThanOrEqual(a.min);
         if (a.max != null) expect(arch!.score).toBeLessThanOrEqual(a.max);
+      }
+      if (row.bestRoleMin != null) {
+        expect(ps!.bestRole?.score ?? 0).toBeGreaterThanOrEqual(row.bestRoleMin);
       }
     });
   }

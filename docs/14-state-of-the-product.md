@@ -14,11 +14,14 @@ the bar the docs set.
 
 ## 0. Progress update (2026-07-15, after P0–P4 partial)
 
-Since the audit snapshot in §1–5 below: **git + `pnpm check`** (190 unit + 4 E2E),
+Since the audit snapshot in §1–5 below: **git + `pnpm check`** (206 unit + E2E),
 Broadsheet finish (doc 15 P1), engine truth and scouting tools (P2), import contract /
-Web Worker / IndexedDB / calibration / branded types (P3), and **hosted v1** (Neon,
-Auth.js, store seam, persistence E2E) are landed. Production deploy:
-**https://tfp-fm.vercel.app**. The sections below describe the codebase at the original audit time unless noted here.
+Web Worker / IndexedDB / calibration / branded types (P3), **hosted v1** (Neon,
+Auth.js, store seam, persistence E2E), **doc 17 engine coherence** (verdict/fit
+currency on preset pairFit, percentile cohort truth, SD chains/packages — passes 1–3),
+and **doc 18 form language** (unified `.control` spec) are landed. Production deploy:
+**https://tfp-fm.vercel.app**. Front Page, Watch, Compare, Similar, and Upgrades
+screens exist; §2–4 below still describe the original audit baseline where noted.
 
 ---
 

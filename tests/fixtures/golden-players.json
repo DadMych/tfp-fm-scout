@@ -11,6 +11,7 @@
     },
     {
       "name": "Dan Burn",
+      "bestRoleMin": 75,
       "assertions": [
         { "archetype": "warrior", "min": 80 },
         { "archetype": "touchlineIsolator", "max": 45 }
@@ -32,6 +33,7 @@
     },
     {
       "name": "Moussa Diaby",
+      "bestRoleMin": 72,
       "assertions": [
         { "archetype": "touchlineIsolator", "min": 80 },
         { "archetype": "warrior", "max": 45 }
@@ -47,6 +49,7 @@
     },
     {
       "name": "Nick Pope",
+      "bestRoleMin": 70,
       "assertions": [
         { "archetype": "boxCommander", "min": 80 }
       ]

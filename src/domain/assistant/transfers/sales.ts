@@ -8,7 +8,7 @@ import type { AnalysisContext } from "../context.js";
 import { blockedBy } from "../rules/helpers.js";
 import type { SlotAssignment } from "../slots.js";
 import { T } from "../thresholds.js";
-import { slotFit, solveXI, type PlayerRow } from "../xi.js";
+import { slotFit, bestPresetFit, solveXI, type PlayerRow } from "../xi.js";
 import { physicalReliance, projectFit, projectValue } from "./ageing.js";
 import { buildChain } from "./chains.js";
 import { computePriceBand } from "./pricing.js";
@@ -22,13 +22,8 @@ function percentile(values: readonly number[], p: number): number {
 }
 
 function bestFit(row: PlayerRow, ctx: AnalysisContext): number {
-  let best = 0;
-  for (const fs of ctx.formation.slots) {
-    if (!row.player.positions.includes(fs.slot)) continue;
-    const fit = slotFit(row, ctx.formation.id, fs);
-    if (fit > best) best = fit;
-  }
-  return best || (row.scores.bestRole?.score ?? 0);
+  const fit = bestPresetFit(row, ctx.formation.id);
+  return fit || (row.scores.bestRole?.score ?? 0);
 }
 
 function materialDelta(ask: number, projected: number): boolean {

@@ -1,17 +1,18 @@
 /**
  * AGE rules — squad ageing, succession and sell windows (docs/11-assistant-analytics.md §4).
- * Quality proxy throughout: `scores.bestRole.score` (absolute 0–100).
+ * Quality proxy: best preset pairFit under the active formation (doc 17 §9).
  */
 
 import type { AnalysisContext } from "../context.js";
 import type { PlayerRow } from "../xi.js";
+import { bestPresetFit } from "../xi.js";
 import type { RawInsight } from "../types.js";
 import { T } from "../thresholds.js";
 import { surname } from "../phrases.js";
 import { blockedBy, insightId } from "./helpers.js";
 
-function bestFit(row: PlayerRow): number {
-  return row.scores.bestRole?.score ?? 0;
+function bestFit(row: PlayerRow, ctx: AnalysisContext): number {
+  return bestPresetFit(row, ctx.formation.id);
 }
 
 export function run(ctx: AnalysisContext): RawInsight[] {
@@ -39,7 +40,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
 
   // AGE-2: no peak-age core.
   const peakCore = ctx.squad.filter(
-    (r) => r.player.age != null && r.player.age >= 25 && r.player.age <= T.AGE_PEAK_END && bestFit(r) >= T.GOOD_FIT,
+    (r) => r.player.age != null && r.player.age >= 25 && r.player.age <= T.AGE_PEAK_END && bestFit(r, ctx) >= T.GOOD_FIT,
   );
   if (peakCore.length < 3) {
     out.push({
@@ -57,7 +58,7 @@ export function run(ctx: AnalysisContext): RawInsight[] {
   for (const bench of ctx.bench) {
     const age = bench.player.age;
     if (age == null || age > T.AGE_DEV) continue;
-    if (bestFit(bench) < T.GEM_FIT) continue;
+    if (bestFit(bench, ctx) < T.GEM_FIT) continue;
     const blocker = blockedBy(ctx, bench);
     if (!blocker) continue;
     const starterName = ctx.byId.get(blocker.starter!.id)?.player.name ?? "the incumbent";
@@ -66,24 +67,24 @@ export function run(ctx: AnalysisContext): RawInsight[] {
       cls: "age",
       severity: "low",
       title: `${surname(bench.player.name)} is blocked — loan him`,
-      detail: `${surname(bench.player.name)} (${age}) already rates ${Math.round(bestFit(bench))} but ${surname(starterName)} (${blocker.starterAge}, fit ${blocker.starter!.fit}) isn't going anywhere. A loan keeps him developing instead of rotting on the bench.`,
-      evidence: [{ label: `${surname(bench.player.name)} best fit`, value: `${Math.round(bestFit(bench))}` }],
+      detail: `${surname(bench.player.name)} (${age}) already rates ${Math.round(bestFit(bench, ctx))} but ${surname(starterName)} (${blocker.starterAge}, fit ${blocker.starter!.fit}) isn't going anywhere. A loan keeps him developing instead of rotting on the bench.`,
+      evidence: [{ label: `${surname(bench.player.name)} best fit`, value: `${Math.round(bestFit(bench, ctx))}` }],
       subjects: [bench.player.id, blocker.starter!.id],
     });
   }
 
   // AGE-5: youth pipeline.
-  const youngGems = ctx.squad.filter((r) => (r.player.age ?? 99) <= T.AGE_DEV && bestFit(r) >= T.GEM_FIT);
+  const youngGems = ctx.squad.filter((r) => (r.player.age ?? 99) <= T.AGE_DEV && bestFit(r, ctx) >= T.GEM_FIT);
   if (youngGems.length >= 3) {
     out.push({
       id: insightId("age.youth-pipeline", "squad"),
       cls: "age",
       severity: "praise",
       title: "The academy is feeding the first team",
-      detail: `${youngGems.length} players ${T.AGE_DEV} or under already rate ${T.GEM_FIT}+ in their best role: ${youngGems
+      detail: `${youngGems.length} players ${T.AGE_DEV} or under already rate ${T.GEM_FIT}+ in their best preset slot: ${youngGems
         .map((r) => surname(r.player.name))
         .join(", ")}.`,
-      evidence: youngGems.map((r) => ({ label: surname(r.player.name), value: `${Math.round(bestFit(r))}` })),
+      evidence: youngGems.map((r) => ({ label: surname(r.player.name), value: `${Math.round(bestFit(r, ctx))}` })),
       subjects: youngGems.map((r) => r.player.id),
     });
   }
