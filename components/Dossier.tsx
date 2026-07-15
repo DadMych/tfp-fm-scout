@@ -17,7 +17,7 @@ import { buildContext, type AnalysisContext } from "@/src/domain/assistant/conte
 import { buildBoard } from "@/src/domain/assistant/transfers/board.js";
 import type { TransferBoard } from "@/src/domain/assistant/transfers/types.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
-import { slotFit } from "@/src/domain/assistant/xi.js";
+import { computeSquadFit } from "@/src/domain/scouting/fit.js";
 import { surname } from "@/src/domain/assistant/phrases.js";
 import {
   footLabel,
@@ -319,23 +319,19 @@ function DirectorRead({
     );
   }
 
-  let best: { slotLabel: string; fit: number; starterFit: number | null; starterName: string | null } | null = null;
-  for (const slot of ctx.slots) {
-    if (!p.positions.includes(slot.slot.slot)) continue;
-    const fit = slotFit({ player: p, scores: s }, ctx.formation.id, slot.slot);
-    if (!best || fit > best.fit) {
-      const starterName = slot.starter ? (ctx.byId.get(slot.starter.id)?.player.name ?? null) : null;
-      best = { slotLabel: slot.label, fit, starterFit: slot.starter?.fit ?? null, starterName };
-    }
-  }
-  if (!best) return null;
+  const nameById = new Map<string, string>();
+  for (const r of ctx.squad) nameById.set(r.player.id, r.player.name);
+  for (const r of ctx.shortlist) nameById.set(r.player.id, r.player.name);
+
+  const squadFit = computeSquadFit({ player: p, scores: s }, ctx.formation.id, ctx.slots, nameById);
+  if (!squadFit) return null;
+
   return (
-    <div className="callout" style={{ borderColor: "var(--ink)" }}>
-      <p className="c-head">
-        {best.starterName
-          ? `At ${best.slotLabel}, he'd challenge ${surname(best.starterName)}: fit ${best.fit} vs ${best.starterFit}.`
-          : `Fills the empty ${best.slotLabel} slot — fit ${best.fit}.`}
-      </p>
+    <div className="callout" style={{ borderColor: squadFit.verdict === "Upgrade" ? "var(--gold)" : "var(--ink)" }}>
+      <span className={`verdict ${squadFit.verdict === "Upgrade" ? "gold" : squadFit.verdict === "Not for you" ? "ink" : ""}`}>
+        {squadFit.verdict}
+      </span>
+      <p className="c-head">{squadFit.headline}</p>
     </div>
   );
 }
