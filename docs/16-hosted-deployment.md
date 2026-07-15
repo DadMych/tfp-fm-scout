@@ -129,7 +129,7 @@ works entirely offline exactly as today.
 2. **GitHub** [github.com/DadMych/tfp-fm-scout](https://github.com/DadMych/tfp-fm-scout) connected to Vercel project `tfp-fm`; `vercel.json` sets `pnpm install` + `pnpm build`.
 3. **Set production env vars** from §6 (pooled `DATABASE_URL` for runtime; unpooled only for migrate CI / `.github/workflows/migrate.yml`).
 4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google` (optional until configured).
-5. **Deploy:** `vercel --prod` (or connect the GitHub repo for automatic deploys).
+5. **Deploy:** push to `main` auto-deploys to [tfp-fm.vercel.app](https://tfp-fm.vercel.app); manual: `vercel --prod`.
 6. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk.
 
 Logged-out visitors still get the full local-first app (IndexedDB) when no session is present.
