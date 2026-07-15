@@ -238,7 +238,7 @@ export function ScoutDesk() {
         <div className="field">
           <label>Search</label>
           <input
-            className="search"
+            className="control control--search"
             placeholder="Player name…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -246,7 +246,7 @@ export function ScoutDesk() {
         </div>
         <div className="field">
           <label>Position</label>
-          <select value={group} onChange={(e) => setGroup(e.target.value as PositionGroup | "all")}>
+          <select className="control" value={group} onChange={(e) => setGroup(e.target.value as PositionGroup | "all")}>
             <option value="all">All</option>
             {GROUPS.map((g) => (
               <option key={g} value={g}>
@@ -258,6 +258,7 @@ export function ScoutDesk() {
         <div className="field">
           <label>Max age</label>
           <input
+            className="control"
             type="number"
             min={15}
             max={45}
@@ -269,6 +270,7 @@ export function ScoutDesk() {
         <div className="field">
           <label>Max value (€M)</label>
           <input
+            className="control"
             type="number"
             min={0}
             value={maxValue}
@@ -278,7 +280,7 @@ export function ScoutDesk() {
         </div>
         <div className="field">
           <label>Verdict</label>
-          <select value={verdict} onChange={(e) => setVerdict(e.target.value as Verdict | "all")}>
+          <select className="control" value={verdict} onChange={(e) => setVerdict(e.target.value as Verdict | "all")}>
             <option value="all">All</option>
             <option>Priority target</option>
             <option>Squad upgrade</option>
@@ -294,6 +296,7 @@ export function ScoutDesk() {
           <div className="field">
             <label>Fit</label>
             <select
+              className="control"
               value={fitFilter}
               onChange={(e) => setFitFilter(e.target.value as typeof fitFilter)}
             >

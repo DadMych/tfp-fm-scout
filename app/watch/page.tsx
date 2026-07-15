@@ -98,7 +98,7 @@ export default function WatchPage() {
                 </td>
                 <td>
                   <select
-                    className="watch-status"
+                    className="control watch-status"
                     value={e.entry.status}
                     onChange={(ev) =>
                       setWatchStatus(e.entry.identityKey, ev.target.value as WatchStatus)
@@ -122,7 +122,7 @@ export default function WatchPage() {
                 </td>
                 <td className="c-note">
                   <input
-                    className="watch-note"
+                    className="control watch-note"
                     placeholder="One-line note…"
                     value={e.entry.note}
                     onChange={(ev) => setWatchNote(e.entry.identityKey, ev.target.value)}

@@ -22,6 +22,7 @@ export function AssistantControls({
       <div className="field">
         <label htmlFor="assist-formation">Formation</label>
         <select
+          className="control"
           id="assist-formation"
           value={formationId}
           onChange={(e) => onFormationChange(e.target.value)}
@@ -36,6 +37,7 @@ export function AssistantControls({
       <div className="field">
         <label htmlFor="assist-budget">Transfer budget (€M)</label>
         <input
+          className="control"
           id="assist-budget"
           type="number"
           min={0}

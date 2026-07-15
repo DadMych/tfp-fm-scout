@@ -74,6 +74,7 @@ export default function LoginForm() {
             Name <span className="hint">optional</span>
             <input
               type="text"
+              className="control control--lg"
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -84,6 +85,7 @@ export default function LoginForm() {
           Email
           <input
             type="email"
+            className="control control--lg"
             autoComplete="email"
             required
             value={email}
@@ -94,6 +96,7 @@ export default function LoginForm() {
           Password <span className="hint">8+ characters</span>
           <input
             type="password"
+            className="control control--lg"
             autoComplete={mode === "register" ? "new-password" : "current-password"}
             required
             minLength={8}
