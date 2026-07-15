@@ -432,7 +432,6 @@ export function renderDossier(p: Player, s: PlayerScores, meta: ReportMeta): str
   ${attributeGrid(p, s)}
 
   <section class="roles">
-    <p class="panel-h">Roles — strongest fits <span style="color:var(--ink-3);font-size:10px">▸ playable in listed positions</span></p>
     ${roleTable(p, s)}
   </section>
 

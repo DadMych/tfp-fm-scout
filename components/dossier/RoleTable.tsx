@@ -15,10 +15,7 @@ export function RoleTable({ p, s }: { p: Player; s: PlayerScores }) {
     .slice(0, 8);
 
   return (
-    <>
-      <p className="panel-h">
-        Roles — strongest fits <span className="role-hint">▸ playable in listed positions</span>
-      </p>
+    <section className="roles">
       <table className="roletable">
         <thead>
           <tr>
@@ -47,6 +44,6 @@ export function RoleTable({ p, s }: { p: Player; s: PlayerScores }) {
           })}
         </tbody>
       </table>
-    </>
+    </section>
   );
 }

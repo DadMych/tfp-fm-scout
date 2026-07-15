@@ -213,7 +213,7 @@ export function FrontPage() {
       ) : null}
 
       {briefs.length > 0 ? (
-        <>
+        <section className="fp-briefs-block">
           <SectionRule gap="sm">Today&apos;s briefs</SectionRule>
           <div className="briefs">
             {briefs.map(({ p, s, rec }) => {
@@ -244,7 +244,7 @@ export function FrontPage() {
               );
             })}
           </div>
-        </>
+        </section>
       ) : null}
 
       <div className="cta-row fp-actions">
