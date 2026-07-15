@@ -5,9 +5,8 @@ decisions that doc 02 left open ("any managed Postgres") now that the database e
 a **Neon** Postgres project in `eu-central-1`. Where this doc conflicts with doc 02, this
 doc wins — doc 02 has been amended to match.
 
-> **Status:** infrastructure provisioned, code not started. The P4 hard rule from doc 15
-> stands: no server code before P3 acceptance criteria are green. This doc exists so the
-> P4 build starts from decisions, not research.
+> **Status:** P4 in progress — Drizzle schema, Auth.js (password + Google), hosted store
+> seam, and persistence E2E are landed. Password reset and Vercel deploy remain.
 
 ---
 

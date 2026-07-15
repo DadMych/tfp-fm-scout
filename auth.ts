@@ -3,13 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { z } from "zod";
 import { getDb } from "@/src/db/client.js";
-import {
-  createUser,
-  findOAuthAccount,
-  findUserByEmail,
-  linkOAuthAccount,
-  verifyPassword,
-} from "@/src/db/auth-store.js";
+import { findUserByEmail, verifyPassword } from "@/src/db/auth-store.js";
+import { linkOAuthUser } from "@/src/db/oauth-link.js";
 
 function hostedAuthEnabled(): boolean {
   return Boolean(process.env.DATABASE_URL && process.env.AUTH_SECRET);
@@ -70,25 +65,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = (user.email ?? profile?.email)?.toLowerCase();
       if (!email) return false;
 
-      const existing = await findOAuthAccount(db, account.provider, account.providerAccountId);
-      if (existing) {
-        user.id = existing.userId;
-        return true;
-      }
-
-      let row = await findUserByEmail(db, email);
-      if (!row) {
-        row = await createUser(db, { email, name: user.name ?? null });
-      }
-
-      await linkOAuthAccount(db, {
-        userId: row.id,
+      user.id = await linkOAuthUser(db, {
+        email,
         provider: account.provider,
         providerAccountId: account.providerAccountId,
         type: account.type,
+        name: user.name ?? null,
       });
-
-      user.id = row.id;
       return true;
     },
     jwt({ token, user }) {

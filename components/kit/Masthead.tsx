@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountNav } from "@/components/AccountNav";
 
 export type MastheadPage = "home" | "upload" | "scout" | "assistant" | "watch";
 
@@ -22,7 +23,7 @@ export function Masthead({ current }: { current: MastheadPage }) {
             {item.label}
           </Link>
         ))}
-        <Link href="/login">Account</Link>
+        <AccountNav />
         <a href="https://buymeacoffee.com/tfpdev" target="_blank" rel="noopener noreferrer">
           Support
         </a>
