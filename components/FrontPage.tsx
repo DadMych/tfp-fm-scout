@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useDatasets } from "@/lib/store";
+import { buildAssistantReport } from "@/src/domain/assistant/report.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { pickBargain, pickLead, posLabel, standouts, type ScoredRow } from "@/src/domain/front-page.js";
 import { recommend } from "@/src/domain/recommendation.js";
+import { getFormation } from "@/src/domain/squad/formations.js";
 import { formatMoney, ordinal } from "@/src/report/format.js";
 import { Dateline } from "@/components/kit/Dateline";
 import { FactsRail } from "@/components/kit/FactsRail";
@@ -20,7 +22,7 @@ function rowsFromBundle(bundle: NonNullable<ReturnType<typeof useDatasets>["shor
 }
 
 export function FrontPage() {
-  const { shortlist, squad, squadContext, ready, watchList } = useDatasets();
+  const { shortlist, squad, squadContext, ready, watchList, lastAssistantRun } = useDatasets();
 
   const bundle = shortlist ?? squad;
   const rows = useMemo(() => (bundle ? rowsFromBundle(bundle) : []), [bundle]);
@@ -39,6 +41,28 @@ export function FrontPage() {
       .sort((a, b) => a.rec.rank - b.rec.rank || (b.s.topArchetype?.score ?? 0) - (a.s.topArchetype?.score ?? 0))
       .slice(0, 4);
   }, [rows, bundle, squadContext, shortlist]);
+
+  const teamReport = useMemo(() => {
+    if (!squad) return null;
+    const formation = getFormation(lastAssistantRun?.formationId ?? "4-2-3-1");
+    const squadRows = squad.dataset.players.map((p) => ({
+      player: p,
+      scores: squad.scoreById.get(p.id)!,
+    }));
+    const shortlistRows = shortlist
+      ? shortlist.dataset.players.map((p) => ({
+          player: p,
+          scores: shortlist.scoreById.get(p.id)!,
+        }))
+      : [];
+    return buildAssistantReport({
+      squad: squadRows,
+      shortlist: shortlistRows,
+      formation,
+      budget: lastAssistantRun?.budget ?? 50e6,
+      useFullBudget: lastAssistantRun?.useFull ?? false,
+    }).teamReport;
+  }, [squad, shortlist, lastAssistantRun]);
 
   if (!ready) return <div className="empty">Setting the page…</div>;
 
@@ -148,6 +172,23 @@ export function FrontPage() {
         </div>
       ) : null}
 
+      {teamReport ? (
+        <section className="team-report">
+          <p className="section-label">Team report</p>
+          <div className="tr-headline">{teamReport.headline}</div>
+          {teamReport.paragraphs.map((p, i) => (
+            <p key={i} className="tr-p">
+              {p}
+            </p>
+          ))}
+          <p className="lede">
+            <Link href="/assistant" className="link-red">
+              Open the full assistant →
+            </Link>
+          </p>
+        </section>
+      ) : null}
+
       {briefs.length > 0 ? (
         <>
           <p className="section-label">Today&apos;s briefs</p>
@@ -182,11 +223,6 @@ export function FrontPage() {
         <Link className="btn ghost" href="/upload">
           Upload another file
         </Link>
-        {squad ? (
-          <Link className="btn ghost" href="/assistant">
-            Team report
-          </Link>
-        ) : null}
       </div>
     </>
   );
