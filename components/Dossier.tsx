@@ -215,7 +215,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
         />
       </section>
 
-      <ArchetypeColumns archetypes={identity} />
+      <ArchetypeColumns archetypes={identity} artId={s.topArchetype?.id ?? null} />
 
       <div className="d-body">
         <figure className="radar-figure">

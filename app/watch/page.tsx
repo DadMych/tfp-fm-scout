@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Masthead } from "@/components/kit/Masthead";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { useDatasets } from "@/lib/store";
@@ -46,6 +47,7 @@ export default function WatchPage() {
         id,
         name: p.name,
         kind,
+        archId: s.topArchetype?.id ?? null,
         arch,
         score: Math.round(s.topArchetype?.score ?? 0),
         rec: recommend(p, s, kind === "shortlist" ? (squadContext ?? undefined) : undefined),
@@ -115,6 +117,7 @@ export default function WatchPage() {
                   <VerdictBadge rec={e.rec} />
                 </td>
                 <td className="c-arch">
+                  {e.archId ? <ArchetypeIcon id={e.archId} size={16} /> : null}
                   <span className="aname">{e.arch}</span>
                 </td>
                 <td className="c-num">

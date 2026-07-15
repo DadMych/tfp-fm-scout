@@ -74,8 +74,11 @@ export function run(ctx: AnalysisContext, packages: readonly TransferPackage[]):
       cls: "risk",
       severity: "low",
       title: "No slack in any plan",
-      detail: "Every transfer plan on the table spends at least 90% of your budget cap — there's no room for a deadline-day opportunity or an injury replacement.",
-      evidence: packages.map((p) => ({ label: p.name, value: `${Math.round((p.totalCost / ctx.budgetCap) * 100)}%` })),
+      detail: "Every transfer plan on the table commits at least 90% of your budget cap in net spend — there's no room for a deadline-day opportunity or an injury replacement.",
+      evidence: packages.map((p) => ({
+        label: p.name,
+        value: `${Math.round((p.netSpend / ctx.budgetCap) * 100)}%`,
+      })),
       subjects: [],
     });
   }

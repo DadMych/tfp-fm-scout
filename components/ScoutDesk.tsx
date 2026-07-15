@@ -7,12 +7,13 @@ import { useDatasets, type DatasetKind } from "@/lib/store";
 import { parseScoutFilters, serializeScoutFilters, type ScoutSortKey } from "@/lib/scout-filters";
 import { buildFitDeskContext, fitsGap, squadFitForRow } from "@/lib/squad-fit-desk";
 import type { SquadFitResult } from "@/src/domain/scouting/fit.js";
-import { getArchetype } from "@/src/domain/archetypes/registry.js";
+import { getArchetype, type ArchetypeId } from "@/src/domain/archetypes/registry.js";
 import { playerGroups, type PositionGroup } from "@/src/domain/positions.js";
 import { standouts } from "@/src/domain/front-page.js";
 import { recommend, type Recommendation, type Verdict } from "@/src/domain/recommendation.js";
 import { formatMoney, scoutGradeRank } from "@/src/report/format.js";
 import { VerdictBadge } from "@/components/VerdictBadge";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { InkBar } from "@/components/kit/InkBar";
 
 const GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
@@ -29,6 +30,7 @@ interface Row {
   groups: PositionGroup[];
   score: number;
   badge: string | null;
+  archId: ArchetypeId | null;
   archName: string;
   grade: string | null;
   rec: Recommendation;
@@ -95,6 +97,7 @@ export function ScoutDesk() {
         groups: playerGroups(p.positions),
         score: Math.round(s.topArchetype?.score ?? 0),
         badge: s.topArchetype?.badge ?? null,
+        archId: s.topArchetype?.id ?? null,
         archName: arch?.name ?? "Utility",
         grade: p.scoutGrade ?? null,
         rec: recommend(p, s, ctx),
@@ -401,6 +404,7 @@ export function ScoutDesk() {
                 <div className="why">{r.rec.headline}</div>
               </td>
               <td className="c-arch">
+                {r.archId ? <ArchetypeIcon id={r.archId} size={16} /> : null}
                 <span className="aname">{r.archName}</span>
                 {r.badge ? (
                   <span className={`stamp ${r.badge === "Elite" ? "gold" : ""}`}>{r.badge}</span>

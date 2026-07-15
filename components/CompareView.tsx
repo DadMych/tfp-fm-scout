@@ -17,6 +17,7 @@ import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import type { PositionSlot } from "@/src/domain/positions.js";
 import { formatMoney, metricLabel } from "@/src/report/format.js";
 import { CompareRadar } from "@/components/CompareRadar";
+import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
 import { Dateline } from "@/components/kit/Dateline";
 import { InkBar } from "@/components/kit/InkBar";
 import { parseAttrDisplay } from "@/components/kit/AttrValue";
@@ -201,6 +202,7 @@ export function CompareView() {
                     <span className="num">{formatMoney(p.value)}</span>
                   </p>
                   <p className="cmp-arch">
+                    {s.topArchetype ? <ArchetypeIcon id={s.topArchetype.id} size={16} /> : null}
                     <b>{arch?.name ?? "Utility"}</b>
                     {s.topArchetype?.badge ? (
                       <span className={`stamp ${s.topArchetype.badge === "Elite" ? "gold" : ""}`}>
