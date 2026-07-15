@@ -1,12 +1,10 @@
 "use client";
 
 /**
- * Client-side dataset store (no backend yet).
+ * Client-side dataset store.
  *
- * The user's squad and shortlist live entirely in the browser: parsed from an FM26 export,
- * kept in React state, and mirrored to IndexedDB so a reload doesn't lose them. Only the
- * raw parsed players are persisted; scores are recomputed in a Web Worker on load. This whole
- * module is the seam a real DB + auth will replace later.
+ * Logged out: IndexedDB (local-first). Logged in with hosted auth: Neon via /api/*.
+ * Only raw parsed players are persisted; scores recompute in a Web Worker on load.
  */
 
 import {
@@ -19,6 +17,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
 import type { Player } from "@/src/domain/player.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { ImportError } from "@/src/import/parse.js";
@@ -31,6 +30,12 @@ import {
   saveDatasets,
   saveWatchList,
 } from "@/lib/client-storage";
+import {
+  loadHostedStorage,
+  saveHostedAssistantSettings,
+  saveHostedDatasets,
+  saveHostedWatchList,
+} from "@/lib/hosted-storage";
 import {
   createWatchEntry,
   isPlayerWatched,
@@ -62,6 +67,7 @@ interface StoreState {
   readonly importStatus: Partial<Record<DatasetKind, string>>;
   readonly lastAssistantRun: LastAssistantRun | null;
   readonly watchList: readonly WatchEntry[];
+  readonly hosted: boolean;
   loadText(kind: DatasetKind, text: string, source: string, label?: string): Promise<number>;
   clear(kind: DatasetKind): void;
   setLastAssistantRun(run: LastAssistantRun): void;
@@ -90,35 +96,63 @@ function makeBundle(
   return { dataset, scores, scoreById: new Map(scores.map((s) => [s.playerId, s])) };
 }
 
+function applySnapshot(
+  snapshot: Awaited<ReturnType<typeof loadClientStorage>>,
+  setters: {
+    setRaw: (v: Persisted) => void;
+    setLastAssistantRunState: (v: LastAssistantRun | null) => void;
+    setWatchList: (v: WatchEntry[]) => void;
+    setScoreByKind: (v: Partial<Record<DatasetKind, PlayerScores[]>>) => void;
+  },
+) {
+  setters.setRaw(snapshot.datasets as Persisted);
+  setters.setLastAssistantRunState(
+    snapshot.assistant != null ? (snapshot.assistant as LastAssistantRun) : null,
+  );
+  setters.setWatchList(snapshot.watchList);
+  setters.setScoreByKind({});
+}
+
 export function DatasetProvider({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession();
+  const hosted = Boolean(session?.user?.id);
+
   const [raw, setRaw] = useState<Persisted>({});
   const [scoreByKind, setScoreByKind] = useState<Partial<Record<DatasetKind, PlayerScores[]>>>({});
   const [importStatus, setImportStatus] = useState<Partial<Record<DatasetKind, string>>>({});
   const [lastAssistantRun, setLastAssistantRunState] = useState<LastAssistantRun | null>(null);
   const [watchList, setWatchList] = useState<WatchEntry[]>([]);
-  const [ready, setReady] = useState(false);
+  const [readyTarget, setReadyTarget] = useState<string | null>(null);
   const scoringRef = useRef(new Set<DatasetKind>());
+  const storageKey = `${status}:${hosted}`;
+  const ready = status !== "loading" && readyTarget === storageKey;
 
   useEffect(() => {
+    if (status === "loading") return;
+
+    const key = storageKey;
     let cancelled = false;
+
     void (async () => {
       try {
-        const snapshot = await loadClientStorage();
+        const snapshot = hosted ? await loadHostedStorage() : await loadClientStorage();
         if (cancelled) return;
-        setRaw(snapshot.datasets as Persisted);
-        if (snapshot.assistant != null) {
-          setLastAssistantRunState(snapshot.assistant as LastAssistantRun);
-        }
-        setWatchList(snapshot.watchList);
+        applySnapshot(snapshot, {
+          setRaw,
+          setLastAssistantRunState,
+          setWatchList,
+          setScoreByKind,
+        });
       } catch {
         // Corrupt or unavailable storage — start empty rather than crash.
       }
-      if (!cancelled) setReady(true);
+      if (!cancelled) setReadyTarget(key);
     })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hosted, status, storageKey]);
 
   useEffect(() => {
     if (!ready) return;
@@ -145,66 +179,88 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     }
   }, [ready, raw, scoreByKind]);
 
-  const persist = useCallback((next: Persisted | ((prev: Persisted) => Persisted)) => {
-    setRaw((prev) => {
-      const resolved = typeof next === "function" ? next(prev) : next;
-      void saveDatasets(resolved).catch(() => {
-        // Private mode or IDB unavailable: keep it in memory for this session.
+  const persist = useCallback(
+    (next: Persisted | ((prev: Persisted) => Persisted)) => {
+      setRaw((prev) => {
+        const resolved = typeof next === "function" ? next(prev) : next;
+        const save = hosted ? saveHostedDatasets : saveDatasets;
+        void save(resolved).catch(() => {
+          // Private mode, IDB, or API unavailable: keep it in memory for this session.
+        });
+        return resolved;
       });
-      return resolved;
-    });
-  }, []);
+    },
+    [hosted],
+  );
 
-  const setLastAssistantRun = useCallback((run: LastAssistantRun) => {
-    setLastAssistantRunState(run);
-    void saveAssistantSettings(run).catch(() => {
-      // Session-only if storage is unavailable.
-    });
-  }, []);
+  const setLastAssistantRun = useCallback(
+    (run: LastAssistantRun) => {
+      setLastAssistantRunState(run);
+      const save = hosted ? saveHostedAssistantSettings : saveAssistantSettings;
+      void save(run).catch(() => {
+        // Session-only if storage is unavailable.
+      });
+    },
+    [hosted],
+  );
 
-  const toggleWatch = useCallback((p: Player) => {
-    setWatchList((prev) => {
-      const key = playerIdentityKey(p);
-      const exists = prev.some((e) => e.identityKey === key);
-      const next = exists
-        ? prev.filter((e) => e.identityKey !== key)
-        : [...prev, createWatchEntry(p)];
-      void saveWatchList(next).catch(() => {
+  const persistWatch = useCallback(
+    (next: WatchEntry[]) => {
+      const save = hosted ? saveHostedWatchList : saveWatchList;
+      void save(next).catch(() => {
         // Session-only.
       });
-      return next;
-    });
-  }, []);
+    },
+    [hosted],
+  );
 
-  const setWatchStatus = useCallback((identityKey: string, status: WatchStatus) => {
-    setWatchList((prev) => {
-      const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, status } : e));
-      void saveWatchList(next).catch(() => {
-        // Session-only.
+  const toggleWatch = useCallback(
+    (p: Player) => {
+      setWatchList((prev) => {
+        const key = playerIdentityKey(p);
+        const exists = prev.some((e) => e.identityKey === key);
+        const next = exists
+          ? prev.filter((e) => e.identityKey !== key)
+          : [...prev, createWatchEntry(p)];
+        persistWatch(next);
+        return next;
       });
-      return next;
-    });
-  }, []);
+    },
+    [persistWatch],
+  );
 
-  const setWatchNote = useCallback((identityKey: string, note: string) => {
-    setWatchList((prev) => {
-      const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, note } : e));
-      void saveWatchList(next).catch(() => {
-        // Session-only.
+  const setWatchStatus = useCallback(
+    (identityKey: string, status: WatchStatus) => {
+      setWatchList((prev) => {
+        const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, status } : e));
+        persistWatch(next);
+        return next;
       });
-      return next;
-    });
-  }, []);
+    },
+    [persistWatch],
+  );
 
-  const removeWatch = useCallback((identityKey: string) => {
-    setWatchList((prev) => {
-      const next = prev.filter((e) => e.identityKey !== identityKey);
-      void saveWatchList(next).catch(() => {
-        // Session-only.
+  const setWatchNote = useCallback(
+    (identityKey: string, note: string) => {
+      setWatchList((prev) => {
+        const next = prev.map((e) => (e.identityKey === identityKey ? { ...e, note } : e));
+        persistWatch(next);
+        return next;
       });
-      return next;
-    });
-  }, []);
+    },
+    [persistWatch],
+  );
+
+  const removeWatch = useCallback(
+    (identityKey: string) => {
+      setWatchList((prev) => {
+        const next = prev.filter((e) => e.identityKey !== identityKey);
+        persistWatch(next);
+        return next;
+      });
+    },
+    [persistWatch],
+  );
 
   const isWatched = useCallback(
     (p: Player) => isPlayerWatched(p, watchList),
@@ -304,6 +360,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       importStatus,
       lastAssistantRun,
       watchList,
+      hosted,
       loadText,
       clear,
       setLastAssistantRun,
@@ -321,6 +378,7 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       importStatus,
       lastAssistantRun,
       watchList,
+      hosted,
       loadText,
       clear,
       setLastAssistantRun,

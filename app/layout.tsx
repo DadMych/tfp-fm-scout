@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import { DatasetProvider } from "@/lib/store";
 import { AuthProvider } from "@/components/AuthProvider";
+import { LocalMigrationPrompt } from "@/components/LocalMigrationPrompt";
 import "./globals.css";
 
 const serif = Source_Serif_4({
@@ -27,7 +28,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
         <AuthProvider>
-          <DatasetProvider>{children}</DatasetProvider>
+          <DatasetProvider>
+            <LocalMigrationPrompt />
+            {children}
+          </DatasetProvider>
         </AuthProvider>
       </body>
     </html>

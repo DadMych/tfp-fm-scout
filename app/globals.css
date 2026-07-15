@@ -52,6 +52,8 @@ button{font-family:inherit;cursor:pointer;}
 .auth-form{max-width:420px;display:flex;flex-direction:column;gap:16px;padding:24px 0;}
 .auth-form label{display:flex;flex-direction:column;gap:6px;font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);}
 .auth-form input{font-family:var(--serif);font-size:18px;padding:10px 12px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);}
+.migration-banner{margin:0 0 24px;padding:20px 24px;border:1px solid var(--rule);background:var(--paper-2);}
+.migration-banner p{margin:0 0 12px;font-style:italic;color:var(--ink-2);}
 .auth-divider{font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);padding:8px 0 20px;}
 .btn{font-family:var(--sans);font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:12px 22px;border:2px solid var(--ink);background:var(--ink);color:var(--paper);text-decoration:none;display:inline-block;}
 .btn:hover{background:var(--red);border-color:var(--red);}
