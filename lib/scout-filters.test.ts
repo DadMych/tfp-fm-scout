@@ -21,6 +21,7 @@ describe("scout filters URL", () => {
       maxAge: "24",
       maxValue: "15",
       verdict: "Bargain",
+      fit: "all",
       sort: "value",
       dir: "asc",
     });
@@ -37,6 +38,7 @@ describe("scout filters URL", () => {
     expect(filters.group).toBe("all");
     expect(filters.sort).toBe("reco");
     expect(filters.verdict).toBe("all");
+    expect(filters.fit).toBe("all");
     expect(serializeScoutFilters(filters)).toBe("/scout");
   });
 });

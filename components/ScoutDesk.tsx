@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { parseScoutFilters, serializeScoutFilters, type ScoutSortKey } from "@/lib/scout-filters";
+import { buildFitDeskContext, fitsGap, squadFitForRow } from "@/lib/squad-fit-desk";
+import type { SquadFitResult } from "@/src/domain/scouting/fit.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { playerGroups, type PositionGroup } from "@/src/domain/positions.js";
 import { standouts } from "@/src/domain/front-page.js";
@@ -31,13 +33,14 @@ interface Row {
   grade: string | null;
   rec: Recommendation;
   standout: { label: string; pct: number } | null;
+  fit: SquadFitResult | null;
 }
 
 export function ScoutDesk() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initial = useMemo(() => parseScoutFilters(searchParams), [searchParams]);
-  const { shortlist, squad, squadContext, ready, isWatched, toggleWatch } = useDatasets();
+  const { shortlist, squad, squadContext, ready, isWatched, toggleWatch, lastAssistantRun } = useDatasets();
   const [kind, setKind] = useState<DatasetKind>(initial.kind);
   const bundle = kind === "squad" ? squad : shortlist;
 
@@ -46,6 +49,7 @@ export function ScoutDesk() {
   const [maxAge, setMaxAge] = useState(initial.maxAge);
   const [maxValue, setMaxValue] = useState(initial.maxValue);
   const [verdict, setVerdict] = useState<Verdict | "all">(initial.verdict);
+  const [fitFilter, setFitFilter] = useState(initial.fit);
   const [sort, setSort] = useState<SortKey>(initial.sort);
   const [dir, setDir] = useState<"asc" | "desc">(initial.dir);
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -58,11 +62,19 @@ export function ScoutDesk() {
       maxAge,
       maxValue,
       verdict,
+      fit: fitFilter,
       sort,
       dir,
     });
     router.replace(href, { scroll: false });
-  }, [kind, q, group, maxAge, maxValue, verdict, sort, dir, router]);
+  }, [kind, q, group, maxAge, maxValue, verdict, fitFilter, sort, dir, router]);
+
+  const fitCtx = useMemo(() => {
+    if (!squad || !shortlist) return null;
+    return buildFitDeskContext(squad, shortlist, lastAssistantRun);
+  }, [squad, shortlist, lastAssistantRun]);
+
+  const showFit = kind === "shortlist" && fitCtx != null;
 
   const rows = useMemo<Row[]>(() => {
     if (!bundle) return [];
@@ -70,6 +82,8 @@ export function ScoutDesk() {
     return bundle.dataset.players.map((p) => {
       const s = bundle.scoreById.get(p.id)!;
       const arch = s.topArchetype ? getArchetype(s.topArchetype.id) : null;
+      const row = { player: p, scores: s };
+      const fit = showFit && fitCtx ? squadFitForRow(row, fitCtx) : null;
       return {
         id: p.id,
         name: p.name,
@@ -84,9 +98,10 @@ export function ScoutDesk() {
         grade: p.scoutGrade ?? null,
         rec: recommend(p, s, ctx),
         standout: standouts(s, 1)[0] ?? null,
+        fit,
       };
     });
-  }, [bundle, kind, squadContext]);
+  }, [bundle, kind, squadContext, showFit, fitCtx]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -98,6 +113,11 @@ export function ScoutDesk() {
       if (ageCap != null && (r.age == null || r.age > ageCap)) return false;
       if (valCap != null && (r.value == null || r.value > valCap)) return false;
       if (verdict !== "all" && r.rec.verdict !== verdict) return false;
+      if (showFit && fitFilter !== "all") {
+        if (!r.fit) return false;
+        if (fitFilter === "upgrade" && r.fit.verdict !== "Upgrade") return false;
+        if (fitFilter === "gap" && (!fitCtx || !fitsGap(r.fit, fitCtx.needBySlotKey))) return false;
+      }
       return true;
     });
     const cmp: Record<SortKey, (a: Row, b: Row) => number> = {
@@ -107,11 +127,12 @@ export function ScoutDesk() {
       age: (a, b) => (a.age ?? 999) - (b.age ?? 999),
       value: (a, b) => (a.value ?? Infinity) - (b.value ?? Infinity),
       name: (a, b) => a.name.localeCompare(b.name),
+      fit: (a, b) => (b.fit?.pairScore ?? -1) - (a.fit?.pairScore ?? -1),
     };
     out.sort(cmp[sort]);
     if (dir === "desc") out.reverse();
     return out;
-  }, [rows, q, group, maxAge, maxValue, verdict, sort, dir]);
+  }, [rows, q, group, maxAge, maxValue, verdict, fitFilter, showFit, fitCtx, sort, dir]);
 
   const activeId = useMemo(() => {
     if (filtered.length === 0) return null;
@@ -263,6 +284,19 @@ export function ScoutDesk() {
             <option>Not for us</option>
           </select>
         </div>
+        {showFit ? (
+          <div className="field">
+            <label>Fit</label>
+            <select
+              value={fitFilter}
+              onChange={(e) => setFitFilter(e.target.value as typeof fitFilter)}
+            >
+              <option value="all">All</option>
+              <option value="upgrade">Improves my XI</option>
+              <option value="gap">Fits a gap</option>
+            </select>
+          </div>
+        ) : null}
         <span className="count">
           {filtered.length} shown · <span className="kbd-hint">j/k move · s watch · c compare</span>
         </span>
@@ -293,6 +327,11 @@ export function ScoutDesk() {
             </th>
             <th>Identity</th>
             <th>Standout</th>
+            {showFit ? (
+              <th onClick={() => toggleSort("fit")} className={sort === "fit" ? "sorted" : ""}>
+                Fit
+              </th>
+            ) : null}
             <th
               onClick={() => toggleSort("age")}
               className={`c-num ${sort === "age" ? "sorted" : ""}`}
@@ -322,7 +361,7 @@ export function ScoutDesk() {
         <tbody>
           {filtered.length === 0 ? (
             <tr>
-              <td colSpan={8} className="empty">
+              <td colSpan={showFit ? 9 : 8} className="empty">
                 No players match. Loosen the filters.
               </td>
             </tr>
@@ -369,6 +408,24 @@ export function ScoutDesk() {
                   "—"
                 )}
               </td>
+              {showFit ? (
+                <td className="c-fit">
+                  {r.fit ? (
+                    <>
+                      <span
+                        className={`stamp ${r.fit.verdict === "Upgrade" ? "gold" : r.fit.verdict === "Not for you" ? "" : ""}`}
+                      >
+                        {r.fit.verdict}
+                      </span>
+                      <div className="sub num">
+                        {r.fit.slotLabel} · {r.fit.pairScore}
+                      </div>
+                    </>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              ) : null}
               <td className="c-num">{r.age ?? "—"}</td>
               <td className="c-num">{r.grade ?? "—"}</td>
               <td className="c-num">{formatMoney(r.value)}</td>
