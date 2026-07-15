@@ -1,0 +1,76 @@
+{
+  "source": "samples/real/fm26_biglist.csv",
+  "note": "Starter golden set (~10 players). Doc 05/06 target ~40 anchors — extend with owner-curated rows.",
+  "players": [
+    {
+      "name": "James Milner",
+      "assertions": [
+        { "archetype": "leaderOrganizer", "min": 80 },
+        { "archetype": "roadrunner", "max": 45 }
+      ]
+    },
+    {
+      "name": "Dan Burn",
+      "assertions": [
+        { "archetype": "warrior", "min": 80 },
+        { "archetype": "touchlineIsolator", "max": 45 }
+      ]
+    },
+    {
+      "name": "Joshua Zirkzee",
+      "assertions": [
+        { "archetype": "chanceArchitect", "min": 80 },
+        { "archetype": "roadrunner", "max": 45 }
+      ]
+    },
+    {
+      "name": "Malcom",
+      "assertions": [
+        { "archetype": "maverick", "min": 80 },
+        { "archetype": "warrior", "max": 45 }
+      ]
+    },
+    {
+      "name": "Moussa Diaby",
+      "assertions": [
+        { "archetype": "touchlineIsolator", "min": 80 },
+        { "archetype": "warrior", "max": 45 }
+      ]
+    },
+    {
+      "name": "Juan Brunetta",
+      "assertions": [
+        { "archetype": "longRangeMarksman", "min": 80 },
+        { "archetype": "chanceArchitect", "min": 80 },
+        { "archetype": "duelWinner", "max": 45 }
+      ]
+    },
+    {
+      "name": "Nick Pope",
+      "assertions": [
+        { "archetype": "boxCommander", "min": 80 }
+      ]
+    },
+    {
+      "name": "Joe Worrall",
+      "assertions": [
+        { "archetype": "duelWinner", "min": 70 },
+        { "archetype": "touchlineIsolator", "max": 25 }
+      ]
+    },
+    {
+      "name": "Mike Trésor",
+      "assertions": [
+        { "archetype": "deadBallSpecialist", "min": 75 },
+        { "archetype": "warrior", "max": 45 }
+      ]
+    },
+    {
+      "name": "Osame Sahraoui",
+      "assertions": [
+        { "archetype": "maverick", "min": 80 },
+        { "archetype": "duelWinner", "max": 45 }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { ImportError, decodeExportText } from "@/src/import/parse.js";
+import { ENGINE_VERSION } from "@/src/domain/engine-version.js";
 
 const ACCEPT = ".csv,.html,.htm,.txt,text/csv,text/html";
 
@@ -74,7 +75,7 @@ export function Uploader({
         <>
           <div className="meta">
             <b>{bundle.dataset.players.length}</b> players · <b>{bundle.dataset.source}</b> ·{" "}
-            {Math.round(bundle.dataset.maskedShare * 100)}% masked
+            {Math.round(bundle.dataset.maskedShare * 100)}% masked · engine {ENGINE_VERSION}
           </div>
           <div className="row-actions">
             <button onClick={() => inputRef.current?.click()}>Replace</button>
