@@ -5,8 +5,8 @@ decisions that doc 02 left open ("any managed Postgres") now that the database e
 a **Neon** Postgres project in `eu-central-1`. Where this doc conflicts with doc 02, this
 doc wins — doc 02 has been amended to match.
 
-> **Status:** P4 code complete — hosted accounts, persistence E2E, and password reset are
-> landed. **Vercel deploy** (§8) is the remaining ops step.
+> **Status:** P4 complete — hosted accounts, persistence E2E, password reset, and production
+> deploy at **https://tfp-fm.vercel.app** (`vercel.json` + `.github/workflows/migrate.yml`).
 
 ---
 
@@ -111,17 +111,6 @@ later without moving the seam again.
 | `RESEND_API_KEY` | Optional — reset link logged to console in dev | Required in production for password reset |
 | `EMAIL_FROM` | `onboarding@resend.dev` for testing | Verified sender domain on Resend |
 
-## 8. Vercel deploy checklist
-
-1. **Neon `main` branch** has migrations applied: `DATABASE_URL_UNPOOLED=… pnpm db:migrate`.
-2. **Create Vercel project** from this repo; framework preset Next.js; build command `pnpm build`.
-3. **Set production env vars** from §6 (pooled `DATABASE_URL` for runtime; unpooled only for migrate CI).
-4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google`.
-5. **Resend** verified domain + `EMAIL_FROM` for password reset in production.
-6. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk; forgot-password email arrives.
-
-Logged-out visitors still get the full local-first app (IndexedDB) when no session is present.
-
 ## 7. Order of work when P4 opens
 
 1. Drizzle + schema from §4, migrations against a Neon branch, then `main`.
@@ -136,3 +125,15 @@ Logged-out visitors still get the full local-first app (IndexedDB) when no sessi
 **AC:** two different Google accounts see fully isolated data (tenancy test); a
 password user and the same email via Google land in one account; logged-out mode still
 works entirely offline exactly as today.
+
+## 8. Vercel deploy checklist
+
+1. **Neon `main` branch** has migrations applied: `DATABASE_URL_UNPOOLED=… pnpm db:migrate`.
+2. **Vercel project** `tfp-fm` (linked via `vercel link`); `vercel.json` sets `pnpm install` + `pnpm build`.
+3. **Set production env vars** from §6 (pooled `DATABASE_URL` for runtime; unpooled only for migrate CI / `.github/workflows/migrate.yml`).
+4. **Google OAuth** prod client: authorized redirect `https://<your-domain>/api/auth/callback/google`.
+5. **Resend** verified domain + `EMAIL_FROM` for password reset in production.
+6. **Deploy:** `vercel --prod` (or connect the GitHub repo for automatic deploys).
+7. **Smoke test:** register → upload sample → sign out → sign in → data on Scout desk; forgot-password email arrives.
+
+Logged-out visitors still get the full local-first app (IndexedDB) when no session is present.

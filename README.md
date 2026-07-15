@@ -10,10 +10,9 @@
 It is deployed as a multi-user web app: uploads are parsed server-side, datasets are stored per user, and analysis screens are served from our infrastructure.
 
 > **Current stage (July 2026):** the shipped build is **local-first by default** (browser
-> parse + IndexedDB). **Hosted accounts** work when `DATABASE_URL` and `AUTH_SECRET` are
-> set — datasets and watch lists persist per user on Neon. Vercel deploy is the remaining
-> P4 step. See [doc 14](docs/14-state-of-the-product.md), [doc 15](docs/15-premium-overhaul.md),
-> and [doc 16](docs/16-hosted-deployment.md).
+> parse + IndexedDB). **Hosted accounts** work at [tfp-fm.vercel.app](https://tfp-fm.vercel.app)
+> when `DATABASE_URL` and `AUTH_SECRET` are set. See [doc 14](docs/14-state-of-the-product.md),
+> [doc 15](docs/15-premium-overhaul.md), and [doc 16](docs/16-hosted-deployment.md).
 
 **Support:** [buymeacoffee.com/tfpdev](https://buymeacoffee.com/tfpdev) · **Site:** [tfpdev.com](https://tfpdev.com)
 

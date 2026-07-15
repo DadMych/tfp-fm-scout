@@ -185,14 +185,15 @@ Premium software doesn't just look finished — it doesn't fall over on a 50 MB 
 
 ---
 
-## P4 — Hosted (the doc 02 promise, deferred deliberately)
+## P4 — Hosted (the doc 02 promise)
 
-Infrastructure is now pinned in **doc 16**: Neon Postgres (provisioned, `DATABASE_URL`
-in `.env`), Auth.js with email+password + Google, Vercel, and a deliberately smaller v1
-than doc 02's full topology (client-side worker parsing stays; S3/pg-boss defer until
-share links demand canonical raw files). **Do not start until P0–P3 ACs are green.** The
-store seam (`lib/store.tsx`) and the pure domain layer are the designed insertion
-points; the UI should not need restructuring again.
+Infrastructure is pinned in **doc 16**: Neon Postgres, Auth.js (password + Google), Vercel,
+and a deliberately smaller v1 than doc 02's full topology (client-side worker parsing
+stays; S3/pg-boss defer until share links demand canonical raw files).
+
+**Status (July 2026):** code complete — store seam, persistence E2E, password reset, and
+Vercel project `tfp-fm` are landed. Production deploy is ops: env vars on Vercel (doc 16
+§6–8), `pnpm db:migrate` on Neon main, smoke test.
 
 ---
 
