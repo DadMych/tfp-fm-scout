@@ -9,6 +9,7 @@ coverage/
 .DS_Store
 .env
 .env.local
+.vercel
 
 # Real FM26 exports dropped in for local scoring (keep the folder, not the data)
 data/*
@@ -29,3 +30,5 @@ tools/fm26_export/plugin/obj/
 tools/fm26_export/plugin_displayfix/bin/
 tools/fm26_export/plugin_displayfix/obj/
 tools/fm26_export/BETA/FM26DisplayFix/
+.vercel
+.env*
