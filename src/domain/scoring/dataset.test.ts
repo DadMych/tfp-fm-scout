@@ -68,6 +68,24 @@ describe("buildScores — dataset integration", () => {
     expect(s.confidence).toBe(1);
   });
 
+  it("ranks display percentiles within the position group cohort", () => {
+    const highPassDm = [1, 2, 3, 4, 5, 6].map((i) => ({
+      ...filler(`dm${i}`, 7, ["DM-C"]),
+      attrs: exact({ ...rawObj(filler("x", 7, ["DM-C"]).attrs), passing: 18 }),
+    }));
+    const stFillers = [1, 2].map((i) => filler(`st${i}`, 8, ["ST-C"]));
+    const stStar: Player = {
+      id: "ststar",
+      name: "ststar",
+      age: 22,
+      positions: ["ST-C"],
+      attrs: exact({ ...rawObj(filler("x", 8, ["ST-C"]).attrs), passing: 12 }),
+    };
+    const withStar = buildScores([...highPassDm, ...stFillers, stStar]);
+    const scored = withStar.find((x) => x.playerId === "ststar")!;
+    expect(scored.percentiles.passing).toBeGreaterThan(scored.datasetPercentiles.passing ?? 0);
+  });
+
   it("scores a goalkeeper against the GK population", () => {
     const gk: Player = {
       id: "gk1",

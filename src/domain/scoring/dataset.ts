@@ -30,8 +30,10 @@ export interface PlayerScores {
   readonly playerId: string;
   readonly pop: Population;
   readonly derived: DerivedMetrics;
-  /** metric id (attribute or derived) -> dataset percentile (null when masked). */
+  /** metric id -> position-group percentile for radar/dossier display. */
   readonly percentiles: Readonly<Record<string, number | null>>;
+  /** metric id -> population-wide percentile for archetype gates (doc 06). */
+  readonly datasetPercentiles: Readonly<Record<string, number | null>>;
   readonly roles: Readonly<Record<string, RoleScore>>;
   readonly archetypes: readonly ArchetypeScore[];
   readonly general: GeneralArchetype;
@@ -44,6 +46,8 @@ export interface PlayerScores {
 const ATTR_IDS = ATTRIBUTES.map((a) => a.id);
 const DERIVED_IDS = Object.keys(DERIVED_INPUTS) as DerivedId[];
 const METRIC_IDS: readonly string[] = [...ATTR_IDS, ...DERIVED_IDS];
+
+const POSITION_GROUPS: readonly PositionGroup[] = ["GK", "CB", "FB/WB", "DM/CM", "AM/W", "ST"];
 
 const OUTFIELD_EXPECTED = ATTRIBUTES.filter(
   (a) => a.category === "technical" || a.category === "mental" || a.category === "physical",
@@ -79,41 +83,72 @@ function primaryGroup(p: Player): PositionGroup {
   return playerGroups(p.positions)[0] ?? "DM/CM";
 }
 
+function inGroup(p: Player, group: PositionGroup): boolean {
+  return playerGroups(p.positions).includes(group);
+}
+
+function cohortForGroup(players: readonly Player[], group: PositionGroup): Player[] {
+  if (group === "GK") return players.filter((p) => isGoalkeeper(p));
+  return players.filter((p) => !isGoalkeeper(p) && inGroup(p, group));
+}
+
+function buildRankers(
+  players: readonly Player[],
+  derivedByPlayer: ReadonlyMap<string, DerivedMetrics>,
+  cohort: readonly Player[],
+): Map<string, Ranker> {
+  const map = new Map<string, Ranker>();
+  for (const metric of METRIC_IDS) {
+    const values = cohort.map((p) =>
+      metricValue(p.attrs, derivedByPlayer.get(p.id) as DerivedMetrics, metric),
+    );
+    map.set(metric, makeRanker(values));
+  }
+  return map;
+}
+
 export function buildScores(players: readonly Player[]): PlayerScores[] {
   const derivedByPlayer = new Map<string, DerivedMetrics>();
   for (const p of players) derivedByPlayer.set(p.id, computeDerived(p.attrs));
 
-  // Rankers per population per metric (sort once; O(log n) lookups thereafter).
+  // Rankers per population per metric (whole cohort — archetype gates).
   const rankers: Record<Population, Map<string, Ranker>> = {
     outfield: new Map(),
     gk: new Map(),
   };
   for (const pop of ["outfield", "gk"] as const) {
     const cohort = players.filter((p) => (isGoalkeeper(p) ? pop === "gk" : pop === "outfield"));
-    for (const metric of METRIC_IDS) {
-      const values = cohort.map((p) =>
-        metricValue(p.attrs, derivedByPlayer.get(p.id) as DerivedMetrics, metric),
-      );
-      rankers[pop].set(metric, makeRanker(values));
-    }
+    rankers[pop] = buildRankers(players, derivedByPlayer, cohort);
+  }
+
+  // Rankers per position group for radar/dossier display percentiles.
+  const groupRankers = new Map<PositionGroup, Map<string, Ranker>>();
+  for (const group of POSITION_GROUPS) {
+    const cohort = cohortForGroup(players, group);
+    if (cohort.length === 0) continue;
+    groupRankers.set(group, buildRankers(players, derivedByPlayer, cohort));
   }
 
   return players.map((p) => {
     const pop: Population = isGoalkeeper(p) ? "gk" : "outfield";
     const derived = derivedByPlayer.get(p.id) as DerivedMetrics;
-    const rank = rankers[pop];
+    const datasetRank = rankers[pop];
+    const groupRank = groupRankers.get(primaryGroup(p)) ?? datasetRank;
 
+    const datasetPercentiles: Record<string, number | null> = {};
     const percentiles: Record<string, number | null> = {};
     const atOrAbove: Record<string, number> = {};
     for (const metric of METRIC_IDS) {
       const v = metricValue(p.attrs, derived, metric);
-      const r = rank.get(metric) as Ranker;
-      percentiles[metric] = v == null ? null : r.pct(v);
-      if (v != null) atOrAbove[metric] = r.atOrAbove(v);
+      const dr = datasetRank.get(metric) as Ranker;
+      const gr = groupRank.get(metric) as Ranker;
+      datasetPercentiles[metric] = v == null ? null : dr.pct(v);
+      percentiles[metric] = v == null ? null : gr.pct(v);
+      if (v != null) atOrAbove[metric] = dr.atOrAbove(v);
     }
 
     const ctx = {
-      pct: (m: string) => percentiles[m] ?? null,
+      pct: (m: string) => datasetPercentiles[m] ?? null,
       raw: (m: string) => metricValue(p.attrs, derived, m),
     };
 
@@ -169,6 +204,7 @@ export function buildScores(players: readonly Player[]): PlayerScores[] {
       pop,
       derived,
       percentiles,
+      datasetPercentiles,
       roles,
       archetypes,
       general,
