@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { playerGroups, type PositionGroup } from "@/src/domain/positions.js";
@@ -29,7 +30,8 @@ interface Row {
 }
 
 export function ScoutDesk() {
-  const { shortlist, squad, squadContext, ready } = useDatasets();
+  const router = useRouter();
+  const { shortlist, squad, squadContext, ready, watchIds, toggleWatch } = useDatasets();
   const [kind, setKind] = useState<DatasetKind>("shortlist");
   const bundle = kind === "squad" ? squad : shortlist;
 
@@ -40,6 +42,7 @@ export function ScoutDesk() {
   const [verdict, setVerdict] = useState<Verdict | "all">("all");
   const [sort, setSort] = useState<SortKey>("reco");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const rows = useMemo<Row[]>(() => {
     if (!bundle) return [];
@@ -89,6 +92,36 @@ export function ScoutDesk() {
     return out;
   }, [rows, q, group, maxAge, maxValue, verdict, sort, dir]);
 
+  const activeId = useMemo(() => {
+    if (filtered.length === 0) return null;
+    if (focusedId && filtered.some((r) => r.id === focusedId)) return focusedId;
+    return filtered[0]!.id;
+  }, [filtered, focusedId]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (filtered.length === 0) return;
+      const idx = filtered.findIndex((r) => r.id === activeId);
+      const cur = idx >= 0 ? idx : 0;
+      if (e.key === "j") {
+        e.preventDefault();
+        setFocusedId(filtered[Math.min(cur + 1, filtered.length - 1)]!.id);
+      } else if (e.key === "k") {
+        e.preventDefault();
+        setFocusedId(filtered[Math.max(cur - 1, 0)]!.id);
+      } else if (e.key === "s" && activeId) {
+        e.preventDefault();
+        toggleWatch(activeId);
+      } else if (e.key === "Enter" && activeId) {
+        e.preventDefault();
+        router.push(`/scout/${kind}/${activeId}`);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [filtered, activeId, kind, toggleWatch, router]);
+
   const guidance = useMemo(() => {
     const counts = new Map<Verdict, number>();
     for (const r of rows) counts.set(r.rec.verdict, (counts.get(r.rec.verdict) ?? 0) + 1);
@@ -130,10 +163,22 @@ export function ScoutDesk() {
     <>
       <div className="toolbar">
         <div className="seg" role="tablist">
-          <button className={kind === "shortlist" ? "on" : ""} onClick={() => setKind("shortlist")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={kind === "shortlist"}
+            className={kind === "shortlist" ? "on" : ""}
+            onClick={() => setKind("shortlist")}
+          >
             Shortlist {shortlist ? `(${shortlist.dataset.players.length})` : ""}
           </button>
-          <button className={kind === "squad" ? "on" : ""} onClick={() => setKind("squad")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={kind === "squad"}
+            className={kind === "squad" ? "on" : ""}
+            onClick={() => setKind("squad")}
+          >
             Squad {squad ? `(${squad.dataset.players.length})` : ""}
           </button>
         </div>
@@ -193,7 +238,9 @@ export function ScoutDesk() {
             <option>Not for us</option>
           </select>
         </div>
-        <span className="count">{filtered.length} shown</span>
+        <span className="count">
+          {filtered.length} shown · <span className="kbd-hint">j/k move · s watch</span>
+        </span>
       </div>
 
       {kind === "shortlist" && guidance.length > 0 && (
@@ -255,11 +302,18 @@ export function ScoutDesk() {
             </tr>
           ) : (
             filtered.map((r) => (
-            <tr className="player" key={r.id}>
+            <tr
+              className={`player${activeId === r.id ? " focused" : ""}${watchIds.has(r.id) ? " watched" : ""}`}
+              key={r.id}
+              tabIndex={activeId === r.id ? 0 : -1}
+              onFocus={() => setFocusedId(r.id)}
+              onClick={() => setFocusedId(r.id)}
+            >
               <td className="c-name">
                 <Link className="pname" href={`/scout/${kind}/${r.id}`}>
                   {r.name}
                 </Link>
+                {watchIds.has(r.id) ? <span className="watch-mark">Watch</span> : null}
                 <div className="sub">
                   {r.positions}
                   {r.club ? ` · ${r.club}` : ""}

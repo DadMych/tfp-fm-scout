@@ -45,13 +45,16 @@ interface StoreState {
   readonly squadContext: SquadContext | null;
   readonly ready: boolean;
   readonly lastAssistantRun: LastAssistantRun | null;
+  readonly watchIds: ReadonlySet<string>;
   loadText(kind: DatasetKind, text: string, source: string, label?: string): number;
   clear(kind: DatasetKind): void;
   setLastAssistantRun(run: LastAssistantRun): void;
+  toggleWatch(playerId: string): void;
 }
 
 const KEY = "tfp.datasets.v1";
 const SETTINGS_KEY = "tfp.assistant.v1";
+const WATCH_KEY = "tfp.watch.v1";
 
 export interface LastAssistantRun {
   readonly formationId: string;
@@ -72,6 +75,7 @@ function bundle(dataset: Dataset | null): DatasetBundle | null {
 export function DatasetProvider({ children }: { children: ReactNode }) {
   const [raw, setRaw] = useState<Persisted>({});
   const [lastAssistantRun, setLastAssistantRunState] = useState<LastAssistantRun | null>(null);
+  const [watchIds, setWatchIds] = useState<ReadonlySet<string>>(new Set());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -84,6 +88,8 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
       }
       const settings = localStorage.getItem(SETTINGS_KEY);
       if (settings) setLastAssistantRunState(JSON.parse(settings) as LastAssistantRun);
+      const watch = localStorage.getItem(WATCH_KEY);
+      if (watch) setWatchIds(new Set(JSON.parse(watch) as string[]));
     } catch {
       // Corrupt or unavailable storage — start empty rather than crash.
     }
@@ -109,6 +115,20 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
     } catch {
       // Session-only if storage is unavailable.
     }
+  }, []);
+
+  const toggleWatch = useCallback((playerId: string) => {
+    setWatchIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      try {
+        localStorage.setItem(WATCH_KEY, JSON.stringify([...next]));
+      } catch {
+        // Session-only.
+      }
+      return next;
+    });
   }, []);
 
   const loadText = useCallback(
@@ -176,8 +196,19 @@ export function DatasetProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<StoreState>(
-    () => ({ shortlist, squad, squadContext, ready, lastAssistantRun, loadText, clear, setLastAssistantRun }),
-    [shortlist, squad, squadContext, ready, lastAssistantRun, loadText, clear, setLastAssistantRun],
+    () => ({
+      shortlist,
+      squad,
+      squadContext,
+      ready,
+      lastAssistantRun,
+      watchIds,
+      loadText,
+      clear,
+      setLastAssistantRun,
+      toggleWatch,
+    }),
+    [shortlist, squad, squadContext, ready, lastAssistantRun, watchIds, loadText, clear, setLastAssistantRun, toggleWatch],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

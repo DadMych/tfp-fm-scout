@@ -49,9 +49,9 @@ export interface SquadContext {
 const TONE: Record<Verdict, Tone> = {
   "Priority target": "gold",
   "Squad upgrade": "gold",
-  Bargain: "green",
-  "One for the future": "green",
-  "Proven performer": "green",
+  Bargain: "ink",
+  "One for the future": "ink",
+  "Proven performer": "ink",
   "Squad depth": "ink",
   Project: "ink",
   "Not for us": "muted",

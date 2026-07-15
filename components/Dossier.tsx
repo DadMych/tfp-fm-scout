@@ -10,7 +10,6 @@ import {
 } from "@/src/domain/attributes.js";
 import type { Player } from "@/src/domain/player.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
-import { badgeFor } from "@/src/domain/archetypes/score.js";
 import { getRole } from "@/src/domain/roles/registry.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { recommend } from "@/src/domain/recommendation.js";
@@ -29,7 +28,9 @@ import {
 } from "@/src/report/format.js";
 import { Radar } from "@/components/Radar";
 import { VerdictBadge } from "@/components/VerdictBadge";
+import { ArchetypeColumns } from "@/components/kit/ArchetypeColumns";
 import { AttrValueCell } from "@/components/kit/AttrValue";
+import { Dateline } from "@/components/kit/Dateline";
 import { InkBar } from "@/components/kit/InkBar";
 import { PullQuote } from "@/components/kit/PullQuote";
 import { useBundle, useDatasets, type DatasetKind } from "@/lib/store";
@@ -143,7 +144,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
     ? `In this database he sits in the ${ordinal(Math.round(topPct[1]))} percentile for ${metricLabel(topPct[0]).toLowerCase()}.`
     : "";
 
-  const identity = [...s.archetypes].sort((a, b) => b.score - a.score).slice(0, 4);
+  const identity = s.archetypes;
 
   const posSet = new Set(p.positions);
   const roles = Object.entries(s.roles)
@@ -166,13 +167,11 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
 
   return (
     <>
-      <div className="dateline">
-        <span>Player dossier</span>
-        <span>{bundle?.dataset.label}</span>
-        <Link href="/scout" style={{ textDecoration: "none" }}>
-          ← Back to desk
-        </Link>
-      </div>
+      <Dateline
+        left="Player dossier"
+        center={`${bundle!.dataset.label} · ${bundle!.dataset.players.length} players`}
+        right={`Known ${conf}%`}
+      />
 
       <section className="d-hero">
         <div>
@@ -245,7 +244,9 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
         </div>
       </section>
 
-      <section className="d-cols">
+      <ArchetypeColumns archetypes={identity} />
+
+      <div className="d-body">
         <figure className="radar-figure">
           <p className="panel-h">Profile radar</p>
           <Radar scores={s} />
@@ -253,42 +254,15 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
             Percentile vs {s.pop === "gk" ? "goalkeepers" : "outfielders"} in this database
           </figcaption>
         </figure>
-        <div>
-          <p className="panel-h">Identity — best-fitting archetypes</p>
-          <table className="idtable">
-            <tbody>
-              {identity.map((a) => {
-                const def = getArchetype(a.id);
-                const badge = badgeFor(a.score, a.gatesPassed);
-                return (
-                  <tr key={a.id}>
-                    <td className={`score${badge === "Elite" ? " lead" : ""} num`}>
-                      {Math.round(a.score)}
-                    </td>
-                    <td className="aname">
-                      {def.name}
-                      <span className="fam">{def.family}</span>
-                    </td>
-                    <td className="badge">
-                      {badge ? (
-                        <span className={`stamp ${badge === "Elite" ? "gold" : "ink"}`}>{badge}</span>
-                      ) : a.gatesPassed ? null : (
-                        <span className="stamp faint">gated</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
 
-      <p className="panel-h">Attributes — value &amp; dataset percentile</p>
-      <div className="grid">
-        {attrCols.map((c) => (
-          <AttrColumn key={c.title} p={p} s={s} title={c.title} ids={c.ids} />
-        ))}
+        <div className="d-attrs">
+          <p className="panel-h">Attributes — value &amp; dataset percentile</p>
+          <div className="grid">
+            {attrCols.map((c) => (
+              <AttrColumn key={c.title} p={p} s={s} title={c.title} ids={c.ids} />
+            ))}
+          </div>
+        </div>
       </div>
 
       <p className="panel-h">
@@ -326,7 +300,11 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
 
       <div className="footline">
         <span>Source · {bundle?.dataset.source}</span>
-        <Link href="/scout">The Scouting Post — desk</Link>
+        <span>
+          <Link href="/scout">← Back to desk</Link>
+          {" · "}
+          <Link href="/scout">The Scouting Post</Link>
+        </span>
       </div>
     </>
   );

@@ -64,7 +64,7 @@ describe("recommend", () => {
     const cheap = player("cheap", { v: 16, age: 26, value: 6e6 });
     const rec = recommend(cheap, scoreIn(cheap, bg));
     expect(rec.verdict).toBe("Bargain");
-    expect(rec.tone).toBe("green");
+    expect(rec.tone).toBe("ink");
   });
 
   it("recognises a squad upgrade against the user's squad (absolute role fit)", () => {
