@@ -27,6 +27,8 @@ import type { SaleRecommendation, SaleVerdict } from "./transfers/types.js";
 
 export type SuggestionKind = "fill" | "upgrade" | "succession" | "depth";
 
+export type MoveFate = "bench" | "sell" | "cover";
+
 export interface PackageMove {
   readonly playerId: string;
   readonly slotKey: string;
@@ -40,6 +42,14 @@ export interface PackageMove {
   readonly age: number | null;
   readonly profile: string;
   readonly why: string;
+  readonly out: { readonly name: string; readonly fate: MoveFate } | null;
+}
+
+export interface XiSlotDiff {
+  readonly slotLabel: string;
+  readonly before: string;
+  readonly after: string;
+  readonly changed: boolean;
 }
 
 /** A sale bundled into a package to help fund it (doc 13 §7.1). */
@@ -74,6 +84,8 @@ export interface TransferPackage {
   readonly sales: readonly PackageSale[];
   readonly income: number;
   readonly netSpend: number;
+  readonly xiDiff: readonly XiSlotDiff[];
+  readonly windowSummary: string;
 }
 
 const NEED_SEVERITY: Record<SlotNeed, number> = { hole: 0, weak: 1, ageing: 2, thin: 3, solid: 9 };
@@ -402,8 +414,10 @@ function toMove(
   c: Candidate,
   ctx: AnalysisContext,
   newStarterBySlot: ReadonlyMap<string, string>,
+  pkgSales: readonly PackageSale[],
+  allRows: readonly PlayerRow[],
 ): PackageMove {
-  return {
+  const base = {
     playerId: c.row.player.id,
     slotKey: c.slotKey,
     slotLabel: c.slotLabel,
@@ -416,7 +430,60 @@ function toMove(
     age: c.age,
     profile: profileOf(c.row, ctx),
     why: whyFor(c, ctx, newStarterBySlot),
+    out: outFor(c, ctx, pkgSales, allRows),
   };
+  return base;
+}
+
+function outFor(
+  c: Candidate,
+  ctx: AnalysisContext,
+  pkgSales: readonly PackageSale[],
+  allRows: readonly PlayerRow[],
+): { name: string; fate: MoveFate } | null {
+  if (c.kind === "depth") return null;
+  const slot = ctx.slots.find((s) => s.slotKey === c.slotKey);
+  const incumbentId = slot?.starter?.id;
+  if (!incumbentId) return null;
+  const name = surname(ctx.byId.get(incumbentId)?.player.name ?? incumbentId);
+  if (pkgSales.some((s) => s.playerId === incumbentId)) return { name, fate: "sell" };
+  const newXi = solveXI(allRows, ctx.formation);
+  const shadow = deriveSlots(newXi, allRows, ctx.formation).find((s) => s.slotKey === c.slotKey);
+  if (shadow?.backup?.id === incumbentId) return { name, fate: "cover" };
+  return { name, fate: "bench" };
+}
+
+function buildXiDiff(
+  ctx: AnalysisContext,
+  allRows: readonly PlayerRow[],
+  newXi: ReturnType<typeof solveXI>,
+): XiSlotDiff[] {
+  const afterSlots = deriveSlots(newXi, allRows, ctx.formation);
+  return ctx.slots.map((slot) => {
+    const after = afterSlots.find((s) => s.slotKey === slot.slotKey);
+    const beforeName = slot.starter ? surname(ctx.byId.get(slot.starter.id)?.player.name ?? "") : "—";
+    const afterName = after?.starter ? surname(ctx.byId.get(after.starter.id)?.player.name ?? "") : "—";
+    return {
+      slotLabel: slot.label,
+      before: beforeName,
+      after: afterName,
+      changed: beforeName !== afterName,
+    };
+  });
+}
+
+function windowSummaryFor(
+  ctx: AnalysisContext,
+  signings: number,
+  pkgSales: readonly PackageSale[],
+  displaced: readonly string[],
+): string {
+  const sold = pkgSales.length;
+  const bench = displaced.length;
+  const newSize = ctx.squad.length + signings - sold;
+  const sizePhrase =
+    newSize === ctx.squad.length ? `stays at ${newSize}` : `grows to ${newSize}`;
+  return `${signings} in, ${sold} sold, ${bench} to the bench — squad ${sizePhrase}.`;
 }
 
 function fundingNoteFor(
@@ -424,6 +491,8 @@ function fundingNoteFor(
   cap: number,
   unused: readonly { row: PlayerRow; value: number }[],
 ): string | null {
+  // Affordable plans never suggest sales (doc 19 §4).
+  if (totalCost <= cap) return null;
   if (unused.length === 0 || totalCost < 0.3 * cap) return null;
   // Fewest sellers to cover the bill, largest first.
   const sellers: { name: string; value: number }[] = [];
@@ -593,9 +662,14 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
 
     const totalCost = picks.reduce((s, p) => s + (p.cost ?? 0), 0);
     const afterVerdict = verdictOf(afterFit);
-    const { sales: pkgSales, income } = fundingPass(ctx, allRows, picks, afterFit, totalCost, saleCandidates);
+    const needsFunding = totalCost > cap;
+    const { sales: pkgSales, income } = needsFunding
+      ? fundingPass(ctx, allRows, picks, afterFit, totalCost, saleCandidates)
+      : { sales: [] as PackageSale[], income: 0 };
     const netSpend = totalCost - income;
-    const fundingNote = fundingNoteFromSales(pkgSales, totalCost) ?? fundingNoteFor(totalCost, cap, unused);
+    const fundingNote = needsFunding
+      ? fundingNoteFromSales(pkgSales, totalCost) ?? fundingNoteFor(totalCost, cap, unused)
+      : null;
     const solves = insightIds.filter((id) => picks.some((p) => id.endsWith(`:${p.slotKey}`)));
 
     // Who this package's non-depth signings are, per slot — depth moves reference them.
@@ -608,7 +682,7 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
       id: strat.id,
       name: strat.name,
       tagline: strat.tagline,
-      moves: picks.map((p) => toMove(p, ctx, newStarterBySlot)),
+      moves: picks.map((p) => toMove(p, ctx, newStarterBySlot, pkgSales, allRows)),
       totalCost,
       beforeFit: ctx.avgFit,
       afterFit,
@@ -636,6 +710,8 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
       sales: pkgSales,
       income,
       netSpend,
+      xiDiff: buildXiDiff(ctx, allRows, newXi),
+      windowSummary: windowSummaryFor(ctx, picks.length, pkgSales, displaced),
     });
   }
 
@@ -710,7 +786,7 @@ function buildChurnPackage(
     id: strat.id,
     name: strat.name,
     tagline: strat.tagline,
-    moves: picks.map((p) => toMove(p, ctx, newStarterBySlot)),
+    moves: picks.map((p) => toMove(p, ctx, newStarterBySlot, pkgSales, allRows)),
     totalCost,
     beforeFit: ctx.avgFit,
     afterFit,
@@ -727,5 +803,7 @@ function buildChurnPackage(
     sales: pkgSales,
     income,
     netSpend,
+    xiDiff: buildXiDiff(ctx, allRows, newXi),
+    windowSummary: windowSummaryFor(ctx, picks.length, pkgSales, []),
   };
 }

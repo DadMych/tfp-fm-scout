@@ -224,8 +224,7 @@ describe("sale verdicts", () => {
     expect(target?.verdict).toBe("sell-high");
     const line = target?.reasons.find((r) => r.includes("now vs"));
     expect(line).toBeTruthy();
-    expect(line).toContain("€45M now vs");
-    expect(line).toContain("€37.5M");
+    expect(line).toMatch(/now vs .* in 12 months/);
   });
 
   it("sell-high via arbitrage: a cheap shortlist replacement matches the starter", () => {

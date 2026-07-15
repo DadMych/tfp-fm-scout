@@ -11,7 +11,7 @@ import { T } from "../thresholds.js";
 import { slotFit, bestPresetFit, solveXI, type PlayerRow } from "../xi.js";
 import { physicalReliance, projectFit, projectValue } from "./ageing.js";
 import { buildChain } from "./chains.js";
-import { computePriceBand } from "./pricing.js";
+import { computePriceBand, saleProceeds } from "./pricing.js";
 import type { PriceBand, ReplacementChain, SaleRecommendation, SaleVerdict } from "./types.js";
 
 function percentile(values: readonly number[], p: number): number {
@@ -94,7 +94,7 @@ function reasonsFor(
           `${arbitrage.row.player.name} does the same job for ${money(arbitrage.cost)} — bank the difference.`,
         );
       } else if (priceBand != null && age != null && value != null) {
-        const projected = projectValue(value, age + 1);
+        const projected = saleProceeds(projectValue(value, age + 1));
         if (materialDelta(priceBand.ask, projected)) {
           lines.push(`${money(priceBand.ask)} now vs ${money(projected)} in 12 months.`);
         }
@@ -106,7 +106,7 @@ function reasonsFor(
         `Every window he stays costs value: projected fit in 2 seasons is ${fitIn2}, down from ${Math.round(fit)} now.`,
       ];
       if (priceBand != null && age != null && value != null) {
-        const projected = projectValue(value, age + 1);
+        const projected = saleProceeds(projectValue(value, age + 1));
         const loss = priceBand.ask - projected;
         if (loss > 0 && materialDelta(priceBand.ask, projected)) {
           lines.push(`Roughly ${money(loss)} evaporates if you wait a year.`);

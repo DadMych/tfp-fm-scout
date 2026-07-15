@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Player } from "./player.js";
 import type { PlayerScores } from "./scoring/dataset.js";
-import { pickBargain, pickLead } from "./front-page.js";
+import { pickBargain, pickBriefs, pickLead, standoutClause } from "./front-page.js";
+import type { Recommendation } from "./recommendation.js";
 
 function stubPlayer(id: string, name: string, age: number, value: number | null): Player {
   return {
@@ -65,5 +66,32 @@ describe("pickBargain", () => {
       { p: stubPlayer("cheap", "Cheap", 24, 5e6), s: stubScores("Strong", 75) },
     ];
     expect(pickBargain(rows)?.p.name).toBe("Cheap");
+  });
+});
+
+function stubRec(verdict: Recommendation["verdict"], tone: Recommendation["tone"], rank: number): Recommendation {
+  return { verdict, tone, headline: "Test", reasons: [], rank };
+}
+
+describe("pickBriefs", () => {
+  it("returns at most two per verdict tone", () => {
+    const rows = [1, 2, 3, 4, 5].map((n) => ({
+      p: stubPlayer(`p${n}`, `P${n}`, 24, 5e6),
+      s: stubScores("Strong", 80 - n),
+      rec: stubRec("Bargain", "ink", n),
+    }));
+    const briefs = pickBriefs(rows, 4);
+    expect(briefs.length).toBeLessThanOrEqual(4);
+    expect(briefs.length).toBe(2);
+  });
+});
+
+describe("standoutClause", () => {
+  it("returns prose for a high percentile", () => {
+    const s = {
+      ...stubScores("Strong", 80),
+      percentiles: { heading: 96 },
+    } as unknown as PlayerScores;
+    expect(standoutClause(s)).toMatch(/96th percentile/);
   });
 });

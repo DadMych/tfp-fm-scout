@@ -5,6 +5,7 @@
 
 import type { Player } from "./player.js";
 import type { PlayerScores } from "./scoring/dataset.js";
+import type { Recommendation } from "./recommendation.js";
 import { metricLabel } from "../report/format.js";
 
 export interface ScoredRow {
@@ -54,4 +55,33 @@ export function pickBargain(
 
 export function posLabel(p: Player): string {
   return p.positions.length ? p.positions.join("/") : "—";
+}
+
+/** Prose clause for the top standout percentile (doc 19 §1). */
+export function standoutClause(s: PlayerScores): string | null {
+  const top = standouts(s, 1)[0];
+  if (!top || top.pct < 70) return null;
+  return `${Math.round(top.pct)}th percentile for ${top.label.toLowerCase()} in this database.`;
+}
+
+export interface BriefRow extends ScoredRow {
+  readonly rec: Recommendation;
+}
+
+/** Diversify brief picks — at most two per verdict tone (doc 19 §1). */
+export function pickBriefs(rows: readonly BriefRow[], limit = 4): BriefRow[] {
+  const sorted = [...rows].sort(
+    (a, b) => a.rec.rank - b.rec.rank || (b.s.topArchetype?.score ?? 0) - (a.s.topArchetype?.score ?? 0),
+  );
+  const toneCount = new Map<string, number>();
+  const out: BriefRow[] = [];
+  for (const row of sorted) {
+    if (row.rec.verdict === "Not for us") continue;
+    const n = toneCount.get(row.rec.tone) ?? 0;
+    if (n >= 2) continue;
+    toneCount.set(row.rec.tone, n + 1);
+    out.push(row);
+    if (out.length >= limit) break;
+  }
+  return out;
 }

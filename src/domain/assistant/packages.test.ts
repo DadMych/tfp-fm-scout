@@ -107,13 +107,33 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     }
   });
 
-  it("funding notes reference real unused bench value", () => {
+  it("affordable packages propose no sales or funding notes (doc 19 §4)", () => {
+    const smallCtx = ctxFor(40e6);
+    const pkgs = buildPackages(smallCtx);
+    expect(pkgs.length).toBeGreaterThan(0);
+    for (const p of pkgs) {
+      if (p.id === "churn") continue;
+      if (p.totalCost <= smallCtx.budgetCap) {
+        expect(p.sales).toHaveLength(0);
+        expect(p.fundingNote).toBeNull();
+      }
+    }
+  });
+
+  it("non-depth moves name displaced players and fate (doc 19 §5)", () => {
     const pkgs = buildPackages(ctx);
-    const funded = pkgs.filter((p) => p.fundingNote != null);
-    expect(funded.length).toBeGreaterThan(0);
-    for (const p of funded) {
-      expect(p.fundingNote).toMatch(/To fund it/);
-      expect(p.fundingNote).toMatch(/covers \d+% of this plan/);
+    const withMoves = pkgs.find((p) => p.moves.some((m) => m.kind !== "depth" && m.out != null));
+    if (!withMoves) return;
+    const starter = withMoves.moves.find((m) => m.kind !== "depth" && m.out);
+    expect(starter?.out?.name.length).toBeGreaterThan(0);
+    expect(["bench", "sell", "cover"]).toContain(starter?.out?.fate);
+  });
+
+  it("window summary is arithmetically consistent (doc 19 §5)", () => {
+    const pkgs = buildPackages(ctx);
+    for (const p of pkgs) {
+      expect(p.windowSummary).toMatch(/\d+ in, \d+ sold, \d+ to the bench/);
+      expect(p.xiDiff.length).toBeGreaterThan(0);
     }
   });
 

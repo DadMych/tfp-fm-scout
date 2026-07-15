@@ -15,10 +15,12 @@ import { footLabel, formatHeight, formatMoney } from "@/src/report/format.js";
 import { Radar } from "@/components/Radar";
 import { VerdictBadge } from "@/components/VerdictBadge";
 import { ArchetypeColumns } from "@/components/kit/ArchetypeColumns";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
 import { Dateline } from "@/components/kit/Dateline";
 import { FactsRail } from "@/components/kit/FactsRail";
 import { Footline } from "@/components/kit/Footline";
 import { PullQuote } from "@/components/kit/PullQuote";
+import { WatchToggle } from "@/components/kit/WatchToggle";
 import { AttrColumn, attrColumnsFor } from "@/components/dossier/AttrColumn";
 import { RoleTable } from "@/components/dossier/RoleTable";
 import { SaleVerdictCallout } from "@/components/dossier/SaleVerdictCallout";
@@ -28,7 +30,7 @@ import { similarHref, upgradesHref } from "@/lib/scout-anchor-url";
 
 export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
   const bundle = useBundle(kind);
-  const { squad, shortlist, squadContext, ready, lastAssistantRun, isWatched, toggleWatch } = useDatasets();
+  const { squad, shortlist, squadContext, ready, lastAssistantRun } = useDatasets();
 
   const found = useMemo(() => {
     if (!bundle) return null;
@@ -102,11 +104,29 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
         right={`Known ${conf}%`}
       />
 
-      <section className="d-hero">
-        <div>
+      <section className="d-hero d-hero-art">
+        <div className="d-hero-main">
           <p className="eyebrow">{eyebrow}</p>
-          <h1>{p.name}</h1>
+          <h1>
+            {p.name}
+            <WatchToggle player={p} />
+          </h1>
           <p className="standfirst">{s.summary}</p>
+
+          <FactsRail
+            rows={[
+              { label: "Club", value: p.club || "—" },
+              { label: "Nation", value: p.nationality || "—" },
+              { label: "Age", value: <span className="num">{p.age ?? "—"}</span> },
+              { label: "Height", value: <span className="num">{formatHeight(p.heightCm)}</span> },
+              { label: "Foot", value: footLabel(p.foot) },
+              { label: "Positions", value: p.positions.join("/") || "—" },
+              { label: "Value", value: <span className="num">{formatMoney(p.value)}</span> },
+              { label: "Top archetype", value: <b>{arch ? arch.name : "No defined archetype"}</b> },
+              { label: "FM grade", value: <b>{p.scoutGrade || "—"}</b> },
+              { label: "Known", value: <span className="num">{conf}%</span> },
+            ]}
+          />
 
           <div className="callout">
             <VerdictBadge rec={rec} />
@@ -118,23 +138,14 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
           {director && kind === "squad" ? <SaleVerdictCallout p={p} board={director.board} /> : null}
         </div>
 
-        <FactsRail
-          rows={[
-            { label: "Club", value: p.club || "—" },
-            { label: "Nation", value: p.nationality || "—" },
-            { label: "Age", value: <span className="num">{p.age ?? "—"}</span> },
-            { label: "Height", value: <span className="num">{formatHeight(p.heightCm)}</span> },
-            { label: "Foot", value: footLabel(p.foot) },
-            { label: "Positions", value: p.positions.join("/") || "—" },
-            { label: "Value", value: <span className="num">{formatMoney(p.value)}</span> },
-            { label: "Top archetype", value: <b>{arch ? arch.name : "No defined archetype"}</b> },
-            { label: "FM grade", value: <b>{p.scoutGrade || "—"}</b> },
-            { label: "Known", value: <span className="num">{conf}%</span> },
-          ]}
-        />
+        {s.topArchetype ? (
+          <ArchetypeArt id={s.topArchetype.id} size="hero" priority caption />
+        ) : (
+          <ArchetypeArtFallback family={s.general.family} />
+        )}
       </section>
 
-      <ArchetypeColumns archetypes={s.archetypes} artId={s.topArchetype?.id ?? null} />
+      <ArchetypeColumns archetypes={s.archetypes} />
 
       <div className="d-body">
         <figure className="radar-figure">
@@ -170,9 +181,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
         left={`Source · ${bundle?.dataset.source}`}
         right={
           <>
-            <button type="button" className="foot-action" onClick={() => toggleWatch(p)}>
-              {isWatched(p) ? "Remove from watch" : "Add to watch"}
-            </button>
+            <WatchToggle player={p} />
             {" · "}
             <Link href={`/compare?a=${kind}:${p.id}`}>Compare</Link>
             {" · "}

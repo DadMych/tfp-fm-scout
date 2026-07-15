@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { WatchToggle } from "@/components/kit/WatchToggle";
+import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
 import { Dateline } from "@/components/kit/Dateline";
 import { parseAnchorRef, upgradesHref } from "@/lib/scout-anchor-url";
 import { useDatasets } from "@/lib/store";
@@ -12,6 +15,7 @@ import { slotFit, type PlayerRow } from "@/src/domain/assistant/xi.js";
 import type { SlotAssignment } from "@/src/domain/assistant/slots.js";
 import { findUpgrades } from "@/src/domain/scouting/upgrade-finder.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
+import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { formatMoney } from "@/src/report/format.js";
 
 function resolveSquadRow(
@@ -154,6 +158,25 @@ export function UpgradesView() {
         right={`${formationName} · budget ${formatMoney(budgetCap)}`}
       />
 
+      <section className="watch-hero">
+        <div>
+          <p className="eyebrow">
+            {incumbent.scores.topArchetype
+              ? getArchetype(incumbent.scores.topArchetype.id).name
+              : incumbent.scores.general.family}
+          </p>
+          <h1>
+            <Link href={`/scout/squad/${anchorRef.id}`}>{incumbent.player.name}</Link>
+          </h1>
+          <p className="standfirst">{incumbent.scores.summary}</p>
+        </div>
+        {incumbent.scores.topArchetype ? (
+          <ArchetypeArt id={incumbent.scores.topArchetype.id} size="hero" caption />
+        ) : (
+          <ArchetypeArtFallback family={incumbent.scores.general.family} size="hero" />
+        )}
+      </section>
+
       {hits.length === 0 ? (
         <div className="empty">
           No shortlist player beats him by +5 pair fit within budget at {slot.label}.
@@ -163,6 +186,7 @@ export function UpgradesView() {
           <thead>
             <tr className="head">
               <th>Player</th>
+              <th>Identity</th>
               <th className="c-num">Pair fit</th>
               <th className="c-num">Δ</th>
               <th className="c-num">Age Δ</th>
@@ -171,12 +195,22 @@ export function UpgradesView() {
             </tr>
           </thead>
           <tbody>
-            {hits.map((hit) => (
+            {hits.map((hit) => {
+              const player = shortlist.dataset.players.find((x) => x.id === hit.playerId);
+              const scores = shortlist.scoreById.get(hit.playerId);
+              const arch = scores?.topArchetype ? getArchetype(scores.topArchetype.id) : null;
+              return (
               <tr className="player" key={hit.playerId}>
                 <td className="c-name">
+                  {player ? <WatchToggle player={player} /> : null}
                   <Link className="pname" href={`/scout/shortlist/${hit.playerId}`}>
                     {hit.name}
                   </Link>
+                </td>
+                <td className="c-arch">
+                  <ArchetypeCell id={scores?.topArchetype?.id ?? null} family={scores?.general.family ?? "Utility"}>
+                    <span className="aname">{arch?.name ?? "Utility"}</span>
+                  </ArchetypeCell>
                 </td>
                 <td className="c-num">
                   <span className="score num">{hit.pairScore}</span>
@@ -191,7 +225,8 @@ export function UpgradesView() {
                   {hit.downgrade ? ` · ${hit.downgrade.name} ${hit.downgrade.delta}` : ""}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}

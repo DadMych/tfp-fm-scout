@@ -10,6 +10,7 @@ import type { XiSolution } from "./xi.js";
 import type { LinkBoard } from "./links.js";
 import type { TransferPackage } from "./packages.js";
 import type { TransferBoard } from "./transfers/types.js";
+import type { StyleRead } from "./style.js";
 
 export type InsightClass =
   | "shape"
@@ -81,4 +82,5 @@ export interface AssistantReport {
   readonly teamReport: TeamReport;
   readonly budgetCap: number;
   readonly board: TransferBoard;
+  readonly styleReads: readonly StyleRead[];
 }

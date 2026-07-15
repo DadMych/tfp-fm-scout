@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { Masthead } from "@/components/kit/Masthead";
-import { ArchetypeIcon } from "@/components/kit/ArchetypeIcon";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
+import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
 import { Dateline } from "@/components/kit/Dateline";
 import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { VerdictBadge } from "@/components/VerdictBadge";
@@ -42,19 +43,25 @@ export default function WatchPage() {
   const entries = useMemo(() => {
     return resolved.map(({ entry, p, kind, id }) => {
       const s = (kind === "squad" ? squad : shortlist)!.scoreById.get(id)!;
-      const arch = s.topArchetype ? getArchetype(s.topArchetype.id).name : "Utility";
+      const arch = s.topArchetype ? getArchetype(s.topArchetype.id) : null;
       return {
         entry,
         id,
         name: p.name,
         kind,
         archId: s.topArchetype?.id ?? null,
-        arch,
+        family: s.general.family,
+        arch: arch?.name ?? "Utility",
         score: Math.round(s.topArchetype?.score ?? 0),
         rec: recommend(p, s, kind === "shortlist" ? (squadContext ?? undefined) : undefined),
       };
     });
   }, [resolved, shortlist, squad, squadContext]);
+
+  const featured = useMemo(() => {
+    if (entries.length === 0) return null;
+    return [...entries].sort((a, b) => b.score - a.score)[0]!;
+  }, [entries]);
 
   const missing = watchList.length - entries.length;
 
@@ -84,73 +91,96 @@ export default function WatchPage() {
           </p>
         </EmptyBroadsheet>
       ) : (
-        <table className="rowlist watch-table">
-          <thead>
-            <tr className="head">
-              <th>Player</th>
-              <th>Status</th>
-              <th>Verdict</th>
-              <th>Identity</th>
-              <th className="c-num">Score</th>
-              <th>Note</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr className="player" key={e.entry.identityKey}>
-                <td className="c-name">
-                  <Link className="pname" href={`/scout/${e.kind}/${e.id}`}>
-                    {e.name}
-                  </Link>
-                  <div className="sub">{e.kind === "shortlist" ? "Shortlist" : "Squad"}</div>
-                </td>
-                <td>
-                  <select
-                    className="control watch-status"
-                    value={e.entry.status}
-                    onChange={(ev) =>
-                      setWatchStatus(e.entry.identityKey, ev.target.value as WatchStatus)
-                    }
-                  >
-                    {WATCH_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {WATCH_STATUS_LABEL[s]}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="c-verdict">
-                  <VerdictBadge rec={e.rec} />
-                </td>
-                <td className="c-arch">
-                  {e.archId ? <ArchetypeIcon id={e.archId} size={16} /> : null}
-                  <span className="aname">{e.arch}</span>
-                </td>
-                <td className="c-num">
-                  <span className="score num">{e.score}</span>
-                </td>
-                <td className="c-note">
-                  <input
-                    className="control watch-note"
-                    placeholder="One-line note…"
-                    value={e.entry.note}
-                    onChange={(ev) => setWatchNote(e.entry.identityKey, ev.target.value)}
-                  />
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() => removeWatch(e.entry.identityKey)}
-                  >
-                    Remove
-                  </button>
-                </td>
+        <>
+          {featured ? (
+            <section className="watch-hero">
+              <div>
+                <p className="eyebrow">
+                  {featured.arch} · {featured.kind === "shortlist" ? "Shortlist" : "Squad"}
+                </p>
+                <h1>
+                  <Link href={`/scout/${featured.kind}/${featured.id}`}>{featured.name}</Link>
+                </h1>
+                <p className="standfirst">{featured.rec.headline}</p>
+                <VerdictBadge rec={featured.rec} />
+              </div>
+              {featured.archId ? (
+                <ArchetypeArt id={featured.archId} size="hero" priority caption />
+              ) : (
+                <ArchetypeArtFallback family={featured.family} size="hero" />
+              )}
+            </section>
+          ) : null}
+
+          <table className="rowlist watch-table">
+            <thead>
+              <tr className="head">
+                <th>Player</th>
+                <th>Status</th>
+                <th>Verdict</th>
+                <th>Identity</th>
+                <th className="c-num">Score</th>
+                <th>Note</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr className="player" key={e.entry.identityKey}>
+                  <td className="c-name">
+                    <Link className="pname" href={`/scout/${e.kind}/${e.id}`}>
+                      {e.name}
+                    </Link>
+                    <div className="sub">{e.kind === "shortlist" ? "Shortlist" : "Squad"}</div>
+                  </td>
+                  <td>
+                    <select
+                      className="control watch-status"
+                      value={e.entry.status}
+                      onChange={(ev) =>
+                        setWatchStatus(e.entry.identityKey, ev.target.value as WatchStatus)
+                      }
+                    >
+                      {WATCH_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {WATCH_STATUS_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="c-verdict">
+                    <VerdictBadge rec={e.rec} />
+                  </td>
+                  <td className="c-arch">
+                    <ArchetypeCell id={e.archId} family={e.family}>
+                      <span className="aname">{e.arch}</span>
+                    </ArchetypeCell>
+                  </td>
+                  <td className="c-num">
+                    <span className="score num">{e.score}</span>
+                  </td>
+                  <td className="c-note">
+                    <input
+                      className="control watch-note"
+                      placeholder="One-line note…"
+                      value={e.entry.note}
+                      onChange={(ev) => setWatchNote(e.entry.identityKey, ev.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => removeWatch(e.entry.identityKey)}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   );

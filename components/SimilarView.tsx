@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { WatchToggle } from "@/components/kit/WatchToggle";
+import { ArchetypeCell } from "@/components/kit/ArchetypeCell";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
 import { Dateline } from "@/components/kit/Dateline";
 import { parseAnchorRef, similarHref, type PlayerRef } from "@/lib/scout-anchor-url";
 import { serializeCompareRefs } from "@/lib/compare-url";
 import { useDatasets } from "@/lib/store";
 import { findSimilar } from "@/src/domain/scouting/similar.js";
 import type { PlayerRow } from "@/src/domain/assistant/xi.js";
+import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { formatMoney } from "@/src/report/format.js";
 
 function resolveAnchor(
@@ -53,6 +57,7 @@ export function SimilarView() {
   }, [anchor, shortlist, squad]);
 
   const poolKind = shortlist ? "shortlist" : squad ? "squad" : null;
+  const bundle = shortlist ?? squad;
 
   if (!ready) return <div className="empty">Setting the page…</div>;
 
@@ -76,6 +81,25 @@ export function SimilarView() {
         right={poolKind ? `Searching the ${poolKind}` : ""}
       />
 
+      <section className="watch-hero">
+        <div>
+          <p className="eyebrow">
+            {anchor.scores.topArchetype
+              ? getArchetype(anchor.scores.topArchetype.id).name
+              : anchor.scores.general.family}
+          </p>
+          <h1>
+            <Link href={`/scout/${anchorRef.kind}/${anchorRef.id}`}>{anchor.player.name}</Link>
+          </h1>
+          <p className="standfirst">{anchor.scores.summary}</p>
+        </div>
+        {anchor.scores.topArchetype ? (
+          <ArchetypeArt id={anchor.scores.topArchetype.id} size="hero" caption />
+        ) : (
+          <ArchetypeArtFallback family={anchor.scores.general.family} size="hero" />
+        )}
+      </section>
+
       {hits.length === 0 ? (
         <div className="empty">No close matches in the loaded export.</div>
       ) : (
@@ -83,6 +107,7 @@ export function SimilarView() {
           <thead>
             <tr className="head">
               <th>Player</th>
+              <th>Identity</th>
               <th className="c-num">Match</th>
               <th className="c-num">Age</th>
               <th className="c-num">Value</th>
@@ -95,12 +120,21 @@ export function SimilarView() {
                 anchorRef,
                 { kind: poolKind!, id: hit.playerId },
               ]);
+              const player = bundle!.dataset.players.find((x) => x.id === hit.playerId);
+              const scores = bundle!.scoreById.get(hit.playerId);
+              const arch = scores?.topArchetype ? getArchetype(scores.topArchetype.id) : null;
               return (
                 <tr className="player" key={hit.playerId}>
                   <td className="c-name">
+                    {player ? <WatchToggle player={player} /> : null}
                     <Link className="pname" href={`/scout/${poolKind}/${hit.playerId}`}>
                       {hit.name}
                     </Link>
+                  </td>
+                  <td className="c-arch">
+                    <ArchetypeCell id={scores?.topArchetype?.id ?? null} family={scores?.general.family ?? "Utility"}>
+                      <span className="aname">{arch?.name ?? "Utility"}</span>
+                    </ArchetypeCell>
                   </td>
                   <td className="c-num">
                     <span className="score num">{hit.similarity}%</span>

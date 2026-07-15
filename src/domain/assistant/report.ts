@@ -7,6 +7,7 @@ import { evaluateLinks } from "./links.js";
 import { buildPackages } from "./packages.js";
 import { finalize } from "./priority.js";
 import { buildTeamReport } from "./team-report.js";
+import { buildStyleReads } from "./style.js";
 import { buildBoard } from "./transfers/board.js";
 import type { AssistantReport, RawInsight } from "./types.js";
 
@@ -45,10 +46,17 @@ export function buildAssistantReport(params: ContextParams): AssistantReport {
     ...shortlist.run(ctx),
   ];
   const packages = buildPackages(ctx, preRaw.map((i) => i.id));
+  const headroom = market.headroomInsight(ctx, packages);
 
-  const raw: RawInsight[] = [...preRaw, ...risk.run(ctx, packages), ...transfer.run(ctx, board, packages)];
+  const raw: RawInsight[] = [
+    ...preRaw,
+    ...(headroom ? [headroom] : []),
+    ...risk.run(ctx, packages),
+    ...transfer.run(ctx, board, packages),
+  ];
   const insights = finalize(raw);
   const teamReport = buildTeamReport(ctx, insights, packages);
+  const styleReads = buildStyleReads(ctx, linkBoard);
 
   return {
     formation: ctx.formation,
@@ -64,6 +72,7 @@ export function buildAssistantReport(params: ContextParams): AssistantReport {
     teamReport,
     budgetCap: ctx.budgetCap,
     board,
+    styleReads,
   };
 }
 

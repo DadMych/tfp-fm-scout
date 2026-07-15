@@ -37,4 +37,6 @@ export const T = {
   SUCC_READY_GAP: 5,
   VALUE_CLIFF_FRAC: 0.35,
   TRANSFER_CLASS_CAP: 6,
+  /** Expected sale proceeds as a fraction of list value (doc 19 §4). */
+  SALE_HAIRCUT: 0.9,
 } as const;

@@ -3,12 +3,18 @@
  */
 
 import { valueMultiplier } from "./ageing.js";
+import { T } from "../thresholds.js";
 import type { PriceBand } from "./types.js";
 
 function round3sig(n: number): number {
   if (n === 0) return 0;
   const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(n))) - 2);
   return Math.round(n / magnitude) * magnitude;
+}
+
+/** Expected proceeds from a sale at list value (doc 19 §4: −10% haircut). */
+export function saleProceeds(value: number): number {
+  return round3sig(value * T.SALE_HAIRCUT);
 }
 
 /** Expected fee for selling now, plus a negotiation band. `null` when value is unknown. */
@@ -19,7 +25,7 @@ export function computePriceBand(
 ): PriceBand | null {
   if (value == null) return null;
   const mult = age != null ? valueMultiplier(age) : 1;
-  let fee = value * mult;
+  let fee = value * mult * T.SALE_HAIRCUT;
   if (isRelease) fee *= 0.5;
   return {
     low: round3sig(fee * 0.85),

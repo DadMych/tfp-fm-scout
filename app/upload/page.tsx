@@ -1,16 +1,34 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Masthead } from "@/components/kit/Masthead";
-import { BroadsheetIllustration } from "@/components/kit/BroadsheetIllustration";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
 import { Uploader } from "@/components/Uploader";
 import { useDatasets } from "@/lib/store";
+import { pickLead } from "@/src/domain/front-page.js";
+
+const UPLOAD_FEATURE_ARCH = "lineBreaker" as const;
 
 export default function UploadPage() {
   const router = useRouter();
   const { shortlist, loadText } = useDatasets();
   const [loadingSample, setLoadingSample] = useState(false);
+
+  const leadArt = useMemo(() => {
+    if (!shortlist) return null;
+    const rows = shortlist.dataset.players.map((p) => ({
+      p,
+      s: shortlist.scoreById.get(p.id)!,
+    }));
+    const lead = pickLead(rows);
+    if (!lead) return null;
+    return {
+      id: lead.s.topArchetype?.id ?? null,
+      family: lead.s.general.family,
+      name: lead.p.name,
+    };
+  }, [shortlist]);
 
   async function loadSample() {
     setLoadingSample(true);
@@ -29,15 +47,21 @@ export default function UploadPage() {
       <Masthead current="upload" />
 
       <section className="hero-lead upload-hero">
-        <BroadsheetIllustration id="empty-desk" width={200} className="upload-hero-art" />
         <div>
           <p className="eyebrow">Import</p>
           <h1>Upload your players.</h1>
-          <p>
+          <p className="standfirst">
             Drop in an FM26 export of your squad and your shortlist. We rank every player against the
             database, work out his best roles and archetypes, and tell you plainly who to chase.
           </p>
         </div>
+        {leadArt?.id ? (
+          <ArchetypeArt id={leadArt.id} size="hero" priority caption />
+        ) : leadArt ? (
+          <ArchetypeArtFallback family={leadArt.family} size="hero" />
+        ) : (
+          <ArchetypeArt id={UPLOAD_FEATURE_ARCH} size="hero" priority caption />
+        )}
       </section>
 
       <div className="uploads">

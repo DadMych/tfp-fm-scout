@@ -3,17 +3,28 @@ import type { AssistantReport } from "@/src/domain/assistant/types.js";
 import type { Zone } from "@/src/domain/squad/formations.js";
 import type { SlotNeed } from "@/src/domain/assistant/slots.js";
 import { InkBar } from "@/components/kit/InkBar";
+import { SectionRule } from "@/components/kit/SectionRule";
 import { NEED_LABEL, NEED_TONE, surname, ZONE_LABEL } from "./shared";
 
 export function VerdictBar({ report }: { report: AssistantReport }) {
   return (
     <div className="verdict-bar">
       <div>
-        <div className="section-label">Squad verdict</div>
+        <SectionRule>Squad verdict</SectionRule>
         <div className="big-verdict">
           {report.verdict}
           <span className="num verdict-fit"> · XI fit {report.avgFit}</span>
         </div>
+        {report.styleReads.length > 0 ? (
+          <div className="style-reads">
+            <p className="style-reads-h">How to play it</p>
+            {report.styleReads.map((r, i) => (
+              <p key={i} className="style-read">
+                {r.text}
+              </p>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="zones">
         {(Object.keys(report.zoneStrength) as Zone[]).map((z) => (
@@ -31,15 +42,17 @@ export function VerdictBar({ report }: { report: AssistantReport }) {
 export function GapsPanel({
   report,
   nameById,
+  onFormation,
 }: {
   report: AssistantReport;
   nameById: Map<string, Player>;
+  onFormation?: (id: string) => void;
 }) {
   const needs = report.slots.filter((s) => s.need !== "solid");
 
   return (
     <div className="gaps">
-      <div className="section-label">Where you&apos;re short</div>
+      <SectionRule>Where you&apos;re short</SectionRule>
       {needs.length === 0 ? (
         <p className="lede">No pressing gaps — every position has a capable starter and adequate cover.</p>
       ) : (
@@ -63,14 +76,20 @@ export function GapsPanel({
         </ul>
       )}
 
-      <div className="section-label section-gap">Best-fitting shapes</div>
-      <div className="form-strip">
+      <SectionRule gap="sm">Best-fitting shapes</SectionRule>
+      <div className="form-strip" role="group" aria-label="Formation switcher">
         {report.formationRanking.map((f) => (
-          <div key={f.id} className={`form-chip${f.id === report.formation.id ? " current" : ""}`}>
+          <button
+            key={f.id}
+            type="button"
+            className={`form-chip${f.id === report.formation.id ? " current" : ""}`}
+            aria-pressed={f.id === report.formation.id}
+            onClick={() => onFormation?.(f.id)}
+          >
             <span className="fname">{f.name}</span>
             <span className="num ffit">{f.avgFit}</span>
             {f.holes > 0 ? <span className="fwarn">{f.holes} gap</span> : null}
-          </div>
+          </button>
         ))}
       </div>
     </div>

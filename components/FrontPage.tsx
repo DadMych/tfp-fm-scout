@@ -5,18 +5,27 @@ import { useMemo } from "react";
 import { useDatasets } from "@/lib/store";
 import { buildAssistantReport } from "@/src/domain/assistant/report.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
-import { pickBargain, pickLead, posLabel, standouts, type ScoredRow } from "@/src/domain/front-page.js";
+import {
+  pickBargain,
+  pickBriefs,
+  pickLead,
+  posLabel,
+  standoutClause,
+  type ScoredRow,
+} from "@/src/domain/front-page.js";
 import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
 import { formatPullQuote } from "@/src/domain/evidence.js";
 import { ENGINE_VERSION } from "@/src/domain/engine-version.js";
 import { recommend } from "@/src/domain/recommendation.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
 import { formatMoney } from "@/src/report/format.js";
+import { ArchetypeArt, ArchetypeArtFallback } from "@/components/kit/ArchetypeArt";
 import { Dateline } from "@/components/kit/Dateline";
 import { EmptyBroadsheet } from "@/components/kit/EmptyBroadsheet";
 import { FactsRail } from "@/components/kit/FactsRail";
-import { InkBar } from "@/components/kit/InkBar";
 import { PullQuote } from "@/components/kit/PullQuote";
+import { SectionRule } from "@/components/kit/SectionRule";
+import { WatchToggle } from "@/components/kit/WatchToggle";
 
 function rowsFromBundle(bundle: NonNullable<ReturnType<typeof useDatasets>["shortlist"]>): ScoredRow[] {
   return bundle.dataset.players.map((p) => ({
@@ -37,14 +46,11 @@ export function FrontPage() {
 
   const briefs = useMemo(() => {
     if (!bundle) return [];
-    return [...rows]
-      .map((r) => ({
-        ...r,
-        rec: recommend(r.p, r.s, bundle === shortlist ? (squadContext ?? undefined) : undefined),
-      }))
-      .filter((r) => r.rec.verdict !== "Not for us")
-      .sort((a, b) => a.rec.rank - b.rec.rank || (b.s.topArchetype?.score ?? 0) - (a.s.topArchetype?.score ?? 0))
-      .slice(0, 4);
+    const withRec = rows.map((r) => ({
+      ...r,
+      rec: recommend(r.p, r.s, bundle === shortlist ? (squadContext ?? undefined) : undefined),
+    }));
+    return pickBriefs(withRec, 4);
   }, [rows, bundle, squadContext, shortlist]);
 
   const teamReport = useMemo(() => {
@@ -128,38 +134,42 @@ export function FrontPage() {
             </p>
             <h1>
               <Link href={`/scout/${kind}/${lead.p.id}`}>{lead.p.name}</Link>
+              <WatchToggle player={lead.p} />
             </h1>
             <p className="standfirst">{lead.s.summary}</p>
-            {formatPullQuote(lead.s) ? (
-                <PullQuote>{formatPullQuote(lead.s)}</PullQuote>
-              ) : null}
+            {formatPullQuote(lead.s) ? <PullQuote>{formatPullQuote(lead.s)}</PullQuote> : null}
+            <FactsRail
+              rows={[
+                { label: "Club", value: lead.p.club || "—" },
+                { label: "Nation", value: lead.p.nationality || "—" },
+                { label: "Value", value: <span className="num">{formatMoney(lead.p.value)}</span> },
+                { label: "Positions", value: posLabel(lead.p) },
+                {
+                  label: "Top archetype",
+                  value: (
+                    <b>{lead.s.topArchetype ? getArchetype(lead.s.topArchetype.id).name : "Utility"}</b>
+                  ),
+                },
+                {
+                  label: "Score",
+                  value: (
+                    <span className="num">
+                      {lead.s.topArchetype ? Math.round(lead.s.topArchetype.score) : "—"}
+                    </span>
+                  ),
+                },
+                {
+                  label: "Known",
+                  value: <span className="num">{Math.round(lead.s.confidence * 100)}%</span>,
+                },
+              ]}
+            />
           </div>
-          <FactsRail
-            rows={[
-              { label: "Club", value: lead.p.club || "—" },
-              { label: "Nation", value: lead.p.nationality || "—" },
-              { label: "Value", value: <span className="num">{formatMoney(lead.p.value)}</span> },
-              { label: "Positions", value: posLabel(lead.p) },
-              {
-                label: "Top archetype",
-                value: (
-                  <b>{lead.s.topArchetype ? getArchetype(lead.s.topArchetype.id).name : "Utility"}</b>
-                ),
-              },
-              {
-                label: "Score",
-                value: (
-                  <span className="num">
-                    {lead.s.topArchetype ? Math.round(lead.s.topArchetype.score) : "—"}
-                  </span>
-                ),
-              },
-              {
-                label: "Known",
-                value: <span className="num">{Math.round(lead.s.confidence * 100)}%</span>,
-              },
-            ]}
-          />
+          {lead.s.topArchetype ? (
+            <ArchetypeArt id={lead.s.topArchetype.id} size="plate" priority caption />
+          ) : (
+            <ArchetypeArtFallback family={lead.s.general.family} />
+          )}
         </section>
       ) : null}
 
@@ -167,6 +177,7 @@ export function FrontPage() {
         <div className="valuepick">
           <span className="vp-label">Value pick</span>
           <span className="vp-body">
+            <WatchToggle player={bargain.p} />
             <Link href={`/scout/${kind}/${bargain.p.id}`}>{bargain.p.name}</Link>
             {" — "}
             <b>
@@ -185,7 +196,7 @@ export function FrontPage() {
 
       {teamReport ? (
         <section className="team-report">
-          <p className="section-label">Team report</p>
+          <SectionRule>Team report</SectionRule>
           <div className="tr-headline">{teamReport.headline}</div>
           {teamReport.paragraphs.map((p, i) => (
             <p key={i} className="tr-p">
@@ -202,24 +213,32 @@ export function FrontPage() {
 
       {briefs.length > 0 ? (
         <>
-          <p className="section-label">Today&apos;s briefs</p>
+          <SectionRule gap="sm">Today&apos;s briefs</SectionRule>
           <div className="briefs">
             {briefs.map(({ p, s, rec }) => {
-              const top = standouts(s, 1)[0];
+              const clause = standoutClause(s);
               return (
                 <article className="brief-card" key={p.id}>
-                  <Link className="brief-name" href={`/scout/${kind}/${p.id}`}>
-                    {p.name}
-                  </Link>
+                  <div className="brief-top">
+                    <Link className="brief-name" href={`/scout/${kind}/${p.id}`}>
+                      {p.name}
+                    </Link>
+                    <WatchToggle player={p} />
+                  </div>
+                  <p className="brief-meta">
+                    {[
+                      p.age != null ? `Age ${p.age}` : null,
+                      posLabel(p),
+                      p.value != null ? formatMoney(p.value) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
                   <span className={`verdict ${rec.tone}`}>{rec.verdict}</span>
-                  <p className="brief-head">{rec.headline}</p>
-                  {top ? (
-                    <div className="brief-bar">
-                      <span className="brief-metric">{top.label}</span>
-                      <InkBar value={top.pct} width={44} />
-                      <span className="num">{Math.round(top.pct)}</span>
-                    </div>
-                  ) : null}
+                  <p className="brief-head">
+                    {rec.headline}
+                    {clause ? <em className="brief-standout"> {clause}</em> : null}
+                  </p>
                 </article>
               );
             })}

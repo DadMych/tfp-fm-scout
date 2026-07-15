@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AccountNav } from "@/components/AccountNav";
-import { BroadsheetIllustration } from "@/components/kit/BroadsheetIllustration";
+import { LogoIcon } from "@/components/kit/LogoIcon";
 
 export type MastheadPage = "home" | "upload" | "scout" | "assistant" | "watch";
 
@@ -16,7 +16,7 @@ export function Masthead({ current }: { current: MastheadPage }) {
   return (
     <div className="masthead">
       <Link href="/" className="logo">
-        <BroadsheetIllustration id="masthead-vignette" width={36} className="logo-vignette" />
+        <LogoIcon size={32} />
         <span className="logo-text">
           The <span>Scouting</span> Post
         </span>

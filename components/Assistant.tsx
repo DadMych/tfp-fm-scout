@@ -137,7 +137,7 @@ export function Assistant() {
 
           <div className="assist-grid">
             <Pitch report={report} nameById={nameById} />
-            <GapsPanel report={report} nameById={nameById} />
+            <GapsPanel report={report} nameById={nameById} onFormation={tryFormation} />
           </div>
 
           <div className="section-label section-gap-lg">

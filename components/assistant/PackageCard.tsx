@@ -1,7 +1,15 @@
 import Link from "next/link";
+import { useState } from "react";
 import type { Player } from "@/src/domain/player.js";
 import type { TransferPackage } from "@/src/domain/assistant/packages.js";
+import { WatchToggle } from "@/components/kit/WatchToggle";
 import { formatMoney } from "@/src/report/format.js";
+
+const FATE_LABEL = {
+  bench: "drops to the bench",
+  sell: "is sold to fund the window",
+  cover: "becomes first-choice cover",
+} as const;
 
 export function PackageCard({
   pk,
@@ -12,12 +20,19 @@ export function PackageCard({
   nameById: Map<string, Player>;
   cap: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const roundedLift = pk.afterFit - pk.beforeFit;
   const totalLift = pk.afterTotalFit - pk.beforeTotalFit;
   const lift =
     roundedLift > 0 ? roundedLift : totalLift > 0 ? Math.max(1, Math.round(totalLift / 11)) : 0;
   const stratCap = pk.totalCost + pk.remaining;
   const usedPct = Math.min(100, Math.round(pk.capUsed * 100));
+
+  const starters = pk.moves.filter((m) => m.kind !== "depth");
+  const depth = pk.moves.filter((m) => m.kind === "depth");
+  const showCollapse = pk.moves.length > 5;
+  const visibleMoves = showCollapse && !expanded ? starters : pk.moves;
+  const hiddenDepth = showCollapse && !expanded ? depth.length : 0;
 
   return (
     <div className="plan">
@@ -47,6 +62,7 @@ export function PackageCard({
       </div>
 
       <p className="plan-rationale">{pk.rationale}</p>
+      <p className="window-summary">{pk.windowSummary}</p>
 
       {pk.sales.length > 0 ? (
         <p className="sale-funding">
@@ -57,11 +73,12 @@ export function PackageCard({
       ) : null}
 
       <ul className="move-list">
-        {pk.moves.map((m) => {
+        {visibleMoves.map((m) => {
           const p = nameById.get(m.playerId);
           return (
             <li key={m.playerId} className="move">
               <div className="move-top">
+                {p ? <WatchToggle player={p} /> : null}
                 <Link href={`/scout/shortlist/${m.playerId}`} className="move-name">
                   {p?.name ?? m.playerId}
                 </Link>
@@ -70,10 +87,38 @@ export function PackageCard({
                 <span className="num move-cost">{formatMoney(m.cost)}</span>
               </div>
               <div className="move-why">{m.why}</div>
+              {m.out ? (
+                <div className="move-out">
+                  <b>{m.out.name}</b> {FATE_LABEL[m.out.fate]}.
+                </div>
+              ) : null}
             </li>
           );
         })}
+        {hiddenDepth > 0 ? (
+          <li className="move move-collapsed">
+            <button type="button" className="show-depth-btn" onClick={() => setExpanded(true)}>
+              and {hiddenDepth} depth signing{hiddenDepth === 1 ? "" : "s"}
+            </button>
+          </li>
+        ) : null}
       </ul>
+
+      <div className="xi-diff">
+        <p className="xi-diff-h">Your XI after this window</p>
+        <table className="xi-diff-table">
+          <tbody>
+            {pk.xiDiff.map((row) => (
+              <tr key={row.slotLabel} className={row.changed ? "changed" : ""}>
+                <td className="xi-slot">{row.slotLabel}</td>
+                <td className="xi-before">{row.before}</td>
+                <td className="xi-arrow">→</td>
+                <td className="xi-after">{row.after}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="plan-foot">
         {pk.displaced.length > 0 ? (

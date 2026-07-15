@@ -38,6 +38,7 @@ It is deployed as a multi-user web app: uploads are parsed server-side, datasets
 | 16 | [Hosted Deployment](docs/16-hosted-deployment.md) | P4 infrastructure pinned: Neon Postgres, Auth.js (password + Google), per-user schema, Vercel. **Amends 02's auth/deploy lines** |
 | 17 | [Engine Coherence](docs/17-engine-coherence.md) | Verdict/fit/age reconciliation, one fit currency, plus Part II: full audit — percentile truth, chains, packages, rules |
 | 18 | [Visual Identity](docs/18-visual-identity.md) | One form language for all controls; generated archetype art, icons, site furniture |
+| 19 | [Desk Clarity](docs/19-desk-clarity.md) | Front Page overhaul, tactic advice at the verdict, honest funding (−10% haircut), package legibility, art-first dossier |
 | — | [Broadsheet Finish](docs/15-broadsheet-finish.md) | Supplementary UI depth plan (overlaps doc 15 P1) |
 | — | [Engine Truth & Platform](docs/16-engine-truth-and-platform.md) | Supplementary engine/infra depth (overlaps doc 15 P2–P3) |
 

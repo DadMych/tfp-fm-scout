@@ -10,6 +10,8 @@ import { T } from "../thresholds.js";
 import { surname, money, pct, listNames } from "../phrases.js";
 import { slotFit } from "../xi.js";
 import { insightId } from "./helpers.js";
+import type { TransferPackage } from "../packages.js";
+import { saleProceeds } from "../transfers/pricing.js";
 
 function percentile(values: readonly number[], p: number): number {
   if (values.length === 0) return 0;
@@ -201,4 +203,31 @@ export function run(ctx: AnalysisContext): RawInsight[] {
   }
 
   return out;
+}
+
+/** Optional headroom when plans are tight — sales are never assumed (doc 19 §4). */
+export function headroomInsight(
+  ctx: AnalysisContext,
+  packages: readonly TransferPackage[],
+): RawInsight | null {
+  if (packages.length === 0 || ctx.budgetCap <= 0) return null;
+  if (!packages.some((p) => p.capUsed > 0.8)) return null;
+  const unused = unusedValueCandidates(ctx);
+  if (unused.length === 0) return null;
+  const top = unused[0]!;
+  const fee = saleProceeds(top.value);
+  const stretched = ctx.budgetCap + fee;
+  const name = surname(top.row.player.name);
+  return {
+    id: insightId("mkt.headroom", top.row.player.id),
+    cls: "market",
+    severity: "low",
+    title: `Selling ${name} stretches the window`,
+    detail: `Selling ${name} (≈${money(fee)} after the usual haircut) would stretch the budget to ${money(stretched)} — optional, not assumed by the plans below.`,
+    evidence: [
+      { label: "Proceeds", value: money(fee) },
+      { label: "Stretched cap", value: money(stretched) },
+    ],
+    subjects: [top.row.player.id],
+  };
 }
