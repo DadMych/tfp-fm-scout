@@ -166,11 +166,13 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   const id = row.player.id;
   const age = row.player.age;
   const value = row.player.value ?? null;
-  const fit = bestFit(row, ctx);
+
+  const slotAssignment = ctx.slots.find((s) => s.starter?.id === id) ?? null;
+  // Decline and elite checks use the assigned slot's pairFit — same currency as chains/succession (doc 17 §9.3).
+  const fit = slotAssignment?.starter?.fit ?? bestFit(row, ctx);
   const reliance = physicalReliance(row.player);
   const fitIn2 = projectFit(fit, age, reliance, 2);
 
-  const slotAssignment = ctx.slots.find((s) => s.starter?.id === id) ?? null;
   const isStarter = slotAssignment != null;
   const isBackupSomewhere = ctx.slots.some((s) => s.backup?.id === id);
   const fringe = !isStarter && !isBackupSomewhere;

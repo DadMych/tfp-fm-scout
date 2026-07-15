@@ -156,6 +156,49 @@ describe("sale verdicts", () => {
     expect(veteran?.replacement?.ready).toBe(true);
   });
 
+  it("projects sell-now decline from the starter slot pairFit, not bestRole (doc 17 §9.3)", () => {
+    const squad = [
+      ...FULL_4231.filter((s) => s !== "ST-C" && s !== "DM-C").map((s) => player({ positions: [s], base: 13, age: 25 })),
+      player({ positions: ["DM-C"], base: 17, age: 25 }),
+      player({ positions: ["DM-C"], base: 17, age: 25 }),
+      player({
+        positions: ["DM-C", "ST-C"],
+        base: 16,
+        overrides: { passing: 10, tackling: 10 },
+        age: 33,
+        value: 20e6,
+      }),
+      player({ positions: ["ST-C"], base: 15, age: 23, value: 10e6 }),
+    ];
+    const ctx = ctxWith(squad);
+    const dual = squad[squad.length - 2]!;
+    const row = ctx.byId.get(dual.id)!;
+    const slot = ctx.slots.find((s) => s.starter?.id === dual.id);
+    expect(slot).toBeTruthy();
+    expect(row.scores.bestRole!.score).not.toBe(slot!.starter!.fit);
+
+    const sales = buildSales(ctx);
+    const rec = sales.find((s) => s.playerId === dual.id)!;
+    expect(Number(rec.evidence.find((e) => e.label === "Fit")?.value)).toBe(slot!.starter!.fit);
+  });
+
+  it("does not name another actionable sell target as the replacement heir (doc 17 §10.2)", () => {
+    const squad = [
+      ...FULL_4231.filter((s) => s !== "ST-C").map((s) => player({ positions: [s], base: 13, age: 25, value: 1e6 })),
+      player({ positions: ["ST-C"], base: 16, age: 33, value: 20e6 }),
+      player({ positions: ["ST-C"], base: 15, age: 33, value: 18e6 }),
+      player({ positions: ["ST-C"], base: 15, age: 22, value: 5e6 }),
+    ];
+    const sales = buildSales(ctxWith(squad));
+    const veteran = squad[squad.length - 3]!;
+    const heir = squad[squad.length - 2]!;
+    const young = squad[squad.length - 1]!;
+    expect(sales.find((s) => s.playerId === heir.id)?.verdict).toBe("sell-now");
+    const veteranSale = sales.find((s) => s.playerId === veteran.id)!;
+    expect(veteranSale.replacement?.playerId).toBe(young.id);
+    expect(veteranSale.replacement?.playerId).not.toBe(heir.id);
+  });
+
   it("sell-high via arbitrage: omits a null now-vs-12-months line and names the twin (doc 17 §3)", () => {
     const squad = [
       ...FULL_4231.filter((s) => s !== "ST-C").map((s) => player({ positions: [s], base: 13, value: 1e6, age: 25 })),

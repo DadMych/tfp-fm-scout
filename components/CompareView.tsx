@@ -9,6 +9,9 @@ import { ATTRIBUTES, attributesByCategory, type AttributeCategory, type Attribut
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
 import { bestAttrMid, presetPairForSlot, COMPARE_DERIVED } from "@/src/domain/compare.js";
 import { DEFAULT_FORMATION_ID } from "@/src/domain/assistant/defaults.js";
+import { getRole } from "@/src/domain/roles/registry.js";
+import { getSlotPair } from "@/src/domain/squad/tactic-presets.js";
+import { slotKeyForPosition } from "@/src/domain/assistant/xi.js";
 import type { Player } from "@/src/domain/player.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import type { PositionSlot } from "@/src/domain/positions.js";
@@ -77,6 +80,14 @@ export function CompareView() {
     if (slotPick && slotOptions.includes(slotPick)) return slotPick;
     return slotOptions[0]!;
   }, [slotOptions, slotPick]);
+
+  const slotPairLabel = useMemo(() => {
+    if (!slot) return null;
+    const key = slotKeyForPosition(formationId, slot);
+    const pair = key ? getSlotPair(formationId, key) : null;
+    if (!pair) return null;
+    return `${getRole(pair.ip).name} / ${getRole(pair.oop).name}`;
+  }, [slot, formationId]);
 
   const pool = useMemo(() => {
     const out: { kind: DatasetKind; id: string; name: string; label: string }[] = [];
@@ -247,7 +258,10 @@ export function CompareView() {
 
           {slot ? (
             <>
-              <p className="section-label">Role pair at {slot}</p>
+              <p className="section-label">
+                Role pair at {slot}
+                {slotPairLabel ? ` — ${slotPairLabel}` : ""}
+              </p>
               <table className="cmp-table">
                 <thead>
                   <tr>
