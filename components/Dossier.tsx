@@ -271,9 +271,9 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
       <div className="footline">
         <span>Source · {bundle?.dataset.source}</span>
         <span>
-          <Link href="/scout">← Back to desk</Link>
+          <Link href={`/compare?a=${kind}:${p.id}`}>Compare</Link>
           {" · "}
-          <Link href="/scout">The Scouting Post</Link>
+          <Link href="/scout">← Back to desk</Link>
         </span>
       </div>
     </>

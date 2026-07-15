@@ -202,6 +202,29 @@ button{font-family:inherit;cursor:pointer;}
 .rbar{width:180px;}.rbar .pctbar{width:170px;}
 .rscore{text-align:right;width:44px;font-weight:600;font-variant-numeric:tabular-nums;}
 
+.radar .area.p0{fill:rgba(178,59,46,.14);}
+.radar .area.p1{fill:rgba(28,28,28,.08);}
+.radar .area.p2{fill:rgba(184,134,11,.12);}
+.radar .area.p3{fill:rgba(107,91,79,.1);}
+.cmp-radar .cmp-legend .rlabel{font-size:12px;}
+
+.cmp-toolbar{display:flex;flex-wrap:wrap;gap:16px 24px;margin:18px 0 8px;}
+.cmp-heads{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;padding:20px 0;border-bottom:1px solid var(--rule);}
+.cmp-head{position:relative;font-family:var(--sans);padding-right:24px;}
+.cmp-remove{position:absolute;top:0;right:0;border:none;background:none;color:var(--ink-3);font-size:20px;line-height:1;padding:0;}
+.cmp-remove:hover{color:var(--red);}
+.cmp-name{display:block;font-family:var(--serif);font-size:26px;font-weight:700;color:var(--ink);text-decoration:none;margin-bottom:8px;}
+.cmp-name:hover{color:var(--red);}
+.cmp-meta,.cmp-known{font-size:13px;color:var(--ink-3);margin:0;}
+.cmp-arch{font-size:14px;margin:10px 0 4px;}
+.cmp-table{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:13px;margin-bottom:28px;}
+.cmp-table th,.cmp-table td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle;}
+.cmp-table th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;}
+.cmp-table td.cmp-best{background:color-mix(in srgb,var(--gold) 10%,var(--paper));font-weight:600;}
+.cmp-barcell{display:flex;align-items:center;gap:8px;}
+.cmp-attr-block{margin-bottom:24px;}
+.cmp-attr-title{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin:0 0 8px;}
+
 .footline{font-family:var(--sans);font-size:12px;color:var(--ink-3);letter-spacing:.04em;border-top:1px solid var(--rule);margin-top:44px;padding-top:16px;display:flex;justify-content:space-between;}
 .footline a{text-decoration:none;}
 
