@@ -174,41 +174,45 @@ export function FrontPage() {
         </section>
       ) : null}
 
-      {bargain ? (
-        <section className="fp-valuepick">
-          <SectionRule>Value pick</SectionRule>
-          <p className="vp-body">
-            <WatchToggle player={bargain.p} />
-            <Link href={`/scout/${kind}/${bargain.p.id}`}>{bargain.p.name}</Link>
-            {" — "}
-            <b>
-              {bargain.s.topArchetype ? getArchetype(bargain.s.topArchetype.id).name : "Utility"}
-            </b>{" "}
-            <span className="num">{Math.round(bargain.s.topArchetype?.score ?? 0)}</span> at{" "}
-            <span className="num">{formatMoney(bargain.p.value)}</span>
-            {bargain.p.age != null ? (
-              <>
-                , age <span className="num">{bargain.p.age}</span>
-              </>
-            ) : null}
-          </p>
-        </section>
-      ) : null}
+      {bargain || teamReport ? (
+        <section className="fp-notes">
+          {bargain ? (
+            <div className="fp-valuepick">
+              <p className="fp-notes-label">Value pick</p>
+              <p className="vp-body">
+                <WatchToggle player={bargain.p} />
+                <Link href={`/scout/${kind}/${bargain.p.id}`}>{bargain.p.name}</Link>
+                {" — "}
+                <b>
+                  {bargain.s.topArchetype ? getArchetype(bargain.s.topArchetype.id).name : "Utility"}
+                </b>{" "}
+                <span className="num">{Math.round(bargain.s.topArchetype?.score ?? 0)}</span> at{" "}
+                <span className="num">{formatMoney(bargain.p.value)}</span>
+                {bargain.p.age != null ? (
+                  <>
+                    , age <span className="num">{bargain.p.age}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+          ) : null}
 
-      {teamReport ? (
-        <section className="team-report">
-          <SectionRule>Team report</SectionRule>
-          <div className="tr-headline">{teamReport.headline}</div>
-          {teamReport.paragraphs.map((p, i) => (
-            <p key={i} className="tr-p">
-              {p}
-            </p>
-          ))}
-          <p className="lede">
-            <Link href="/assistant" className="link-red">
-              Open the full assistant →
-            </Link>
-          </p>
+          {teamReport ? (
+            <div className="team-report">
+              <p className="fp-notes-label">Team report</p>
+              <div className="tr-headline">{teamReport.headline}</div>
+              {teamReport.paragraphs.map((p, i) => (
+                <p key={i} className="tr-p">
+                  {p}
+                </p>
+              ))}
+              <p className="lede">
+                <Link href="/assistant" className="link-red">
+                  Open the full assistant →
+                </Link>
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

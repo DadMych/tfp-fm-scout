@@ -216,6 +216,43 @@ describe("buildPackages v3 (doc 12 §4, real data)", () => {
     }
   });
 
+  it("xi diff reflects sold starters — not unchanged while listed in exits", () => {
+    const pkgs = buildPackages(ctx);
+    for (const p of pkgs) {
+      for (const sale of p.sales) {
+        const slot = ctx.slots.find((s) => s.starter?.id === sale.playerId);
+        if (!slot) continue;
+        const diff = p.xiDiff.find((d) => d.slotLabel === slot.label);
+        expect(diff).toBeDefined();
+        expect(diff!.afterId).not.toBe(sale.playerId);
+        expect(diff!.changed).toBe(true);
+      }
+    }
+  });
+
+  it("never sells or loans players on loan from another club", () => {
+    const loanedGk = squad.find((r) => r.player.positions.includes("GK"));
+    if (!loanedGk) return;
+    const patched = squad.map((r) =>
+      r.player.id === loanedGk.player.id
+        ? { ...r, player: { ...r.player, club: "Girona", onLoanFrom: "Barcelona" } }
+        : r,
+    );
+    const loanCtx = buildContext({
+      squad: patched,
+      shortlist,
+      formation: getFormation("4-2-3-1"),
+      budget: 80e6,
+      useFullBudget: false,
+    });
+    expect(loanCtx.loanedIn.has(loanedGk.player.id)).toBe(true);
+    const pkgs = buildPackages(loanCtx);
+    for (const p of pkgs) {
+      expect(p.sales.some((s) => s.playerId === loanedGk.player.id)).toBe(false);
+      expect(p.loans.some((l) => l.playerId === loanedGk.player.id)).toBe(false);
+    }
+  });
+
   it("press-conversion package filters on derived workEngine (doc 17 §10.5)", () => {
     const pkgs = buildPackages(ctx);
     const press = pkgs.find((p) => p.id === "press-conversion");

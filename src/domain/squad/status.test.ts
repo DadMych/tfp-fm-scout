@@ -3,6 +3,8 @@ import type { Player } from "../player.js";
 import {
   contractExpiring,
   contractPenultimate,
+  isLoanedIn,
+  isLoanedOut,
   loanStatusOf,
   ourClubOf,
   seasonEndOf,
@@ -47,6 +49,21 @@ describe("loanStatusOf", () => {
 
   it("treats any loanee as loaned-in when our club is unknown", () => {
     expect(loanStatusOf(p({ onLoanFrom: "Barcelona" }), null)).toBe("loaned-in");
+  });
+});
+
+describe("isLoanedOut / isLoanedIn", () => {
+  const ours = "Girona";
+
+  it("isLoanedOut: explicit spell or host club differs from ours", () => {
+    expect(isLoanedOut(p({ club: "Wolves", onLoanFrom: "Girona" }), ours)).toBe(true);
+    expect(isLoanedOut(p({ club: "Galatasaray" }), ours)).toBe(true); // legacy export
+    expect(isLoanedOut(p({ club: "Girona" }), ours)).toBe(false);
+  });
+
+  it("isLoanedIn: only when On Loan From names another owner", () => {
+    expect(isLoanedIn(p({ club: "Girona", onLoanFrom: "Barcelona" }), ours)).toBe(true);
+    expect(isLoanedIn(p({ club: "Girona" }), ours)).toBe(false);
   });
 });
 

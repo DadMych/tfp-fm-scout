@@ -185,6 +185,22 @@ describe("sale verdicts", () => {
     expect(loanee.reasons.join(" ")).toMatch(/on loan from Parent FC/i);
   });
 
+  it("players away at another club are excluded even without On Loan From (legacy export)", () => {
+    const away = player({
+      positions: ["ST-C"],
+      base: 14,
+      age: 20,
+      extra: { club: "Host FC" },
+    });
+    const squadPlayers = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13, extra: { club: "Ours" } })),
+      away,
+    ];
+    const ctx = ctxWith(squadPlayers);
+    expect(ctx.squad.some((r) => r.player.id === away.id)).toBe(false);
+    expect(ctx.loanedOut.map((r) => r.player.id)).toEqual([away.id]);
+  });
+
   it("players loaned out are excluded from the working squad and listed separately (doc 22 §2)", () => {
     const away = player({
       positions: ["ST-C"],

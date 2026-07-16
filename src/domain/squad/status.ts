@@ -42,6 +42,18 @@ export function loanStatusOf(p: Player, ourClub: string | null): LoanStatus {
   return "loaned-in";
 }
 
+/** Away at another club — unavailable this season. */
+export function isLoanedOut(p: Player, ourClub: string | null): boolean {
+  if (loanStatusOf(p, ourClub) === "loaned-out") return true;
+  // Older exports without On Loan From: the Club column shows the host side.
+  return ourClub != null && p.club != null && p.club !== ourClub;
+}
+
+/** Here on someone else's books — not an asset we can sell or re-loan. */
+export function isLoanedIn(p: Player, ourClub: string | null): boolean {
+  return loanStatusOf(p, ourClub) === "loaned-in";
+}
+
 /**
  * The June 30 that ends the current season, inferred as the earliest contract
  * expiry or loan end in the dataset (loan spells always run to a season end).

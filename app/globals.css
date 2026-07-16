@@ -205,6 +205,9 @@ select.control,
 .fp-hero h1 a{color:inherit;text-decoration:none;}
 .fp-hero h1 a:hover{color:var(--red);}
 .fp-valuepick{padding:0;}
+.fp-notes{padding:0;}
+.fp-notes-label{font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin:0 0 8px;}
+.fp-notes .fp-valuepick + .team-report{margin-top:20px;}
 .fp-valuepick .vp-body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.55;color:var(--ink-2);}
 .fp-valuepick .vp-body b{color:var(--ink);font-weight:600;}
 .fp-valuepick .vp-body a{color:var(--ink);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--ink) 28%,transparent);}
@@ -401,8 +404,6 @@ select.control,
 .watch-table .c-note{min-width:200px;}
 
 /* Assistant / smart search */
-.fp-body > .fp-valuepick > .section-label,
-.fp-body > .team-report > .section-label{margin-bottom:10px;}
 .team-report{padding:0;border-bottom:none;}
 .tr-headline{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .tr-p{font-size:18px;line-height:1.6;color:var(--ink-2);margin:0 0 12px;max-width:78ch;}

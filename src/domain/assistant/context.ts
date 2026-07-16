@@ -4,7 +4,7 @@
  */
 
 import type { Formation, Zone } from "../squad/formations.js";
-import { loanStatusOf, ourClubOf, seasonEndOf } from "../squad/status.js";
+import { isLoanedIn, isLoanedOut, ourClubOf, seasonEndOf } from "../squad/status.js";
 import { deriveSlots, rankFormations, verdictOf, zoneStrengthOf, avgFitOf, type FormationFit, type SlotAssignment, type Verdict } from "./slots.js";
 import { solveXI, type PlayerRow, type XiSolution } from "./xi.js";
 import { T } from "./thresholds.js";
@@ -56,11 +56,11 @@ export function buildContext(params: ContextParams): AnalysisContext {
   const allPlayers = params.squad.map((r) => r.player);
   const ourClub = ourClubOf(allPlayers);
   const seasonEnd = seasonEndOf(allPlayers);
-  const loanedOut = params.squad.filter((r) => loanStatusOf(r.player, ourClub) === "loaned-out");
+  const loanedOut = params.squad.filter((r) => isLoanedOut(r.player, ourClub));
   const loanedOutIds = new Set(loanedOut.map((r) => r.player.id));
   const squad = params.squad.filter((r) => !loanedOutIds.has(r.player.id));
   const loanedIn = new Set(
-    squad.filter((r) => loanStatusOf(r.player, ourClub) === "loaned-in").map((r) => r.player.id),
+    squad.filter((r) => isLoanedIn(r.player, ourClub)).map((r) => r.player.id),
   );
 
   const xi = solveXI(squad, params.formation);

@@ -573,6 +573,19 @@ function buildXiDiff(
   });
 }
 
+/** Squad + signings minus everyone who actually leaves in this window. */
+function rosterAfterExits(
+  rows: readonly PlayerRow[],
+  sales: readonly PackageSale[],
+  loans: readonly PackageLoan[],
+): PlayerRow[] {
+  const gone = new Set([
+    ...sales.map((s) => s.playerId),
+    ...loans.map((l) => l.playerId),
+  ]);
+  return rows.filter((r) => !gone.has(r.player.id));
+}
+
 function windowSummaryFor(
   ctx: AnalysisContext,
   picks: readonly Candidate[],
@@ -621,6 +634,7 @@ function consequenceFor(
   sale: SaleRecommendation,
   picks: readonly Candidate[],
   ctx: AnalysisContext,
+  allRows?: readonly PlayerRow[],
 ): string {
   const sellerSlot = ctx.slots.find((s) => s.starter?.id === sale.playerId);
   if (sellerSlot) {
@@ -631,6 +645,20 @@ function consequenceFor(
   }
   const rep = sale.replacement;
   if (rep?.playerId != null && rep.playerName) {
+    const signed = picks.some((p) => p.row.player.id === rep.playerId);
+    if (rep.source === "shortlist" && !signed) {
+      if (allRows && sellerSlot) {
+        const without = allRows.filter((r) => r.player.id !== sale.playerId);
+        const shadow = deriveSlots(solveXI(without, ctx.formation), without, ctx.formation).find(
+          (s) => s.slotKey === sellerSlot.slotKey,
+        );
+        if (shadow?.starter && shadow.starter.id !== sale.playerId) {
+          const name = ctx.byId.get(shadow.starter.id)?.player.name;
+          if (name) return `${surname(name)} (fit ${shadow.starter.fit}) steps in`;
+        }
+      }
+      return "slot covered from within the squad";
+    }
     return rep.source === "internal"
       ? `${surname(rep.playerName)} (fit ${rep.fitAfter}) steps in`
       : `replaced by ${surname(rep.playerName)} from the shortlist`;
@@ -687,7 +715,9 @@ function expandExitPool(
   ctx: AnalysisContext,
   board: readonly SaleRecommendation[],
 ): SaleRecommendation[] {
-  const out: SaleRecommendation[] = board.filter((s) => EXIT_VERDICTS.has(s.verdict));
+  const out: SaleRecommendation[] = board.filter(
+    (s) => EXIT_VERDICTS.has(s.verdict) && !ctx.loanedIn.has(s.playerId),
+  );
   const taken = new Set(out.map((s) => s.playerId));
   const keeps = board
     .filter((s) => s.verdict === "keep" && !taken.has(s.playerId))
@@ -768,6 +798,7 @@ function exitsPass(
 
   const trySale = (s: SaleRecommendation, minFee: number): boolean => {
     if (taken.has(s.playerId)) return false;
+    if (ctx.loanedIn.has(s.playerId)) return false;
     const fee = s.priceBand?.ask ?? 0;
     if (fee < minFee) return false;
     const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
@@ -780,7 +811,7 @@ function exitsPass(
       playerName: row?.player.name ?? s.playerId,
       fee,
       verdict: s.verdict,
-      consequence: consequenceFor(s, picks, ctx),
+      consequence: consequenceFor(s, picks, ctx, allRows),
     });
     taken.add(s.playerId);
     income += fee;
@@ -808,6 +839,7 @@ function exitsPass(
   for (const s of placeOnly) {
     if (freed >= needFree) break;
     if (taken.has(s.playerId)) continue;
+    if (ctx.loanedIn.has(s.playerId)) continue;
     const withoutHim = allRows.filter((r) => r.player.id !== s.playerId);
     const check = solveXI(withoutHim, ctx.formation).avgFit;
     if (check < afterFit - 1) continue;
@@ -1081,7 +1113,11 @@ function buildSwapPackages(
       loans: squadLoans,
       income: exitIncome,
       netSpend,
-      xiDiff: buildXiDiff(ctx, allRows, newXi),
+      xiDiff: buildXiDiff(
+        ctx,
+        rosterAfterExits(allRows, pkgSales, squadLoans),
+        solveXI(rosterAfterExits(allRows, pkgSales, squadLoans), ctx.formation),
+      ),
       windowSummary: windowSummaryFor(ctx, picks, pkgSales, squadLoans, exitIncome),
       squadAfter,
     },
@@ -1191,7 +1227,11 @@ export function buildPackages(ctx: AnalysisContext, insightIds: readonly string[
       loans: allLoans,
       income,
       netSpend,
-      xiDiff: buildXiDiff(ctx, allRows, newXi),
+      xiDiff: buildXiDiff(
+        ctx,
+        rosterAfterExits(allRows, pkgSales, squadLoans),
+        solveXI(rosterAfterExits(allRows, pkgSales, squadLoans), ctx.formation),
+      ),
       windowSummary: windowSummaryFor(ctx, picks, pkgSales, squadLoans, income),
       squadAfter,
     });
@@ -1310,7 +1350,11 @@ function buildChurnPackage(
     loans: squadLoans,
     income,
     netSpend,
-    xiDiff: buildXiDiff(ctx, allRows, newXi),
+    xiDiff: buildXiDiff(
+      ctx,
+      rosterAfterExits(allRows, pkgSales, squadLoans),
+      solveXI(rosterAfterExits(allRows, pkgSales, squadLoans), ctx.formation),
+    ),
     windowSummary: windowSummaryFor(ctx, picks, pkgSales, squadLoans, income),
     squadAfter,
   };
