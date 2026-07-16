@@ -5,6 +5,7 @@ import { useRef, useState, type ReactNode } from "react";
 import type { Player } from "@/src/domain/player.js";
 import type { PlayerScores } from "@/src/domain/scoring/dataset.js";
 import { getArchetype } from "@/src/domain/archetypes/registry.js";
+import { shortDate } from "@/src/domain/squad/status.js";
 import { formatMoney } from "@/src/report/format.js";
 
 export type ScoutDataset = "squad" | "shortlist";
@@ -86,6 +87,16 @@ function PlayerPeekCard({ peek }: { peek: PlayerPeekData }) {
           {arch.name}
           {scores?.topArchetype ? ` · ${Math.round(scores.topArchetype.score)}` : ""}
         </span>
+      ) : null}
+      {player.wage != null || player.contractExpires ? (
+        <span className="player-peek-meta">
+          {player.wage != null ? `${formatMoney(player.wage)} p/w` : ""}
+          {player.wage != null && player.contractExpires ? " · " : ""}
+          {player.contractExpires ? `ends ${shortDate(player.contractExpires)}` : ""}
+        </span>
+      ) : null}
+      {player.onLoanFrom ? (
+        <span className="player-peek-meta">On loan · {player.onLoanFrom}</span>
       ) : null}
       <span className="player-peek-hint">Click for full dossier</span>
     </span>

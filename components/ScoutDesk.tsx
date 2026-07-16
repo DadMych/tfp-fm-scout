@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDatasets, type DatasetKind } from "@/lib/store";
 import { parseScoutFilters, serializeScoutFilters, type ScoutStyleFilter, type ScoutSortKey } from "@/lib/scout-filters";
 import { PLAYING_STYLES, playerMatchesStyle } from "@/src/domain/squad/styles.js";
+import { contractExpiring, seasonEndOf } from "@/src/domain/squad/status.js";
 import { buildFitDeskContext, fitsGap, squadFitForRow } from "@/lib/squad-fit-desk";
 import type { SquadFitResult } from "@/src/domain/scouting/fit.js";
 import { getArchetype, type ArchetypeId } from "@/src/domain/archetypes/registry.js";
@@ -39,6 +40,8 @@ interface Row {
   rec: Recommendation;
   standout: { label: string; pct: number } | null;
   fit: SquadFitResult | null;
+  expiring: boolean;
+  onLoan: boolean;
   scores: import("@/src/domain/scoring/dataset.js").PlayerScores;
 }
 
@@ -88,6 +91,7 @@ export function ScoutDesk() {
   const rows = useMemo<Row[]>(() => {
     if (!bundle) return [];
     const ctx = kind === "shortlist" ? (squadContext ?? undefined) : undefined;
+    const seasonEnd = seasonEndOf(bundle.dataset.players);
     return bundle.dataset.players.map((p) => {
       const s = bundle.scoreById.get(p.id)!;
       const arch = s.topArchetype ? getArchetype(s.topArchetype.id) : null;
@@ -109,6 +113,8 @@ export function ScoutDesk() {
         rec: recommend(p, s, ctx),
         standout: standouts(s, 1)[0] ?? null,
         fit,
+        expiring: contractExpiring(p, seasonEnd),
+        onLoan: p.onLoanFrom != null,
         scores: s,
       };
     });
@@ -422,6 +428,8 @@ export function ScoutDesk() {
                   {r.name}
                 </Link>
                 {watched ? <span className="watch-mark">Watch</span> : null}
+                {r.expiring ? <span className="stamp gold">Free this summer</span> : null}
+                {r.onLoan ? <span className="stamp">On loan</span> : null}
                 <div className="sub">
                   {r.positions}
                   {r.club ? ` · ${r.club}` : ""}

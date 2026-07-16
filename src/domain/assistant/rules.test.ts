@@ -13,6 +13,7 @@ import { wrongSideGate } from "./rules/slot.js";
 import * as age from "./rules/age.js";
 import * as dna from "./rules/dna.js";
 import * as chemistry from "./rules/chemistry.js";
+import * as contracts from "./rules/contracts.js";
 import * as market from "./rules/market.js";
 import * as risk from "./rules/risk.js";
 import * as shortlist from "./rules/shortlist.js";
@@ -31,6 +32,7 @@ function player(opts: {
   age?: number | null;
   value?: number | null;
   scoutGrade?: string | null;
+  extra?: Partial<Player>;
 }): Player {
   const id = `p${seq++}`;
   return {
@@ -45,6 +47,7 @@ function player(opts: {
     heightCm: null,
     foot: null,
     scoutGrade: opts.scoutGrade ?? null,
+    ...opts.extra,
   };
 }
 
@@ -250,6 +253,59 @@ describe("RISK rules", () => {
     ];
     const insights = risk.run(ctxWith(squad), []);
     expect(insights.some((i) => i.id.startsWith("risk.spof:st"))).toBe(true);
+  });
+});
+
+describe("CONTRACT rules", () => {
+  it("fires con.renew-or-lose for a starter whose contract ends this season", () => {
+    const squad = FULL_4231.map((s, i) =>
+      player({
+        positions: [s],
+        base: 14,
+        value: 20e6,
+        extra: { contractExpires: i === 0 ? "2026-06-30" : "2028-06-30" },
+      }),
+    );
+    const insights = contracts.run(ctxWith(squad));
+    const renew = insights.filter((i) => i.id.startsWith("con.renew-or-lose"));
+    expect(renew.length).toBe(1);
+    expect(renew[0]!.subjects).toEqual([squad[0]!.id]);
+    expect(renew[0]!.severity).toBe("critical");
+  });
+
+  it("fires con.bosman for strong shortlist targets out of contract this season", () => {
+    const squad = FULL_4231.map((s) =>
+      player({ positions: [s], base: 12, extra: { contractExpires: "2026-06-30" } }),
+    );
+    const shortlistPlayers = [
+      player({ positions: ["ST-C"], base: 16, value: 20e6, extra: { contractExpires: "2026-06-30" } }),
+      player({ positions: ["ST-C"], base: 16, value: 20e6, extra: { contractExpires: "2029-06-30" } }),
+    ];
+    const insights = contracts.run(ctxWith(squad, shortlistPlayers));
+    const bosman = insights.filter((i) => i.id.startsWith("con.bosman"));
+    expect(bosman.length).toBe(1);
+    expect(bosman[0]!.subjects).toEqual([shortlistPlayers[0]!.id]);
+  });
+
+  it("fires con.loan-returns when squad players are away on loan", () => {
+    const away = player({
+      positions: ["ST-C"],
+      base: 14,
+      extra: { club: "Host FC", onLoanFrom: "Ours", loanEnd: "2026-06-30" },
+    });
+    const squad = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13, extra: { club: "Ours" } })),
+      away,
+    ];
+    const insights = contracts.run(ctxWith(squad));
+    const returns = insights.filter((i) => i.id.startsWith("con.loan-returns"));
+    expect(returns.length).toBe(1);
+    expect(returns[0]!.subjects).toContain(away.id);
+  });
+
+  it("stays silent when the export has no contract or loan data", () => {
+    const squad = FULL_4231.map((s) => player({ positions: [s], base: 13 }));
+    expect(contracts.run(ctxWith(squad))).toEqual([]);
   });
 });
 

@@ -28,6 +28,7 @@ function player(opts: {
   overrides?: Partial<Record<string, number>>;
   age?: number | null;
   value?: number | null;
+  extra?: Partial<Player>;
 }): Player {
   const id = `p${seq++}`;
   return {
@@ -42,6 +43,7 @@ function player(opts: {
     heightCm: null,
     foot: null,
     scoutGrade: null,
+    ...opts.extra,
   };
 }
 
@@ -163,6 +165,63 @@ describe("sale verdicts", () => {
     const sales = buildSales(ctxWith(squad));
     const kid = sales.find((s) => s.playerId === squad[squad.length - 1]!.id);
     expect(kid?.verdict).toBe("b-team");
+  });
+
+  it("loaned-in players are keep with no exit action (doc 22 §2)", () => {
+    const squad = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13, extra: { club: "Ours" } })),
+      // Young poor-fit fringe — would be loan-out/b-team if he were ours.
+      player({
+        positions: ["ST-C"],
+        base: 9,
+        age: 20,
+        value: 3e6,
+        extra: { club: "Ours", onLoanFrom: "Parent FC" },
+      }),
+    ];
+    const sales = buildSales(ctxWith(squad));
+    const loanee = sales.find((s) => s.playerId === squad[squad.length - 1]!.id)!;
+    expect(loanee.verdict).toBe("keep");
+    expect(loanee.reasons.join(" ")).toMatch(/on loan from Parent FC/i);
+  });
+
+  it("players loaned out are excluded from the working squad and listed separately (doc 22 §2)", () => {
+    const away = player({
+      positions: ["ST-C"],
+      base: 14,
+      age: 20,
+      extra: { club: "Host FC", onLoanFrom: "Ours", loanEnd: "2026-06-30" },
+    });
+    const squad = [
+      ...FULL_4231.map((s) => player({ positions: [s], base: 13, extra: { club: "Ours" } })),
+      away,
+    ];
+    const ctx = ctxWith(squad);
+    expect(ctx.squad.some((r) => r.player.id === away.id)).toBe(false);
+    expect(ctx.loanedOut.map((r) => r.player.id)).toEqual([away.id]);
+    expect(buildSales(ctx).some((s) => s.playerId === away.id)).toBe(false);
+  });
+
+  it("expiring contract escalates a fringe player to sell-now at a collapsed fee (doc 22 §3)", () => {
+    const squad = [
+      ...FULL_4231.map((s) =>
+        player({ positions: [s], base: 13, extra: { contractExpires: "2027-06-30" } }),
+      ),
+      player({ positions: ["ST-C"], base: 12, age: 24, extra: { contractExpires: "2027-06-30" } }), // backup
+      player({
+        positions: ["ST-C"],
+        base: 10,
+        age: 26,
+        value: 10e6,
+        extra: { contractExpires: "2026-06-30" }, // season ends 2026-06-30 → expiring
+      }),
+    ];
+    const sales = buildSales(ctxWith(squad));
+    const expiringGuy = sales.find((s) => s.playerId === squad[squad.length - 1]!.id)!;
+    expect(expiringGuy.verdict).toBe("sell-now");
+    expect(expiringGuy.reasons.join(" ")).toMatch(/walks for free/i);
+    // Fee collapses: 10e6 * 0.9 haircut * 0.5 expiring = 4.5e6.
+    expect(expiringGuy.priceBand!.ask).toBeLessThan(10e6 * 0.9);
   });
 
   it("sell-now: old, declining starter with a ready internal backup", () => {

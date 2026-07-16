@@ -4,6 +4,7 @@
  */
 
 import type { PositionSlot } from "../../positions.js";
+import { contractExpiring } from "../../squad/status.js";
 import type { AnalysisContext } from "../context.js";
 import { blockedBy } from "../rules/helpers.js";
 import type { SlotAssignment } from "../slots.js";
@@ -164,6 +165,23 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   const age = row.player.age;
   const value = row.player.value ?? null;
 
+  // Loaned-in players aren't our asset — nothing to sell, loan, or release (doc 22 §2).
+  if (ctx.loanedIn.has(id)) {
+    return {
+      playerId: id,
+      verdict: "keep",
+      reasons: [`On loan from ${row.player.onLoanFrom ?? "his parent club"} — not yours to sell.`],
+      evidence: [
+        { label: "Age", value: age != null ? `${age}` : "—" },
+        { label: "Status", value: `Loan from ${row.player.onLoanFrom ?? "—"}` },
+      ],
+      priceBand: null,
+      xiImpact: 0,
+      replacement: null,
+      urgency: "no-rush",
+    };
+  }
+
   const slotAssignment = ctx.slots.find((s) => s.starter?.id === id) ?? null;
   // Decline and elite checks use the assigned slot's pairFit — same currency as chains/succession (doc 17 §9.3).
   const fit = slotAssignment?.starter?.fit ?? bestFit(row, ctx);
@@ -224,8 +242,22 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
     }
   }
 
+  // Contract cliff (doc 22 §3): a non-starter whose deal ends this season walks for
+  // free next summer — whatever the plan was, this window is the last chance for a fee.
+  const expiring = contractExpiring(row.player, ctx.seasonEnd);
+  let contractDriven = false;
+  if (
+    expiring &&
+    !isStarter &&
+    value != null &&
+    (verdict === "keep" || verdict === "loan-out" || verdict === "b-team" || verdict === "sell-high")
+  ) {
+    verdict = "sell-now";
+    contractDriven = true;
+  }
+
   const isRelease = verdict === "release";
-  const priceBand = computePriceBand(value, age, isRelease);
+  const priceBand = computePriceBand(value, age, isRelease, expiring);
 
   let replacement: ReplacementChain | null = null;
   if (verdict === "sell-now" || verdict === "release" || verdict === "loan-out" || verdict === "b-team") {
@@ -247,10 +279,29 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
 
   const xiImpact = verdict === "keep" || verdict === "untouchable" ? 0 : xiImpactOf(ctx, id);
 
+  let reasons = reasonsFor(verdict, row, priceBand, fit, fitIn2, arbitrage);
+  if (contractDriven) {
+    reasons = [
+      "His contract ends this season — sell now or he walks for free next summer.",
+      ...(priceBand ? [`Even a cut-price ${money(priceBand.ask)} beats a Bosman exit.`] : []),
+    ];
+  } else if (expiring && (verdict === "sell-now" || verdict === "sell-high")) {
+    reasons = [...reasons, "His contract ends this season, which caps any fee — move early in the window."];
+  }
+  if (
+    row.player.flags?.includes("wanted") &&
+    (verdict === "sell-now" || verdict === "sell-high")
+  ) {
+    reasons = [...reasons, "Clubs are already circling — the market is warm."];
+  }
+
   const evidence: { label: string; value: string }[] = [
     { label: "Age", value: age != null ? `${age}` : "—" },
     { label: "Fit", value: `${Math.round(fit)}` },
   ];
+  if (row.player.contractExpires && expiring) {
+    evidence.push({ label: "Contract", value: "expires this season" });
+  }
   if (priceBand) evidence.push({ label: "Ask", value: money(priceBand.ask) });
   if (replacement?.playerId) {
     evidence.push({ label: "Replacement", value: `${replacement.playerName} (fit ${replacement.fitAfter})` });
@@ -260,7 +311,7 @@ function buildOne(ctx: AnalysisContext, row: PlayerRow, p75V: number, p90V: numb
   return {
     playerId: id,
     verdict,
-    reasons: reasonsFor(verdict, row, priceBand, fit, fitIn2, arbitrage),
+    reasons,
     evidence,
     priceBand,
     xiImpact,

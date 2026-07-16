@@ -40,6 +40,13 @@ function rowToPlayer(row: typeof schema.players.$inferSelect): Player {
     heightCm?: number;
     foot?: NonNullable<Player["foot"]>;
     scoutGrade?: string;
+    wage?: number;
+    contractExpires?: string;
+    onLoanFrom?: string;
+    loanEnd?: string;
+    lastTransferFee?: number;
+    flags?: NonNullable<Player["flags"]>;
+    playStyle?: string;
   } = {};
   if (row.club != null) extras.club = row.club;
   if (row.nationality != null) extras.nationality = row.nationality;
@@ -47,6 +54,16 @@ function rowToPlayer(row: typeof schema.players.$inferSelect): Player {
   if (row.heightCm != null) extras.heightCm = row.heightCm;
   if (row.foot != null) extras.foot = row.foot as NonNullable<Player["foot"]>;
   if (row.scoutGrade != null) extras.scoutGrade = row.scoutGrade;
+  const meta = row.meta;
+  if (meta) {
+    if (meta.wage != null) extras.wage = meta.wage;
+    if (meta.contractExpires != null) extras.contractExpires = meta.contractExpires;
+    if (meta.onLoanFrom != null) extras.onLoanFrom = meta.onLoanFrom;
+    if (meta.loanEnd != null) extras.loanEnd = meta.loanEnd;
+    if (meta.lastTransferFee != null) extras.lastTransferFee = meta.lastTransferFee;
+    if (meta.flags != null) extras.flags = meta.flags;
+    if (meta.playStyle != null) extras.playStyle = meta.playStyle;
+  }
   return {
     id: row.rowId,
     name: row.name,
@@ -55,6 +72,26 @@ function rowToPlayer(row: typeof schema.players.$inferSelect): Player {
     attrs: row.attrs,
     ...extras,
   };
+}
+
+function playerMeta(p: Player): schema.PlayerMeta | null {
+  const meta: {
+    wage?: number;
+    contractExpires?: string;
+    onLoanFrom?: string;
+    loanEnd?: string;
+    lastTransferFee?: number;
+    flags?: readonly NonNullable<Player["flags"]>[number][];
+    playStyle?: string;
+  } = {};
+  if (p.wage != null) meta.wage = Math.round(p.wage);
+  if (p.contractExpires != null) meta.contractExpires = p.contractExpires;
+  if (p.onLoanFrom != null) meta.onLoanFrom = p.onLoanFrom;
+  if (p.loanEnd != null) meta.loanEnd = p.loanEnd;
+  if (p.lastTransferFee != null) meta.lastTransferFee = Math.round(p.lastTransferFee);
+  if (p.flags != null && p.flags.length > 0) meta.flags = p.flags;
+  if (p.playStyle != null) meta.playStyle = p.playStyle;
+  return Object.keys(meta).length > 0 ? meta : null;
 }
 
 function playerToRow(datasetId: string, p: Player): typeof schema.players.$inferInsert {
@@ -71,6 +108,7 @@ function playerToRow(datasetId: string, p: Player): typeof schema.players.$infer
     heightCm: p.heightCm != null ? Math.round(p.heightCm) : null,
     foot: p.foot ?? null,
     scoutGrade: p.scoutGrade ?? null,
+    meta: playerMeta(p),
   };
 }
 

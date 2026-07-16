@@ -1,5 +1,6 @@
 import { ATTRIBUTES, type AttributeId } from "../domain/attributes.js";
 import type { AttrValue } from "../domain/attr-value.js";
+import type { PlayerFlag } from "../domain/player.js";
 import type { PositionSlot, Side, Strata } from "../domain/positions.js";
 
 export type FieldTarget =
@@ -13,7 +14,15 @@ export type FieldTarget =
   | "height"
   | "rightFoot"
   | "leftFoot"
-  | "scoutGrade";
+  | "preferredFoot"
+  | "scoutGrade"
+  | "wage"
+  | "contractExpires"
+  | "onLoanFrom"
+  | "loanDuration"
+  | "lastTransferFee"
+  | "infFlags"
+  | "playStyle";
 
 export type HeaderTarget =
   | { kind: "attr"; id: AttributeId }
@@ -43,7 +52,15 @@ const HEADER_SYNONYMS: Map<string, HeaderTarget> = (() => {
     height: ["height"],
     rightFoot: ["rightfoot"],
     leftFoot: ["leftfoot"],
+    preferredFoot: ["preferredfoot"],
     scoutGrade: ["recommendation"],
+    wage: ["wage", "salary"],
+    contractExpires: ["expires", "contractexpires", "contractexpiry"],
+    onLoanFrom: ["onloanfrom"],
+    loanDuration: ["loanduration"],
+    lastTransferFee: ["lasttransferfee", "lastfee"],
+    infFlags: ["inf"],
+    playStyle: ["style", "playstyle"],
   };
   for (const [field, aliases] of Object.entries(fields) as [FieldTarget, string[]][]) {
     for (const a of aliases) m.set(norm(a), { kind: "field", field });
@@ -101,6 +118,62 @@ export function coerceMoney(raw: string): number | null {
 export function coerceHeight(raw: string): number | null {
   const m = raw.match(/(\d{2,3})/);
   return m ? Number(m[1]) : null;
+}
+
+/** Parse FM dates like "30/6/2028" or "30/6/26" (day/month/year) into ISO "2028-06-30". */
+export function coerceDate(raw: string): string | null {
+  const m = raw.trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (!m) return null;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  let year = Number(m[3]);
+  if (year < 100) year += 2000;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Loan Duration exports "14/7/25 - 30/6/26" — the spell's end date is what matters. */
+export function coerceLoanEnd(raw: string): string | null {
+  const s = raw.trim();
+  if (!s || s === "-") return null;
+  const parts = s.split(/\s+-\s+/);
+  return coerceDate(parts[parts.length - 1] ?? "");
+}
+
+/**
+ * Fees like "(€1)" are loan-deal nominals and "€0" free moves — both carry no
+ * information about what the player cost, so they normalize to null.
+ */
+export function coerceLastFee(raw: string): number | null {
+  const fee = coerceMoney(raw);
+  if (fee == null || fee <= 1) return null;
+  return fee;
+}
+
+const INF_FLAG: Record<string, PlayerFlag> = {
+  inj: "injured",
+  wnt: "wanted",
+  loa: "loan-listed",
+  trn: "transfer-listed",
+};
+
+/** The Inf column packs status codes ("Inj", "Wnt, Loa" …) — keep the ones we understand. */
+export function coerceInfFlags(raw: string): PlayerFlag[] {
+  const out: PlayerFlag[] = [];
+  for (const part of raw.split(/[,\s]+/)) {
+    const flag = INF_FLAG[part.trim().toLowerCase()];
+    if (flag && !out.includes(flag)) out.push(flag);
+  }
+  return out;
+}
+
+/** "Right-Footed" / "Left-Footed" from the direct Preferred Foot column. */
+export function coercePreferredFoot(raw: string): "Right" | "Left" | "Either" | null {
+  const s = raw.trim().toLowerCase();
+  if (s.startsWith("right")) return "Right";
+  if (s.startsWith("left")) return "Left";
+  if (s.startsWith("either") || s.startsWith("both")) return "Either";
+  return null;
 }
 
 export function coerceGrade(raw: string): string | null {

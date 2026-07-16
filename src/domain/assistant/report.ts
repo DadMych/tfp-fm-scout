@@ -18,6 +18,7 @@ import * as dna from "./rules/dna.js";
 import * as physical from "./rules/physical.js";
 import * as setpiece from "./rules/setpiece.js";
 import * as chemistry from "./rules/chemistry.js";
+import * as contracts from "./rules/contracts.js";
 import * as market from "./rules/market.js";
 import * as development from "./rules/development.js";
 import * as risk from "./rules/risk.js";
@@ -41,6 +42,7 @@ export function buildAssistantReport(params: ContextParams): AssistantReport {
     ...physical.run(ctx),
     ...setpiece.run(ctx),
     ...chemistry.run(ctx, linkBoard),
+    ...contracts.run(ctx),
     ...market.run(ctx),
     ...development.run(ctx),
     ...shortlist.run(ctx),

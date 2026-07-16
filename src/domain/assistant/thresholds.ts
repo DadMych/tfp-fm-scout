@@ -57,4 +57,9 @@ export const T = {
   PREINCOME_MAX_EXTRAS: 2,
   /** Max post-peak signings per package when fit is genuinely elite (doc 20). */
   VETERAN_SLOTS_PER_PACKAGE: 1,
+  // Contracts & loans layer (doc 22)
+  /** Fee fraction the market pays for a player whose contract ends this season. */
+  EXPIRING_FEE_FRAC: 0.5,
+  /** Wage percentile above which a fringe player counts as a wage problem. */
+  WAGE_HEAVY_PCT: 75,
 } as const;

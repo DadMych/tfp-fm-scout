@@ -10,6 +10,7 @@ import { DEFAULT_BUDGET } from "@/src/domain/assistant/defaults.js";
 import { buildContext } from "@/src/domain/assistant/context.js";
 import { buildBoard } from "@/src/domain/assistant/transfers/board.js";
 import { getFormation } from "@/src/domain/squad/formations.js";
+import { contractExpiring, loanStatusOf, ourClubOf, seasonEndOf, shortDate } from "@/src/domain/squad/status.js";
 import { computeSquadFit } from "@/src/domain/scouting/fit.js";
 import { footLabel, formatHeight, formatMoney } from "@/src/report/format.js";
 import { Radar } from "@/components/Radar";
@@ -96,6 +97,38 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
   const pull = formatPullQuote(s);
   const attrCols = attrColumnsFor(s);
 
+  const allPlayers = bundle!.dataset.players;
+  const seasonEnd = seasonEndOf(allPlayers);
+  const expiring = contractExpiring(p, seasonEnd);
+  const loanStatus = kind === "squad" ? loanStatusOf(p, ourClubOf(allPlayers)) : p.onLoanFrom ? "loaned-in" : null;
+  const contractRows = [
+    ...(p.wage != null
+      ? [{ label: "Wage", value: <span className="num">{formatMoney(p.wage)} p/w</span> }]
+      : []),
+    ...(p.contractExpires
+      ? [
+          {
+            label: "Contract",
+            value: (
+              <span className="num">
+                {shortDate(p.contractExpires)}
+                {expiring ? <b> · expiring</b> : null}
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...(loanStatus === "loaned-in"
+      ? [{ label: "Loan", value: `From ${p.onLoanFrom}${p.loanEnd ? ` until ${shortDate(p.loanEnd)}` : ""}` }]
+      : loanStatus === "loaned-out"
+        ? [{ label: "Loan", value: `Out at ${p.club}${p.loanEnd ? ` until ${shortDate(p.loanEnd)}` : ""}` }]
+        : []),
+    ...(p.lastTransferFee != null
+      ? [{ label: "Last fee", value: <span className="num">{formatMoney(p.lastTransferFee)}</span> }]
+      : []),
+    ...(p.playStyle ? [{ label: "FM style", value: p.playStyle }] : []),
+  ];
+
   return (
     <>
       <Dateline
@@ -122,6 +155,7 @@ export function Dossier({ kind, id }: { kind: DatasetKind; id: string }) {
               { label: "Foot", value: footLabel(p.foot) },
               { label: "Positions", value: p.positions.join("/") || "—" },
               { label: "Value", value: <span className="num">{formatMoney(p.value)}</span> },
+              ...contractRows,
               { label: "Top archetype", value: <b>{arch ? arch.name : "No defined archetype"}</b> },
               { label: "FM grade", value: <b>{p.scoutGrade || "—"}</b> },
               { label: "Known", value: <span className="num">{conf}%</span> },

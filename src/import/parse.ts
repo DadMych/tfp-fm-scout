@@ -8,9 +8,14 @@ import type { Player } from "../domain/player.js";
 import { detectFormat } from "./detect.js";
 import {
   coerceAttr,
+  coerceDate,
   coerceGrade,
   coerceHeight,
+  coerceInfFlags,
+  coerceLastFee,
+  coerceLoanEnd,
   coerceMoney,
+  coercePreferredFoot,
   GK_ATTRS,
   mapHeader,
   normalizeRowCells,
@@ -88,7 +93,15 @@ export function parseExport(text: string, idPrefix?: string): ImportResult {
     let heightCm: number | null = null;
     let rightFootRaw = "";
     let leftFootRaw = "";
+    let footDirect: "Right" | "Left" | "Either" | null = null;
     let scoutGrade: string | null = null;
+    let wage: number | null = null;
+    let contractExpires: string | null = null;
+    let onLoanFrom: string | null = null;
+    let loanEnd: string | null = null;
+    let lastTransferFee: number | null = null;
+    let flags: ReturnType<typeof coerceInfFlags> = [];
+    let playStyle: string | null = null;
     const attrs: AttrVector = {};
 
     targets.forEach((t, col) => {
@@ -135,6 +148,30 @@ export function parseExport(text: string, idPrefix?: string): ImportResult {
           case "scoutGrade":
             if (scoutGrade == null) scoutGrade = coerceGrade(raw);
             break;
+          case "preferredFoot":
+            footDirect = coercePreferredFoot(raw);
+            break;
+          case "wage":
+            wage = coerceMoney(raw);
+            break;
+          case "contractExpires":
+            contractExpires = coerceDate(raw);
+            break;
+          case "onLoanFrom":
+            onLoanFrom = raw && raw !== "-" ? raw : null;
+            break;
+          case "loanDuration":
+            loanEnd = coerceLoanEnd(raw);
+            break;
+          case "lastTransferFee":
+            lastTransferFee = coerceLastFee(raw);
+            break;
+          case "infFlags":
+            flags = coerceInfFlags(raw);
+            break;
+          case "playStyle":
+            playStyle = raw || null;
+            break;
         }
       }
     });
@@ -171,8 +208,15 @@ export function parseExport(text: string, idPrefix?: string): ImportResult {
       nationality,
       value,
       heightCm,
-      foot: preferredFoot(rightFootRaw, leftFootRaw),
+      foot: footDirect ?? preferredFoot(rightFootRaw, leftFootRaw),
       scoutGrade,
+      wage,
+      contractExpires,
+      onLoanFrom,
+      loanEnd,
+      lastTransferFee,
+      flags,
+      playStyle,
     });
   });
 

@@ -81,6 +81,34 @@ describe("parseExport — real FM26 format", () => {
     expect(players[1]!.scoutGrade).toBeNull();
   });
 
+  it("parses wage, contract, loan, fee, flags, preferred foot, and style columns", () => {
+    const header =
+      "Inf;Player;Style;Position;Age;Wage;Expires;Preferred Foot;Loan Duration;On Loan From;Last Transfer Fee;Acceleration;Agility;Balance;Jumping Reach;Natural Fitness;Pace;Stamina;Strength;Corners;Crossing;Dribbling;Finishing;First Touch;Heading;Long Shots;Marking;Passing;Tackling;Technique;Aggression;Anticipation";
+    const rows = [
+      "Inj;Loanee;Creative;M (C);23;€27K p/w;30/6/2028;Left-Footed;14/7/25 - 30/6/26;Barcelona;€11.18M;14;13;12;11;14;13;15;14;12;8;9;11;10;12;10;11;12;13;14;15;12;13",
+      "Wnt, Loa;Owned;Physical;M (C);24;€4K p/w;30/6/2026;Right-Footed;-;;(€1);13;12;11;10;13;12;14;13;11;7;8;10;11;11;9;10;11;12;13;14;12;11",
+    ];
+    const { players } = parseExport([header, ...rows].join("\n"));
+    const loanee = players[0]!;
+    expect(loanee.wage).toBe(27000);
+    expect(loanee.contractExpires).toBe("2028-06-30");
+    expect(loanee.foot).toBe("Left");
+    expect(loanee.loanEnd).toBe("2026-06-30");
+    expect(loanee.onLoanFrom).toBe("Barcelona");
+    expect(loanee.lastTransferFee).toBe(11.18e6);
+    expect(loanee.flags).toEqual(["injured"]);
+    expect(loanee.playStyle).toBe("Creative");
+
+    const owned = players[1]!;
+    expect(owned.wage).toBe(4000);
+    expect(owned.contractExpires).toBe("2026-06-30");
+    expect(owned.foot).toBe("Right");
+    expect(owned.loanEnd).toBeNull();
+    expect(owned.onLoanFrom).toBeNull();
+    expect(owned.lastTransferFee).toBeNull(); // "(€1)" is a loan nominal, not a fee
+    expect(owned.flags).toEqual(["wanted", "loan-listed"]);
+  });
+
   it("reports BAD_ATTRIBUTE_VALUE for junk attribute cells", () => {
     const row = padRow(["Bad", "M (C)", "M (C)", "22", "Team A", "nope", "13", "12", "11", "14", "13", "15", "14", "12", "8", "9", "11", "10", "15", "10", "12", "13", "16", "14", "15", "12", "13", "5"]);
     const { report } = parseExport(csv([row]));

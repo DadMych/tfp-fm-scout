@@ -23,6 +23,13 @@ const playerSchema = z.object({
   heightCm: z.number().nullable().optional(),
   foot: z.enum(["Right", "Left", "Either"]).nullable().optional(),
   scoutGrade: z.string().nullable().optional(),
+  wage: z.number().nullable().optional(),
+  contractExpires: z.string().nullable().optional(),
+  onLoanFrom: z.string().nullable().optional(),
+  loanEnd: z.string().nullable().optional(),
+  lastTransferFee: z.number().nullable().optional(),
+  flags: z.array(z.enum(["injured", "wanted", "loan-listed", "transfer-listed"])).optional(),
+  playStyle: z.string().nullable().optional(),
 });
 
 const datasetSchema = z.object({

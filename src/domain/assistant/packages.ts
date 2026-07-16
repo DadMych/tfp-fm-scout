@@ -14,6 +14,7 @@
 import { midOf } from "../attr-value.js";
 import type { AttributeId } from "../attributes.js";
 import { getArchetype } from "../archetypes/registry.js";
+import { contractExpiring } from "../squad/status.js";
 import type { SlotNeed } from "./slots.js";
 import { deriveSlots } from "./slots.js";
 import { solveXI, slotFit, bestPresetFit, type PlayerRow } from "./xi.js";
@@ -141,6 +142,18 @@ interface Candidate {
   readonly age: number | null;
 }
 
+/**
+ * What signing this player actually costs: expiring contracts go at a deep discount —
+ * the selling club loses him for free in a year (doc 22 §4).
+ */
+function signingCost(row: PlayerRow, ctx: AnalysisContext): number | null {
+  const value = row.player.value ?? null;
+  if (value == null) return null;
+  return contractExpiring(row.player, ctx.seasonEnd)
+    ? Math.round(value * T.EXPIRING_FEE_FRAC)
+    : value;
+}
+
 function buildCandidates(ctx: AnalysisContext): Candidate[] {
   const out: Candidate[] = [];
   for (const slot of ctx.slots) {
@@ -160,7 +173,7 @@ function buildCandidates(ctx: AnalysisContext): Candidate[] {
         newFit,
         delta,
         kind: candidateKind(slot.need),
-        cost: row.player.value ?? null,
+        cost: signingCost(row, ctx),
         age: row.player.age ?? null,
       });
     }
@@ -498,7 +511,11 @@ function toMove(
     headline: headlineFor(c),
     age: c.age,
     profile: profileOf(c.row, ctx),
-    why: whyFor(c, ctx, newStarterBySlot),
+    why:
+      whyFor(c, ctx, newStarterBySlot) +
+      (contractExpiring(c.row.player, ctx.seasonEnd)
+        ? " His deal expires in the summer — comes at a cut price."
+        : ""),
     out: outFor(c, ctx, pkgSales, pkgLoans, allRows),
   };
   return base;
@@ -686,6 +703,8 @@ function expandExitPool(
     const row = ctx.byId.get(k.playerId);
     if (!row) continue;
     if (ctx.starters.has(k.playerId)) continue;
+    // A loaned-in player can't be sold, released, or re-loaned (doc 22 §2).
+    if (ctx.loanedIn.has(k.playerId)) continue;
     const age = row.player.age;
     if (age != null && age <= T.PROSPECT_AGE) {
       out.push({
@@ -961,7 +980,7 @@ function arbitrageCandidate(ctx: AnalysisContext, sale: SaleRecommendation): Can
     newFit,
     delta: newFit - currentFit,
     kind: "upgrade",
-    cost: row.player.value ?? null,
+    cost: signingCost(row, ctx),
     age: row.player.age ?? null,
   };
 }

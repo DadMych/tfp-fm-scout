@@ -22,11 +22,14 @@ export function computePriceBand(
   value: number | null,
   age: number | null,
   isRelease: boolean,
+  isExpiring = false,
 ): PriceBand | null {
   if (value == null) return null;
   const mult = age != null ? valueMultiplier(age) : 1;
   let fee = value * mult * T.SALE_HAIRCUT;
   if (isRelease) fee *= 0.5;
+  // Buyers know an expiring player walks for free next summer — the fee collapses.
+  else if (isExpiring) fee *= T.EXPIRING_FEE_FRAC;
   return {
     low: round3sig(fee * 0.85),
     ask: round3sig(fee),

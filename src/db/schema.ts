@@ -11,7 +11,19 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { AttrVector } from "../domain/attr-value.js";
+import type { PlayerFlag } from "../domain/player.js";
 import type { PositionSlot } from "../domain/positions.js";
+
+/** Contract/loan/status extras carried as one jsonb blob — schema stays stable as FM exports grow. */
+export interface PlayerMeta {
+  readonly wage?: number;
+  readonly contractExpires?: string;
+  readonly onLoanFrom?: string;
+  readonly loanEnd?: string;
+  readonly lastTransferFee?: number;
+  readonly flags?: readonly PlayerFlag[];
+  readonly playStyle?: string;
+}
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -81,6 +93,7 @@ export const players = pgTable(
     heightCm: integer("height_cm"),
     foot: text("foot"),
     scoutGrade: text("scout_grade"),
+    meta: jsonb("meta").$type<PlayerMeta>(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.datasetId, t.rowId] }),
